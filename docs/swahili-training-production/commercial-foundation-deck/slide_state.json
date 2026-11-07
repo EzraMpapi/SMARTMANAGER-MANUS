@@ -1,0 +1,100 @@
+{
+  "project_info": {
+    "title": "SMART MANAGER ERP: Sura 07–09",
+    "created": 1787778677.84,
+    "last_updated": 1787778846.926,
+    "total_slides": 8
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "commercial_context",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "evidence_limits",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "sales",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "pos",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "crm",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "capture_gates",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "next_path",
+      "state": "edited",
+      "pageNum": 8
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "SMART MANAGER ERP: Sura 07–09",
+      "summary": "Cover slide for the Kiswahili commercial-foundation deck on Sales, POS, and CRM.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "commercial_context",
+      "title": "Commercial flow huanza na muktadha",
+      "summary": "Show how Sales, POS, and CRM are taught as distinct context-led operational topics, not as a single verified transaction chain.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "evidence_limits",
+      "title": "Taswira inaeleza; ushahidi huthibitisha",
+      "summary": "Distinguish conceptual 3D visuals, the safe Sales orientation frame, and pending POS/CRM UI approval.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "sales",
+      "title": "Sura 07: Mauzo yanahitaji mapitio",
+      "summary": "Summarize Sales terminology, document review, and the controlled link to stock or finance.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "pos",
+      "title": "Sura 08: POS inalinda utaratibu wa kaunta",
+      "summary": "Summarize POS concepts and the explicit no-live-checkout, payment, receipt, or cash-data boundary.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "crm",
+      "title": "Sura 09: CRM huweka ufuatiliaji wazi",
+      "summary": "Summarize CRM vocabulary, ownership, data quality, and the no-contact-data capture gate.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "capture_gates",
+      "title": "Gates za UI huzuia overclaim",
+      "summary": "Show the distinct Sales, POS, and CRM capture states and their evidence limits.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "next_path",
+      "title": "Njia ya commercial master ni sura kwa sura",
+      "summary": "Close with the chapter-by-chapter script, safe UI review, VTT/audio, QA, and approval path.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

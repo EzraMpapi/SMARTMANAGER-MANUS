@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280, initial-scale=1.0" />
+  <title>Verification evidence is layered</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #0B1F33; color: #F5F8FB; font-family: Arial, Helvetica, sans-serif; }
+    .content { padding: 56px 76px 0; }
+    .kicker { color: #22C7A5; font-size: 15px; letter-spacing: 2.4px; font-weight: 700; text-transform: uppercase; }
+    h2 { margin: 12px 0 0; font-size: 42px; line-height: 1.1; }
+    .lede { margin-top: 8px; color: #BFD0DC; font-size: 19px; line-height: 1.4; width: 900px; }
+
+    .evidence-list { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+    .evidence-item { display: flex; align-items: flex-start; background: rgba(43, 93, 114, 0.2); border-left: 4px solid #22C7A5; padding: 12px; }
+    .evidence-icon { color: #22C7A5; font-size: 24px; margin-right: 20px; font-weight: bold; }
+    .evidence-text h3 { margin: 0 0 8px 0; font-size: 22px; color: #F5F8FB; }
+    .evidence-text p { margin: 0; font-size: 18px; color: #BFD0DC; line-height: 1.4; }
+
+    .source { margin-top: 16px; color: #7895A8; font-size: 13px; border-top: 1px solid #2B5D72; padding-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="content">
+      <div class="kicker">07 / VERIFICATION</div>
+      <h2>Verification evidence is layered</h2>
+      <div class="lede">Validation spans database privileges, unit contracts, and production builds, ensuring the identity snapshot integrates safely across the stack.</div>
+
+      <div class="evidence-list">
+        <div class="evidence-item">
+          <div class="evidence-icon">✓</div>
+          <div class="evidence-text">
+            <h3>SQL Privilege &amp; Invocation Checks</h3>
+            <p>Security definer enabled; <code>anon</code> execution revoked; <code>authenticated</code> execution granted. Unauthenticated RPC invocation correctly raises SQLSTATE <code>42501</code>.</p>
+          </div>
+        </div>
+        <div class="evidence-item">
+          <div class="evidence-icon">✓</div>
+          <div class="evidence-text">
+            <h3>Focused Auth Contracts</h3>
+            <p>3 files and 10 tests passed, verifying the fail-closed state machine and snapshot hydration logic.</p>
+          </div>
+        </div>
+        <div class="evidence-item">
+          <div class="evidence-icon">✓</div>
+          <div class="evidence-text">
+            <h3>Full Vitest Suite</h3>
+            <p>204 files and 835 tests passed (with 5 skipped), confirming no regressions in adjacent modules.</p>
+          </div>
+        </div>
+        <div class="evidence-item">
+          <div class="evidence-icon">✓</div>
+          <div class="evidence-text">
+            <h3>Production Build</h3>
+            <p>Completed successfully through the Vercel-compatible path, ensuring deployment readiness.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="source">Source: Local test execution and Supabase connector verification, 23 Aug 2026.</div>
+    </div>
+  </div>
+</body>
+</html>

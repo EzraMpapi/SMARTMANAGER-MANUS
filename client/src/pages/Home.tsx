@@ -9,6 +9,7 @@ import {
   Headphones,
   HeartPulse,
   Layers3,
+  MessageSquarePlus,
   ShieldCheck,
   Sparkles,
   UsersRound,
@@ -23,16 +24,18 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { AnimatedGoldMesh } from "../components/AnimatedGoldMesh";
 import { BrandLogo } from "../components/BrandLogo";
+// @ts-expect-error The feedback modal intentionally remains JavaScript alongside the TypeScript page.
+import { UserFeedbackModal } from "../components/UserFeedbackModal";
 import { passkeySignInUserMessage, signInWithAccountPasskey } from "../lib/accountPasskeys";
 import { persistAuthSession } from "../lib/authSessionStorage";
 
 const capabilities = [
-  { title: "CRM & Sales", description: "Connect customer records, quotations, invoices, and commercial activity in one operating flow.", icon: UsersRound, tone: "bg-[#C9A96E]/10 text-[#C9A96E]" },
-  { title: "Inventory", description: "Keep stock, valuation, purchasing signals, and fulfillment close to the work that depends on them.", icon: Boxes, tone: "bg-[#16A34A]/10 text-[#16A34A]" },
-  { title: "Finance", description: "Bring receivables, expenses, cash flow, budgets, and reporting into operational context.", icon: WalletCards, tone: "bg-[#C9A96E]/10 text-[#C9A96E]" },
-  { title: "People & HR", description: "Coordinate employee records, attendance, leave, and performance from the same workspace.", icon: HeartPulse, tone: "bg-[#16A34A]/10 text-[#16A34A]" },
-  { title: "Manufacturing", description: "Link work orders, materials, and production steps with the business data around them.", icon: Factory, tone: "bg-[#C9A96E]/10 text-[#C9A96E]" },
-  { title: "Support & Operations", description: "Give teams practical workflows for service, documents, and business controls.", icon: Headphones, tone: "bg-[#16A34A]/10 text-[#16A34A]" },
+  { title: "CRM & Sales", description: "Connect customer records, quotations, invoices, and commercial activity in one operating flow.", icon: UsersRound, tone: "sm-public-icon-tile sm-public-icon-tile--gold bg-[#C9A96E]/10 text-[#C9A96E]" },
+  { title: "Inventory", description: "Keep stock, valuation, purchasing signals, and fulfillment close to the work that depends on them.", icon: Boxes, tone: "sm-public-icon-tile sm-public-icon-tile--emerald bg-[#16A34A]/10 text-[#16A34A]" },
+  { title: "Finance", description: "Bring receivables, expenses, cash flow, budgets, and reporting into operational context.", icon: WalletCards, tone: "sm-public-icon-tile sm-public-icon-tile--gold bg-[#C9A96E]/10 text-[#C9A96E]" },
+  { title: "People & HR", description: "Coordinate employee records, attendance, leave, and performance from the same workspace.", icon: HeartPulse, tone: "sm-public-icon-tile sm-public-icon-tile--emerald bg-[#16A34A]/10 text-[#16A34A]" },
+  { title: "Manufacturing", description: "Link work orders, materials, and production steps with the business data around them.", icon: Factory, tone: "sm-public-icon-tile sm-public-icon-tile--gold bg-[#C9A96E]/10 text-[#C9A96E]" },
+  { title: "Support & Operations", description: "Give teams practical workflows for service, documents, and business controls.", icon: Headphones, tone: "sm-public-icon-tile sm-public-icon-tile--emerald bg-[#16A34A]/10 text-[#16A34A]" },
 ];
 
 const PUBLIC_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
@@ -40,9 +43,10 @@ const PUBLIC_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
-  const { lang, setLang, t } = useLanguage();
+  const { lang, setLang, t, languageOptions } = useLanguage();
   const [passkeyPending, setPasskeyPending] = useState(false);
   const [passkeyError, setPasskeyError] = useState("");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   async function signInWithPublicPasskey() {
     if (!PUBLIC_SUPABASE_URL || !PUBLIC_SUPABASE_ANON_KEY) {
@@ -63,42 +67,45 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0B1120] text-[#F8FAFC]">
+    <div className="sm-public-landing min-h-screen overflow-x-hidden bg-[var(--sm-canvas)] text-[var(--sm-ink)]">
       {/* Navigation */}
-      <header className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10">
+      <header className="sm-public-header relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10">
         <Link href="/" className="flex items-center" aria-label="Smart Manager home"><BrandLogo variant="compact" priority className="h-12 w-12 shadow-lg sm:h-14 sm:w-14" /></Link>
         <div className="flex items-center gap-4">
-          <nav className="hidden items-center gap-8 text-[13px] font-medium text-[#94A3B8] md:flex" aria-label="Main navigation">
+          <nav className="sm-public-nav hidden items-center gap-8 text-[13px] font-medium text-[#94A3B8] md:flex" aria-label="Main navigation">
             <a href="#capabilities" className="transition-colors hover:text-[#C9A96E]">{t("capabilities")}</a>
             <a href="#why-smart-manager" className="transition-colors hover:text-[#C9A96E]">{t("whyUs")}</a>
             <a href="#launch" className="transition-colors hover:text-[#C9A96E]">{t("launch")}</a>
+            <button type="button" onClick={() => setFeedbackOpen(true)} className="transition-colors hover:text-[#C9A96E]">Feedback</button>
           </nav>
           
-          <div className="flex items-center gap-2 border-l border-white/10 pl-4">
+          <div className="sm-public-control-group flex items-center gap-2 border-l border-white/10 pl-4">
             <button
               type="button"
               onClick={toggleTheme}
-              className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10"
+              className="sm-public-icon-button grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10"
               title="Toggle theme"
             >
               {theme === "dark" ? <Sun size={15} className="text-[#C9A96E]" /> : <Moon size={15} className="text-[#C9A96E]" />}
             </button>
-            <button
-              type="button"
-              onClick={() => setLang(lang === "en" ? "sw" : "en")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-white/10"
-              title="Switch language"
+            <label
+              className="sm-public-language-control sm-language-control inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-white/10"
+              title={t("switchLanguage")}
             >
               <Globe size={14} className="text-[#16A34A]" />
-              <span>{lang.toUpperCase()}</span>
-            </button>
+              <span className="sm-language-code" aria-hidden="true">{lang.toUpperCase()}</span>
+              <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value as typeof lang)} className="sm-language-select max-w-[92px] appearance-none bg-transparent outline-none">{languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}</select>
+            </label>
           </div>
 
           <div className="flex items-center gap-2">
-            <button type="button" onClick={signInWithPublicPasskey} disabled={passkeyPending} aria-describedby={passkeyError ? "public-passkey-status" : undefined} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#16A34A]/35 bg-[#16A34A]/10 px-3 text-[12px] font-bold text-[#D1FAE5] transition-all hover:bg-[#16A34A]/20 active:scale-[0.97] disabled:cursor-wait disabled:opacity-70" aria-label="Sign in with a passkey">
+            <button type="button" onClick={() => setFeedbackOpen(true)} className="sm-public-secondary-action inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-[12px] font-bold text-white transition-all hover:bg-white/10 active:scale-[0.97]" aria-label="Open feedback form">
+              <MessageSquarePlus size={15} /><span className="hidden lg:inline">Feedback</span>
+            </button>
+            <button type="button" onClick={signInWithPublicPasskey} disabled={passkeyPending} aria-describedby={passkeyError ? "public-passkey-status" : undefined} className="sm-public-passkey-action inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#16A34A]/35 bg-[#16A34A]/10 px-3 text-[12px] font-bold text-[#D1FAE5] transition-all hover:bg-[#16A34A]/20 active:scale-[0.97] disabled:cursor-wait disabled:opacity-70" aria-label="Sign in with a passkey">
               <Fingerprint size={15} /><span className="hidden sm:inline">{passkeyPending ? "Opening…" : "Passkey"}</span>
             </button>
-            <Link href="/app" className="inline-flex items-center gap-2 rounded-lg bg-[#C9A96E] px-5 py-2.5 text-[13px] font-bold text-[#0B1120] shadow-lg transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
+            <Link href="/app" className="sm-public-primary-action inline-flex items-center gap-2 rounded-lg bg-[#C9A96E] px-5 py-2.5 text-[13px] font-bold text-[#0B1120] shadow-lg transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
               {t("launchApp")} <ArrowRight size={14} />
             </Link>
           </div>
@@ -125,13 +132,13 @@ export default function Home() {
                 Simamia Biashara Yako. Popote, Wakati Wote. Smart Manager brings commercial, financial, and operational workflows together in one noble command center.
               </p>
               <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-                <Link href="/app" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A96E] px-7 py-4 text-[14px] font-bold text-[#0B1120] shadow-[0_15px_30px_rgba(201,169,110,0.15)] transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
+                <Link href="/app" className="sm-public-primary-action inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A96E] px-7 py-4 text-[14px] font-bold text-[#0B1120] shadow-[0_15px_30px_rgba(201,169,110,0.15)] transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
                   Launch Smart Manager <ArrowRight size={16} />
                 </Link>
-                <button type="button" onClick={signInWithPublicPasskey} disabled={passkeyPending} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#16A34A]/35 bg-[#16A34A]/10 px-7 py-4 text-[14px] font-bold text-[#D1FAE5] transition-all hover:bg-[#16A34A]/20 active:scale-[0.97] disabled:cursor-wait disabled:opacity-70">
+                <button type="button" onClick={signInWithPublicPasskey} disabled={passkeyPending} className="sm-public-passkey-action inline-flex items-center justify-center gap-2 rounded-xl border border-[#16A34A]/35 bg-[#16A34A]/10 px-7 py-4 text-[14px] font-bold text-[#D1FAE5] transition-all hover:bg-[#16A34A]/20 active:scale-[0.97] disabled:cursor-wait disabled:opacity-70">
                   <Fingerprint size={16} /> {passkeyPending ? "Opening passkey…" : "Sign in with a passkey"}
                 </button>
-                <a href="#capabilities" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-7 py-4 text-[14px] font-bold text-white transition-all hover:bg-white/10">
+                <a href="#capabilities" className="sm-public-secondary-action inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-7 py-4 text-[14px] font-bold text-white transition-all hover:bg-white/10">
                   Explore capabilities <ChevronRight size={16} />
                 </a>
               </div>
@@ -146,7 +153,7 @@ export default function Home() {
             {/* Noble Dashboard Preview Card */}
             <div className="relative mx-auto w-full max-w-xl lg:mx-0 lg:justify-self-end">
               <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full border border-[#C9A96E]/10 bg-[#C9A96E]/5 blur-2xl" />
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#131C31] p-3 shadow-2xl sm:p-4 gold-glow">
+              <div className="sm-public-preview relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#131C31] p-3 shadow-2xl sm:p-4 gold-glow">
                 <div className="rounded-[1.4rem] bg-[#0B1120] p-5 sm:p-6">
                   <div className="mb-6 flex items-center justify-between">
                     <div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full bg-[#16A34A] animate-pulse" /><span className="text-[13px] font-bold text-white font-heading tracking-wide">Business Overview</span></div>
@@ -168,7 +175,7 @@ export default function Home() {
                   </div>
                   <div className="mt-5 grid grid-cols-[1fr_auto] gap-4 rounded-xl bg-[#C9A96E]/5 border border-[#C9A96E]/10 p-4">
                     <div><p className="text-[11px] font-bold text-[#C9A96E] font-heading">Next Best Action</p><p className="mt-1.5 text-[12px] leading-5 text-[#94A3B8]">Review the priorities surfaced by your connected business workflows.</p></div>
-                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#C9A96E] text-[#0B1120] shadow-lg"><ClipboardCheck size={20} /></span>
+                    <span className="sm-public-icon-tile sm-public-icon-tile--gold grid h-10 w-10 place-items-center rounded-xl bg-[#C9A96E] text-[#0B1120] shadow-lg"><ClipboardCheck size={20} /></span>
                   </div>
                 </div>
               </div>
@@ -215,11 +222,25 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Feedback invitation */}
+        <section id="feedback" className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10">
+          <div className="flex flex-col gap-6 rounded-[2rem] border border-[#16A34A]/20 bg-[#16A34A]/[0.06] px-6 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-9">
+            <div className="max-w-2xl">
+              <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#16A34A]">Build with the community</p>
+              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl font-heading">Help us improve Smart Manager.</h2>
+              <p className="mt-3 text-[15px] leading-7 text-[#94A3B8]">Share a bug, request a feature, or tell us what would make your daily work easier. Your feedback goes directly to the product team.</p>
+            </div>
+            <button type="button" onClick={() => setFeedbackOpen(true)} className="sm-public-emerald-action inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#16A34A] px-6 py-3.5 text-[13px] font-bold text-white shadow-lg transition-all hover:bg-[#22C55E] active:scale-[0.97]">
+              <MessageSquarePlus size={16} /> Leave feedback
+            </button>
+          </div>
+        </section>
+
         {/* Call to Action */}
         <section id="launch" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10">
           <div className="relative overflow-hidden rounded-[2.5rem] border border-[#C9A96E]/20 bg-gradient-to-br from-[#131C31] to-[#0B1120] px-8 py-16 text-center sm:px-16 sm:py-20 gold-glow">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(201,169,110,0.05),transparent_70%)]" />
-            <span className="relative z-10 mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#C9A96E] text-[#0B1120] shadow-xl"><Layers3 size={28} /></span>
+            <span className="sm-public-icon-tile sm-public-icon-tile--gold relative z-10 mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#C9A96E] text-[#0B1120] shadow-xl"><Layers3 size={28} /></span>
             <h2 className="relative z-10 mx-auto mt-8 max-w-2xl text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">Ready to enter the command center?</h2>
             <p className="relative z-10 mx-auto mt-6 max-w-xl text-[16px] leading-7 text-[#94A3B8]">Launch the Smart Manager ERP dashboard to work with connected modules and live operational data. Salama na Mwaminifu.</p>
             <div className="relative z-10 mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -231,10 +252,12 @@ export default function Home() {
         </section>
       </main>
 
+      <UserFeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+
       <footer className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10">
         <div className="flex flex-col items-center justify-between gap-6 border-t border-white/5 pt-12 md:flex-row">
           <BrandLogo variant="compact" className="h-11 w-11" />
-          <div className="flex items-center gap-2 text-[12px] font-medium text-[#64748B]">
+          <div className="sm-public-footer-meta flex items-center gap-2 text-[12px] font-medium text-[#64748B]">
             <img src="https://upload.wikimedia.org/wikipedia/commons/3/38/Flag_of_Tanzania.svg" alt="Tanzania" className="h-3 w-auto rounded-sm" />
             <span>Imetengenezwa Tanzania</span>
           </div>

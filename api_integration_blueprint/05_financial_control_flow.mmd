@@ -1,0 +1,35 @@
+---
+title: SMART MANAGER — Financial Integration Control Flow
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#fff7ed'
+    primaryBorderColor: '#ea580c'
+    lineColor: '#64748b'
+---
+flowchart TB
+  EVENT["External financial event\ninvoice · receipt · payment · loan movement"]
+  VALIDATE["Validate amount, currency, dates, references\nTZS/Africa-Dar_es_Salaam defaults"]
+  IDEMP["Idempotency + duplicate detection\nconnection + external_id + event_id"]
+  APPROVAL{"Approval / posting policy"}
+  PENDING["Pending review\nno ledger effect"]
+  POST["Controlled domain command\nserver-side authorization"]
+  JOURNAL["Balanced double-entry journal\ndebit = credit"]
+  SUBLEDGER["Subledger effect\naccount · inventory · receivable · loan"]
+  RECON["Reconciliation\nexternal statement vs internal record"]
+  EXCEPTION["Exception queue\nmanual resolution + audit"]
+  EVENT --> VALIDATE --> IDEMP --> APPROVAL
+  APPROVAL -- "maker-checker required" --> PENDING --> POST
+  APPROVAL -- "auto-post policy" --> POST
+  POST --> JOURNAL --> SUBLEDGER --> RECON
+  RECON -- "match" --> DONE["Settled / reconciled"]
+  RECON -- "difference" --> EXCEPTION
+  EXCEPTION --> POST
+  classDef input fill:#f8fafc,stroke:#334155,color:#0f172a,stroke-width:1.5px;
+  classDef control fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.7px;
+  classDef ledger fill:#eef2ff,stroke:#4338ca,color:#1e1b4b,stroke-width:1.8px;
+  classDef exception fill:#fef2f2,stroke:#dc2626,color:#7f1d1d,stroke-width:1.7px;
+  class EVENT input;
+  class VALIDATE,IDEMP,APPROVAL,PENDING,POST,RECON control;
+  class JOURNAL,SUBLEDGER,DONE ledger;
+  class EXCEPTION exception;

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background-color: #F0F4F8; background-image: radial-gradient(#C9D6E2 1px, transparent 1px); background-size: 20px 20px; color: #34495E; font-family: Arial, Helvetica, sans-serif; }
+    .frame { min-height: 720px; padding-top: 54px; padding-left: 48px; padding-right: 48px; display: flex; flex-direction: column; }
+    .eyebrow { color: #2ECC71; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+    h1 { margin: 14px 0 0; color: #0F4C81; font-size: 42px; line-height: 1.08; letter-spacing: -0.8px; }
+    .thesis { margin: 14px 0 0; max-width: 860px; font-size: 20px; line-height: 1.35; font-weight: 300; }
+    .content-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; flex: 1; padding-top: 12px; padding-bottom: 4px; }
+    .code-block { border: 1px solid #8EA8BC; background: #FFFFFF; padding-top: 8px; padding-left: 8px; padding-right: 8px; font-family: monospace; font-size: 16px; line-height: 1.6; color: #0F4C81; min-height: 200px; }
+    .code-keyword { color: #2ECC71; font-weight: bold; }
+    .code-comment { color: #8EA8BC; }
+    .points-list { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; }
+    .point-item { border-top: 1px dashed #8EA8BC; padding-top: 6px; }
+    .point-title { color: #0F4C81; font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .point-desc { font-size: 16px; line-height: 1.4; }
+    .footer { display: flex; justify-content: space-between; border-top: 1px dashed #8EA8BC; padding-top: 6px; padding-bottom: 6px; font-size: 12px; color: #60798C; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="frame">
+      <div class="eyebrow">02 / DATABASE MIGRATION</div>
+      <h1>Additive database change</h1>
+      <p class="thesis">The migration introduces a single RPC without altering existing tables, data, or RLS policies.</p>
+      <div class="content-grid">
+        <div class="code-block">
+          <span class="code-comment">-- New function definition</span><br>
+          <span class="code-keyword">CREATE OR REPLACE FUNCTION</span> public.auth_identity_snapshot() <br>
+          <span class="code-keyword">RETURNS</span> jsonb<br>
+          <span class="code-keyword">LANGUAGE</span> plpgsql <span class="code-keyword">STABLE</span> <span class="code-keyword">SECURITY DEFINER</span><br>
+          <span class="code-keyword">SET</span> search_path = public, auth, pg_temp<br>
+          <span class="code-keyword">AS</span> $$ -- Implementation (omitted) $$;<br><br>
+          <span class="code-keyword">REVOKE ALL ON FUNCTION</span> public.auth_identity_snapshot() <span class="code-keyword">FROM</span> PUBLIC, anon;<br>
+          <span class="code-keyword">GRANT EXECUTE ON FUNCTION</span> public.auth_identity_snapshot() <span class="code-keyword">TO</span> authenticated;
+        </div>
+        <div class="points-list">
+          <div class="point-item">
+            <div class="point-title">Zero Destructive Changes</div>
+            <div class="point-desc">No table creation, alteration, data rewrite, RLS disablement, or migration-ledger edits.</div>
+          </div>
+          <div class="point-item">
+            <div class="point-title">Strict Execution Context</div>
+            <div class="point-desc">Runs as <code>SECURITY DEFINER</code> with a pinned <code>search_path</code> to prevent privilege escalation.</div>
+          </div>
+          <div class="point-item">
+            <div class="point-title">Restricted Access</div>
+            <div class="point-desc"><code>PUBLIC</code> and <code>anon</code> execution revoked; granted only to <code>authenticated</code>.</div>
+          </div>
+          <div class="point-item">
+            <div class="point-title">Data Minimization</div>
+            <div class="point-desc">Returns limited JSONB identity data rather than exposing raw table joins or secrets.</div>
+          </div>
+        </div>
+      </div>
+      <div class="footer"><span>Preserve existing modules; narrow the authority boundary</span><span>03</span></div>
+    </div>
+  </div>
+</body>
+</html>

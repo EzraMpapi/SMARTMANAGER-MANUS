@@ -1,0 +1,31 @@
+# 1 - SMART MANAGER ERP
+
+Your business. Connected. Controlled. Intelligent. We're looking at Smart Manager ERP, built to give growing organizations one unified operating foundation. This is our official manual and customer value pitch, prepared right here in Dar es Salaam. Asante sana for joining us as we explore this trilingual enterprise story and subscription overview. Let us dive right into what makes this platform work.
+
+# 2 - One workspace. More control.
+
+Building on our introduction, the central promise here is disciplined connection. You record work once, validate it, preserve evidence, and make the result visible to the people who must act. Habari za kazi, we bring customers, sales, stock, finance, and people into one authenticated operating foundation. Management visibility means dashboards and reports show what is recorded, pending, or ready for action. Control and accountability rely on authentication, roles, database constraints, and audit paths to make ownership crystal clear. We provide evidence, not theatre. The manual presents a verified product foundation and labels configuration or external service prerequisites instead of hiding them. From fragmentation to visibility. And that leads directly to how we speak to our markets across borders.
+
+# 3 - A modular operating system for growth
+
+Expanding on our operating model, you start from the operational foundations your organization needs today, then connect additional workspaces and governance controls as complexity increases. Our core ERP foundation runs the business across sales, POS, inventory, procurement, finance, accounting, and workforce. Our industry workspaces fit the specific context, offering purpose built operating surfaces for microfinance, schools, healthcare, and property. Our trust and control plane governs the system through identity, permissions, audit evidence, and global administration. C'est formidable to see how modular design supports real enterprise scaling. Our core adoption principle is simple. Sell the verified core first, keeping module depth and external integrations subject to clear manual status labels. One platform, staged adoption, clearer control.
+
+# 4 - From business action to management insight
+
+Moving from our trilingual message to daily execution, a customer journey becomes a management system only when identity, company scope, protected action, evidence, and reporting stay connected. We trace authentication and company aware access as the first control boundary, never as an afterthought. You discover and register, verify company scope, enter a role aware workspace, execute a protected action, and turn evidence into action. The pitch is never about adding more screens. It is about a controlled path from work performed to work understood. But remember this crucial boundary. Browser convenience never replaces server and database enforcement. And that enforcement powers our entire modular ecosystem for growth.
+
+# 5 - One promise, three languages
+
+Connecting from our unified workspace, our value proposition stays consistent across every market we serve. We connect the work, control the record, and make growth easier to manage. In English, it is one connected command center for growing organizations. In Kiswahili, kituo kimoja kilichounganisha biashara inayokua, where teams connect operations and strengthen control in a language that reaches them directly. In French, un centre de pilotage connecté pour les organisations en croissance, linking operations and decisions while clearly signaling configuration limits. Our strict marketing rule remains simple. Sell the verified foundation, then expand with evidence. And here is how that foundation turns everyday business action into management insight.
+
+# 6 - Start free. Grow with a clear monthly contract.
+
+Starting free is the best way to build trust without friction. Building on our modular ecosystem, you give customers fifteen days to test everything at zero cost using the FREE_15 package priced at TZS 0 with no automatic charges. And when they are ready to grow, they choose from our exact paid packages: TWIGA at 5,000, TEMBO at 10,000, SIMBA at 15,000, SIMBA SC at 4,500, YANGA SC at 9,000, and AZAM FC at 7,000. Each paid plan delivers two full months of access consisting of one paid calendar month plus one promotional bonus calendar month on a strict monthly-only basis. Our server-verified architecture ensures that every payment, tenant, and provider order is checked and protected against duplicate entitlements. C'est simple, predictable, and secure for every growing business. Na twende mbele na mipango iliyo wazi. Let us move forward with clear packages.
+
+# 7 - Sell the value. State the boundaries.
+
+Trust grows when you are completely honest about what is ready today and what requires setup. Customers buy clarity, not surprises. We use precise status labels to govern every feature across the board. Implemented means a tested workflow is fully available in the verified foundation. Partially implemented means the end-to-end contract needs review. UI-only shows a visible surface without persistence. Configuration required means roles and storage settings are prerequisites. External service required points to third-party providers like TRA or SMS. And planned or not verified keeps our roadmap honest as a conversation rather than a promise. Voilà, this discipline protects customer trust and ensures long-term retention.
+
+# 8 - Your business. Connected. Controlled. Intelligent.
+
+Your business connected, controlled, and intelligent starts with a single decisive action today. Begin by activating the FREE_15 plan for fifteen days at TZS 0, establish your core operational foundation, and expand deliberately using verified business needs. Hapa kazi tu, and we build from what is proven. Choose clarity, prove the value through visible control, and let us grow your organization together. Asante sana for your time, and let us shape the future of enterprise management.

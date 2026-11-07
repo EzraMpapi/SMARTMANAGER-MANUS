@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280, initial-scale=1.0" />
+  <title>From business action to management insight</title>
+  <style>
+    * { box-sizing: border-box; }
+    /* Keep min-height:720px as required */
+    .slide-container { width: 1280px; min-height: 720px; background: #f5f8f6; color: #14251e; font-family: Arial, Helvetica, sans-serif; padding: 42px 56px 0 58px; }
+    .header { min-height: 42px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #cbd9d1; }
+    .brand { color: #0b5d3b; font-size: 16px; font-weight: 800; letter-spacing: 1.7px; }
+    .eyebrow { color: #8a6a2f; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
+    h1 { margin: 27px 0 6px; font-size: 43px; line-height: 1.08; letter-spacing: -1.4px; color: #0b5d3b; }
+    .intro { margin: 0; max-width: 990px; font-size: 18px; line-height: 1.35; color: #5c6c65; }
+    /* Tighter grid spacing */
+    .grid { display: grid; grid-template-columns: 46% 54%; gap: 16px; padding-top: 16px; align-items: start; }
+    .evidence { border-top: 6px solid #0b5d3b; border-bottom: 5px solid #d6b36a; background: #ffffff; padding: 8px 10px 6px; }
+    /* Reduced image height to save vertical space (no font-size changes) */
+    .evidence img { width: 490px; height: 250px; object-fit: contain; display: block; }
+    .evidence p { margin: 6px 0 0; color: #697a72; font-size: 12px; line-height: 1.3; }
+    .steps { border-top: 4px solid #1c79d3; }
+    /* Reduce inner padding and remove verbose sub-text to save height */
+    .step { display: grid; grid-template-columns: 54px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #c9d6ce; }
+    .number { color: #1c79d3; font-size: 20px; font-weight: 800; padding-top: 2px; }
+    .step h2 { margin: 0; color: #173024; font-size: 18px; line-height: 1.15; }
+    /* Step details removed to preserve vertical space */
+    .closing { margin-top: 10px; color: #0b5d3b; font-size: 15px; font-weight: 700; line-height: 1.35; }
+    .footer { margin-top: 12px; border-top: 1px solid #d7e0db; padding-top: 10px; display: flex; justify-content: space-between; color: #7a8982; font-size: 12px; }
+    .footer strong { color: #1c79d3; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <!-- Height adjustments summary:
+         header: 42px
+         h1: 93px
+         intro: 48px
+         grid original height: 452px
+           - image reduced by 40px (290 -> 250)
+           - removed step detail paragraphs and reduced step padding (~-200px)
+         grid new height estimate: ~200-230px
+         footer margin-top 12px + footer height ~25px
+         Total estimate: 8 (top) + 42 + 93 + 48 + 230 + 12 + 25 = 458 +  *minor* => ~658px < 720px
+    -->
+
+    <div class="header"><div class="brand">SMART MANAGER ERP</div><div class="eyebrow">Verified operating model</div></div>
+    <h1>From business action<br />to management insight.</h1>
+    <p class="intro">A customer journey becomes a management system only when identity, company scope, protected action, evidence, and reporting stay connected.</p>
+    <div class="grid">
+      <section class="evidence">
+        <img src="/home/ubuntu/SMARTMANAGER-MANUS-audit/docs/smart-manager-book/assets/figures/03-auth-workflow.png" alt="Verified authentication workflow architecture" />
+        <p><strong>Verified evidence:</strong> the published manual traces authentication and company-aware access as the first control boundary—not an afterthought.</p>
+      </section>
+      <section>
+        <div class="steps">
+          <div class="step"><div class="number">01</div><div><h2>Discover and register</h2></div></div>
+          <div class="step"><div class="number">02</div><div><h2>Verify and set company scope</h2></div></div>
+          <div class="step"><div class="number">03</div><div><h2>Enter a role-aware workspace</h2></div></div>
+          <div class="step"><div class="number">04</div><div><h2>Execute a protected action</h2></div></div>
+          <div class="step"><div class="number">05</div><div><h2>Turn evidence into action</h2></div></div>
+        </div>
+        <div class="closing">The pitch is not “more screens.” It is a controlled path from work performed to work understood.</div>
+      </section>
+    </div>
+    <div class="footer"><div><strong>Control boundary:</strong> browser convenience never replaces server and database enforcement.</div><div>EN  •  SW  •  FR</div></div>
+  </div>
+</body>
+</html>

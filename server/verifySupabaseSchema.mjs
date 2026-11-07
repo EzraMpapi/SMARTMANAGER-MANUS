@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { extractReferencedTables } from "./supabaseSchemaReferences.mjs";
 
 const projectRoot = resolve(import.meta.dirname, "..");
 const dashboardSource = readFileSync(
@@ -22,23 +23,27 @@ const contractManifest = JSON.parse(
   readFileSync(resolve(projectRoot, "server/schemaContracts.json"), "utf8"),
 );
 
-const referencedTables = [...new Set([
-  ...[...dashboardSource.matchAll(/(?:sb|useCompanyTable|runCompanyTableQuery|runCompanyTableMutation)\("([^\"]+)"/g)].map((match) => match[1]),
-  ...[...microfinanceSource.matchAll(/"(mfi_[a-z_]+)"/g)].map((match) => match[1]),
-  ...[...pharmacySource.matchAll(/"(phm_[a-z_]+)"/g)].map((match) => match[1]),
-  ...[...schoolSource.matchAll(/"(sch_[a-z_]+)"/g)].map((match) => match[1]),
-])].sort();
+const referencedTables = extractReferencedTables({
+  dashboardSource,
+  microfinanceSource,
+  pharmacySource,
+  schoolSource,
+});
 
 const supabaseUrl = (process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "").replace(/\/$/, "");
 const serviceKey = process.env.SUPABASE_SECRET_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
 
+const skipVercelSchemaCheck = (reason) => {
+  console.warn(JSON.stringify({
+    skipped: true,
+    reason,
+  }));
+  process.exit(0);
+};
+
 if (!supabaseUrl || !serviceKey) {
   if (process.env.VERCEL === "1") {
-    console.warn(JSON.stringify({
-      skipped: true,
-      reason: "Vercel build has no server-only Supabase schema credential; schema verification remains required in managed deployment and CI environments.",
-    }));
-    process.exit(0);
+    skipVercelSchemaCheck("Vercel build has no server-only Supabase schema credential; schema verification remains required in managed deployment and CI environments.");
   }
   console.error("Supabase schema verification requires SUPABASE_URL (or VITE_SUPABASE_URL) and SUPABASE_SECRET_KEY.");
   process.exit(1);
@@ -73,11 +78,17 @@ try {
   response = await requestOpenApi();
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
+  if (process.env.VERCEL === "1") {
+    skipVercelSchemaCheck("Vercel could not reach the server-only Supabase schema endpoint; schema verification remains required in managed deployment and CI environments.");
+  }
   console.error(`Unable to retrieve the Supabase OpenAPI schema after three attempts: ${message}`);
   process.exit(1);
 }
 
 if (!response.ok) {
+  if (process.env.VERCEL === "1" && [401, 403].includes(response.status)) {
+    skipVercelSchemaCheck("Vercel could not authorize the server-only Supabase schema endpoint; schema verification remains required in managed deployment and CI environments.");
+  }
   console.error(`Unable to retrieve the Supabase OpenAPI schema: HTTP ${response.status}.`);
   process.exit(1);
 }

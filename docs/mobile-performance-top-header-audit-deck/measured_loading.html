@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8" />
+  <title>Measured mobile loading</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #f7faf9; color: #132a22; font-family: Inter, Arial, sans-serif; padding-top: 0; }
+    .top { min-height: 76px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #d9e7e0; padding: 0 68px; }
+    .brand { color: #0b5d3b; font-size: 14px; font-weight: 800; letter-spacing: .08em; }
+    .tag { color: #6a7e75; font-size: 12px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+    .content { display: grid; grid-template-columns: .85fr 1.15fr; gap: 74px; padding: 59px 72px 0; }
+    .eyebrow { color: #07845a; font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { font-family: Poppins, Arial, sans-serif; font-size: 38px; letter-spacing: -.035em; line-height: 1.13; margin-top: 16px; }
+    .number { color: #073a35; font-family: Poppins, Arial, sans-serif; font-size: 79px; font-weight: 800; letter-spacing: -.07em; line-height: 1; margin-top: 48px; }
+    .number small { font-size: 25px; letter-spacing: -.02em; }
+    .caption { color: #167d55; font-size: 15px; font-weight: 700; margin-top: 8px; }
+    .note { border-top: 1px solid #d9e7e0; color: #63766e; font-size: 13px; line-height: 1.52; margin-top: 46px; padding-top: 20px; max-width: 390px; }
+    .metric-list { border-top: 1px solid #cfe1d9; }
+    .metric { min-height: 88px; display: grid; grid-template-columns: 176px 1fr 102px; align-items: center; border-bottom: 1px solid #dce9e3; column-gap: 20px; }
+    .metric-name { color: #526961; font-size: 14px; font-weight: 700; }
+    .track { height: 8px; background: #e4eeea; }
+    .fill { height: 8px; background: linear-gradient(90deg, #16a34a, #63d99b); }
+    .value { color: #123d2e; font-size: 20px; font-weight: 800; text-align: right; }
+    .resource-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 28px; }
+    .resource { border-top: 2px solid #0b5d3b; padding-top: 14px; }
+    .resource strong { color: #123d2e; display: block; font-family: Poppins, Arial, sans-serif; font-size: 29px; letter-spacing: -.04em; }
+    .resource span { color: #667a72; font-size: 12px; font-weight: 700; }
+    .footer { color: #71847c; font-size: 11px; margin: 37px 72px 0; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="top"><div class="brand">SMART MANAGER</div><div class="tag">Measured loading</div></div>
+    <div class="content">
+      <section>
+        <div class="eyebrow">375 × 812 mobile viewport</div>
+        <h1>Dashboard-ready<br />katika sekunde 3.01 locally.</h1>
+        <div class="number">3.01<small>s</small></div>
+        <div class="caption">Protected dashboard greeting visible</div>
+        <p class="note">Kipimo hiki ni local isolated-artifact measurement. Kinathibitisha regression guard, si latency au SLO ya mtandao wa 4G/3G wa mteja.</p>
+      </section>
+      <section>
+        <div class="metric-list">
+          <div class="metric"><div class="metric-name">Time to first byte</div><div class="track"><div class="fill" style="width: 4%;"></div></div><div class="value">8 ms</div></div>
+          <div class="metric"><div class="metric-name">DOM content loaded</div><div class="track"><div class="fill" style="width: 13%;"></div></div><div class="value">233 ms</div></div>
+          <div class="metric"><div class="metric-name">Load event</div><div class="track"><div class="fill" style="width: 13%;"></div></div><div class="value">236 ms</div></div>
+          <div class="metric"><div class="metric-name">Dashboard ready</div><div class="track"><div class="fill" style="width: 84%;"></div></div><div class="value">3.01 s</div></div>
+        </div>
+        <div class="resource-row"><div class="resource"><strong>47</strong><span>Browser resource entries</span></div><div class="resource"><strong>2.32 MB</strong><span>Total transferred bytes</span></div></div>
+      </section>
+    </div>
+    <div class="footer">Production-like compiled artifact · Isolated browser measurement · 27 Agosti 2026</div>
+  </div>
+</body>
+</html>

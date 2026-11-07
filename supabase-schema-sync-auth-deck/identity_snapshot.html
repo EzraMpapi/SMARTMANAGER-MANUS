@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280, initial-scale=1.0" />
+  <title>One server snapshot closes the tenant boundary</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #0B1F33; color: #F5F8FB; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; }
+    .content { padding: 56px 76px 0; flex: 1; display: flex; flex-direction: column; }
+    .kicker { color: #22C7A5; font-size: 15px; letter-spacing: 2.4px; font-weight: 700; text-transform: uppercase; }
+    h2 { margin: 12px 0 0; font-size: 42px; line-height: 1.1; }
+    .lede { margin-top: 12px; color: #BFD0DC; font-size: 19px; line-height: 1.4; max-width: 900px; }
+    .split { display: grid; grid-template-columns: 1fr 1.2fr; gap: 40px; margin-top: 40px; }
+    .text-col { padding-top: 10px; }
+    .gates-list { list-style: none; padding: 0; margin: 0; }
+    .gates-list li { margin-bottom: 24px; font-size: 19px; line-height: 1.5; color: #F5F8FB; display: flex; align-items: flex-start; }
+    .gates-list li::before { content: "■"; color: #22C7A5; margin-right: 14px; font-size: 14px; padding-top: 4px; }
+    .highlight { color: #22C7A5; font-weight: bold; }
+    .img-col { display: flex; justify-content: center; align-items: flex-start; }
+    .img-col img { width: 100%; height: 420px; object-fit: contain; border: 1px solid #2B5D72; background: #FFFFFF; padding: 10px; }
+    .source { margin-top: auto; padding-bottom: 30px; color: #7895A8; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="content">
+      <div class="kicker">04 / IDENTITY SNAPSHOT</div>
+      <h2>One server snapshot closes the tenant boundary</h2>
+      <div class="lede"><code>public.auth_identity_snapshot()</code> is a new additive RPC that returns limited identity metadata instead of exposing browser-side table joins as authority.</div>
+      <div class="split">
+        <div class="text-col">
+          <ul class="gates-list">
+            <li>Requires an authenticated <span class="highlight">auth.uid()</span> and raises SQLSTATE 42501 when absent.</li>
+            <li>Requires an <span class="highlight">active profile</span> and matching company context.</li>
+            <li>Requires an existing <span class="highlight">company</span>, <span class="highlight">membership</span>, and <span class="highlight">workspace</span>.</li>
+            <li>Fails closed if any condition is not met, preventing unauthorized access.</li>
+          </ul>
+        </div>
+        <div class="img-col">
+          <img src="/home/ubuntu/SMARTMANAGER-MANUS/auth_identity_snapshot_authorization_flow.png" alt="Authorization Flowchart" />
+        </div>
+      </div>
+      <div class="source">Source: auth_identity_snapshot() RPC implementation, 23 Aug 2026.</div>
+    </div>
+  </div>
+</body>
+</html>

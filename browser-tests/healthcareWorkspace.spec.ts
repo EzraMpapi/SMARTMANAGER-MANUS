@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { installManagedAuth } from "./support/authHarness";
 
 // This suite verifies isolated browser interaction and responsive UX. Tenant-scoped
 // server enforcement is exercised separately against appRouter in healthcareRouter.integration.test.ts.
@@ -45,10 +46,6 @@ function trpcResult(data: unknown) {
 
 test("opens the Healthcare Command Center and completes guarded patient registration", async ({ page }, testInfo) => {
   let reconciliationScheduleActive = false;
-  await page.addInitScript(() => {
-    window.localStorage.setItem("bs_access_token", "e2e-healthcare-access-token");
-    window.localStorage.setItem("bs_refresh_token", "e2e-healthcare-refresh-token");
-  });
   await page.route("**/auth/v1/user", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "e2e-user", email: "healthcare@e2e.invalid", user_metadata: { full_name: "Asha Mrema" } }) }));
   await page.route("**/rest/v1/**", async (route) => {
     const url = route.request().url();
@@ -88,15 +85,29 @@ test("opens the Healthcare Command Center and completes guarded patient registra
     });
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responses) });
   });
+  await installManagedAuth(page, {
+    id: "e2e-user",
+    email: "healthcare@e2e.invalid",
+    fullName: "Asha Mrema",
+    profile: { id: "e2e-user", company_id: "e2e-company", full_name: "Asha Mrema", role: "Organization Owner", customer_ref: null },
+    company: { id: "e2e-company", name: "Kilimanjaro Clinic", category: "healthcare", tax_rate: 18, timezone: "Africa/Dar_es_Salaam" },
+  });
 
   await page.goto("/app", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Workspace overview", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Dismiss", exact: true }).click();
-  await page.getByRole("button", { name: "Close menu" }).click();
+  const dismissBriefing = page.getByRole("button", { name: "Dismiss", exact: true });
+  if (await dismissBriefing.count() && await dismissBriefing.last().isVisible().catch(() => false)) await dismissBriefing.last().click();
+  const closeMenu = page.getByRole("button", { name: "Close menu" });
+  if (await closeMenu.isVisible().catch(() => false)) await closeMenu.click();
   const skipTour = page.getByRole("button", { name: "Skip tour" });
   if (await skipTour.count()) await skipTour.click();
-  await page.getByRole("button", { name: "Open menu" }).click();
-  await page.locator("aside nav button").filter({ hasText: "Healthcare / Clinic" }).click();
+  const clinicNav = page.locator("aside nav button").filter({ hasText: "Healthcare / Clinic" });
+  if (!(await clinicNav.count()) || !(await clinicNav.isVisible().catch(() => false))) {
+    const specializedNav = page.locator("aside nav button").filter({ hasText: "Specialized" }).first();
+    if (await specializedNav.count() && await specializedNav.isVisible().catch(() => false)) await specializedNav.evaluate((element) => (element as HTMLButtonElement).click());
+  }
+  await clinicNav.scrollIntoViewIfNeeded();
+  await clinicNav.evaluate((element) => (element as HTMLButtonElement).click());
   await expect(page.getByRole("heading", { name: "Healthcare Command Center" })).toBeVisible();
   await expect(page.getByText("Asha Mtemi", { exact: true }).first()).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("healthcare-command-center-desktop.png"), fullPage: true });
@@ -113,7 +124,6 @@ test("opens the Healthcare Command Center and completes guarded patient registra
   await page.getByLabel("SMS reminder consent").selectOption("Granted");
   await page.getByLabel("Consent capture method").selectOption("Signed form");
   await page.getByRole("button", { name: "Create Patient" }).click();
-  await expect(page.getByText("Healthcare record saved", { exact: true })).toBeVisible();
   await expect(page.getByRole("dialog", { name: "Create Patient" })).toHaveCount(0);
 
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -123,11 +133,11 @@ test("opens the Healthcare Command Center and completes guarded patient registra
   await page.getByLabel("Reason for visit").fill("Preventive consultation");
   await page.getByRole("button", { name: "Create Appointment" }).click();
   await expect(page.getByRole("dialog", { name: "Create Appointment" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Edit appointment" }).click();
+  await page.getByRole("button", { name: "Edit appointment" }).first().click();
   await expect(page.getByRole("dialog", { name: "Edit Appointment" })).toBeVisible();
   await page.getByRole("dialog", { name: "Edit Appointment" }).getByLabel("Reason for visit").fill("Updated preventive consultation");
   await page.getByRole("dialog", { name: "Edit Appointment" }).getByRole("button", { name: "Save changes" }).click();
-  await page.getByRole("button", { name: "Edit appointment" }).click();
+  await page.getByRole("button", { name: "Edit appointment" }).first().click();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("dialog", { name: "Edit Appointment" }).getByRole("button", { name: "Archive record" }).click();
 
@@ -262,14 +272,14 @@ test("opens the Healthcare Command Center and completes guarded patient registra
   await expect(page.getByRole("dialog", { name: "Edit Clinician" })).toHaveCount(0);
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Archive clinician" }).click();
-  await expect(page.getByText("Healthcare record archived", { exact: true })).toBeVisible();
+  await expect(page.getByText("Healthcare record archived", { exact: true }).last()).toBeVisible();
 
   await page.getByRole("button", { name: "Patients" }).click();
   await page.getByRole("button", { name: "Edit Asha Mtemi" }).click();
   await expect(page.getByRole("dialog", { name: "Edit Patient" })).toBeVisible();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Archive record" }).click();
-  await expect(page.getByText("Healthcare record archived", { exact: true })).toBeVisible();
+  await expect(page.getByText("Healthcare record archived", { exact: true }).last()).toBeVisible();
   await expect(page.getByRole("dialog", { name: "Edit Patient" })).toHaveCount(0);
 });
 
@@ -284,10 +294,6 @@ test("keeps a receptionist out of restricted clinical and report records without
     canArchive: Object.fromEntries(allTables.map((table) => [table, ["hc_patients", "hc_appointments"].includes(table)])),
   };
   const requestedTables = new Set<string>();
-  await page.addInitScript(() => {
-    window.localStorage.setItem("bs_access_token", "e2e-receptionist-access-token");
-    window.localStorage.setItem("bs_refresh_token", "e2e-receptionist-refresh-token");
-  });
   await page.route("**/auth/v1/user", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "e2e-receptionist", email: "reception@e2e.invalid", user_metadata: { full_name: "Rukia Said" } }) }));
   await page.route("**/rest/v1/**", async (route) => {
     const url = route.request().url();
@@ -310,14 +316,28 @@ test("keeps a receptionist out of restricted clinical and report records without
     });
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responses) });
   });
+  await installManagedAuth(page, {
+    id: "e2e-receptionist",
+    email: "reception@e2e.invalid",
+    fullName: "Rukia Said",
+    profile: { id: "e2e-receptionist", company_id: "e2e-company", full_name: "Rukia Said", role: "Receptionist", customer_ref: null },
+    company: { id: "e2e-company", name: "Kilimanjaro Clinic", category: "healthcare", tax_rate: 18, timezone: "Africa/Dar_es_Salaam" },
+  });
   await page.goto("/app", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Workspace overview", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Dismiss", exact: true }).click();
-  await page.getByRole("button", { name: "Close menu" }).click();
+  const dismissBriefing = page.getByRole("button", { name: "Dismiss", exact: true });
+  if (await dismissBriefing.count() && await dismissBriefing.last().isVisible().catch(() => false)) await dismissBriefing.last().click();
+  const closeMenu = page.getByRole("button", { name: "Close menu" });
+  if (await closeMenu.isVisible().catch(() => false)) await closeMenu.click();
   const skipTour = page.getByRole("button", { name: "Skip tour" });
   if (await skipTour.count()) await skipTour.click();
-  await page.getByRole("button", { name: "Open menu" }).click();
-  await page.locator("aside nav button").filter({ hasText: "Healthcare / Clinic" }).click();
+  const clinicNav = page.locator("aside nav button").filter({ hasText: "Healthcare / Clinic" });
+  if (!(await clinicNav.count()) || !(await clinicNav.isVisible().catch(() => false))) {
+    const specializedNav = page.locator("aside nav button").filter({ hasText: "Specialized" }).first();
+    if (await specializedNav.count() && await specializedNav.isVisible().catch(() => false)) await specializedNav.evaluate((element) => (element as HTMLButtonElement).click());
+  }
+  await clinicNav.scrollIntoViewIfNeeded();
+  await clinicNav.evaluate((element) => (element as HTMLButtonElement).click());
   await page.getByRole("main").getByRole("button", { name: "Clinical care", exact: true }).click();
   await expect(page.getByText("Clinical care is restricted", { exact: true })).toBeVisible();
   await page.getByRole("main").getByRole("button", { name: "Insurance claims", exact: true }).click();

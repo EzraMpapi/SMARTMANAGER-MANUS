@@ -1,0 +1,7 @@
+auth.oauth_clients	0	id,client_secret_hash,registration_type,redirect_uris,grant_types,client_name,client_uri,logo_uri,created_at,updated_at,deleted_at,client_type,token_endpoint_auth_method	id
+auth.oauth_authorizations	0	id,authorization_id,client_id,user_id,redirect_uri,scope,state,resource,code_challenge,code_challenge_method,response_type,status,authorization_code,created_at,expires_at,approved_at,nonce	id
+auth.oauth_consents	0	id,user_id,client_id,scopes,granted_at,revoked_at	id
+auth.oauth_client_states	0	id,provider_type,code_verifier,created_at	id
+auth.custom_oauth_providers	0	id,provider_type,identifier,name,client_id,client_secret,acceptable_client_ids,scopes,pkce_enabled,attribute_mapping,authorization_params,enabled,email_optional,issuer,discovery_url,skip_nonce_check,cached_discovery,discovery_cached_at,authorization_url,token_url,userinfo_url,jwks_uri,created_at,updated_at,custom_claims_allowlist	id
+auth.webauthn_credentials	3	id,user_id,credential_id,public_key,attestation_type,aaguid,sign_count,transports,backup_eligible,backed_up,friendly_name,created_at,updated_at,last_used_at	id
+auth.webauthn_challenges	32	id,user_id,challenge_type,session_data,created_at,expires_at	id

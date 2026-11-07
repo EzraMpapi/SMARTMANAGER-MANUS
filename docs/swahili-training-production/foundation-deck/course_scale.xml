@@ -1,0 +1,29 @@
+<slide id="course_scale">
+  <background color="ivory"/>
+  <shape id="top-accent" type="line" x="1020" y="56" width="200" height="0" stroke="gold" stroke-width="3"/>
+  <text id="slide-title" x="60" y="62" width="900" height="46" font="heading" size="34" color="emerald" wrap="false">Kutoka maono hadi kozi ya saa 8:30</text>
+  <text id="slide-subtitle" x="60" y="114" width="760" height="52" font="body" size="20" color="slate">Mpango ulioandikwa unaweka uzalishaji katika vipande 48 vinavyopitiwa kivyake.</text>
+  <shape id="chapters-card" type="rect" x="60" y="190" width="235" height="220" fill="mist" stroke="hairline" stroke-width="1"/>
+  <text id="chapters-number" x="84" y="215" width="187" height="92" font="display" size="72" color="emerald" align="center" anchor="middle" wrap="false">48</text>
+  <text id="chapters-label" x="84" y="322" width="187" height="55" font="body" size="20" color="ink" align="center"><p>Sura za kozi</p><p>zilizopangwa</p></text>
+  <shape id="minutes-card" type="rect" x="320" y="190" width="260" height="220" fill="emerald"/>
+  <text id="minutes-number" x="344" y="215" width="212" height="92" font="display" size="64" color="ivory" align="center" anchor="middle" wrap="false">510</text>
+  <text id="minutes-label" x="344" y="322" width="212" height="55" font="body" size="20" color="ivory" align="center"><p>dakika za mpango</p><p>(saa 8:30)</p></text>
+  <text id="architecture-heading" x="670" y="180" width="500" height="28" font="body" size="18" color="slate" wrap="false">MUUNDO WA SEHEMU TANO</text>
+  <shape id="section-a" type="rect" x="670" y="225" width="550" height="46" fill="emerald"/>
+  <text id="section-a-text" x="688" y="236" width="514" height="22" font="body" size="17" color="ivory" wrap="false">A • Kuanzia na mfumo salama — 106 dk</text>
+  <shape id="section-b" type="rect" x="670" y="281" width="550" height="62" fill="#0D6B53"/>
+  <text id="section-b-text" x="688" y="299" width="514" height="24" font="body" size="17" color="ivory" wrap="false">B • Shughuli, fedha na watu — 142 dk</text>
+  <shape id="section-c" type="rect" x="670" y="353" width="550" height="55" fill="#4B7C70"/>
+  <text id="section-c-text" x="688" y="368" width="514" height="24" font="body" size="17" color="ivory" wrap="false">C • Sekta maalumu na shughuli za kisasa — 124 dk</text>
+  <shape id="section-d" type="rect" x="670" y="418" width="550" height="48" fill="#799C92"/>
+  <text id="section-d-text" x="688" y="430" width="514" height="24" font="body" size="17" color="ink" wrap="false">D • Uongozi, automation na uaminifu — 104 dk</text>
+  <shape id="section-e" type="rect" x="670" y="476" width="550" height="32" fill="gold"/>
+  <text id="section-e-text" x="688" y="481" width="514" height="20" font="caption" size="14" color="ink" wrap="false">E • Ustadi, adoption na hitimisho — 34 dk</text>
+  <shape id="foundation-band" type="rect" x="60" y="545" width="1160" height="82" fill="#EAF1EE" stroke="#B7D4C9" stroke-width="1"/>
+  <text id="foundation-band-title" x="84" y="558" width="290" height="28" font="body" size="18" color="emerald" wrap="false">SURA 01–06: MSINGI ULIOTAYARISHWA</text>
+  <text id="foundation-band-detail" x="84" y="591" width="1080" height="24" font="body" size="18" color="ink" wrap="false">Dakika 58 za scripts, storyboards, VTT cues, asset lists na QA; master assembly bado inasubiri production review ya kila sura.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="footer-course" x="60" y="675" width="460" height="20" font="caption" color="slate" wrap="false">SMART MANAGER ERP • Msingi wa Kozi ya Kiswahili</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="20" font="caption" color="slate" align="right" wrap="false">02</text>
+</slide>

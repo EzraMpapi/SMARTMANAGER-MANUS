@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1280, initial-scale=1.0" />
+<title>Effective permissions are evaluated in PostgreSQL</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0}
+.slide-container{width:1280px;min-height:720px;background:#0B1F33;color:#F5F8FB;font-family:Arial,Helvetica,sans-serif}
+.content{padding:56px 76px 0}
+.kicker{color:#22C7A5;font-size:15px;letter-spacing:2.4px;font-weight:700;text-transform:uppercase}
+h2{margin:12px 0 0;font-size:42px;line-height:1.1}
+.lede{margin-top:12px;color:#BFD0DC;font-size:19px;line-height:1.4;width:900px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:48px}
+.grid-item{border-top:2px solid #2B5D72;padding-top:20px}
+.grid-item h3{color:#22C7A5;font-size:24px;margin:0 0 12px 0}
+.grid-item p{color:#BFD0DC;font-size:18px;line-height:1.5;margin:0}
+.source{margin-top:60px;color:#7895A8;font-size:13px;border-top:1px solid #2B5D72;padding-top:16px}
+</style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="content">
+      <div class="kicker">05 / PERMISSION EVALUATION</div>
+      <h2>Effective permissions are evaluated in PostgreSQL</h2>
+      <div class="lede">The snapshot RPC calculates effective permissions server-side, ensuring consistent enforcement across the application without relying on client-side joins.</div>
+
+      <div class="grid">
+        <div class="grid-item">
+          <h3>Active Workforce Roles</h3>
+          <p>Active workforce member roles are strictly filtered by their current status and effective date windows, ensuring only currently valid assignments are considered.</p>
+        </div>
+        <div class="grid-item">
+          <h3>Allow Paths</h3>
+          <p>The permission catalog is limited to active tenant permissions. Access can be granted through explicit role grants or direct profile/role module access.</p>
+        </div>
+        <div class="grid-item">
+          <h3>Deny Precedence</h3>
+          <p>Security is fail-closed. Active, time-valid Deny grants strictly override any Allow grants for the same permission, preventing accidental escalation.</p>
+        </div>
+        <div class="grid-item">
+          <h3>Legacy-Role Containment</h3>
+          <p>Legacy profile role strings are returned for display compatibility only. They are intentionally excluded from the permission calculation and cannot silently grant access.</p>
+        </div>
+      </div>
+
+      <div class="source">Source: auth_identity_snapshot RPC implementation, 23 Aug 2026.</div>
+    </div>
+  </div>
+</body>
+</html>

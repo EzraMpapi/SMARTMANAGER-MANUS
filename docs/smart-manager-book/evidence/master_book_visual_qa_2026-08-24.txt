@@ -1,0 +1,11 @@
+Master-book visual QA findings:
+
+- PDF cover page renders on A4 with a dark-green branded background, the recovered official SMART MANAGER logo, gold rule, title, bilingual-edition label, version/date, owner/creator identification, and Dar es Salaam, Tanzania location. No clipping or missing image was observed.
+- Representative module page 107 renders with a running header and page number, blue section hierarchy, readable paragraphs, a bounded technical table, and visible source paths. The pharmacy module appears as page 92 in the printed page footer because front matter and the PDF counter intentionally differ from the PDF object index; navigation is governed by the generated TOC.
+- Typst escapes underscores in source paths as visible backslash characters (for example phm\\_audit\\_logs) rather than visually hiding them. This is technically readable but is a minor polish issue to consider before final delivery.
+
+- After changing underscore rendering to the Unicode code-point escape, the representative PDF render is clean: no stray backslashes are visible in repository paths, the diagram caption is readable, and page margins/running header/page number remain intact.
+- The final cover render remains visually consistent after regeneration: official logo, dark-green page, gold rule, title, bilingual edition label, version/date, creator attribution, and location are all legible with no visible clipping.
+
+- Final PDF cover after enrichment remains legible and unclipped, with official logo, title, bilingual edition label, date, version, creator attribution, and location.
+- Final module-table page is readable and retains running header, section hierarchy, bounded table, and page number. Long lists of real table names wrap across rows; this is acceptable for an audit appendix, although the database rows are intentionally dense.

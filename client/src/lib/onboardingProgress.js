@@ -110,3 +110,12 @@ export function getSignupProgressionStep({ account, company, step }) {
   if (step === 2) return company?.name?.trim()?.length > 1 ? 3 : 2;
   return 3;
 }
+
+export function getSignupStepOneValidationError({ account, termsAccepted }) {
+  if (!account?.fullName?.trim()) return "Please enter your full name.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account?.email?.trim() || "")) return "Please enter a valid email address.";
+  if (!isEnterprisePassword(account?.password || "")) return "Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.";
+  if (account.password !== account.confirmPassword) return "Passwords do not match.";
+  if (!termsAccepted) return "Please accept the Terms of Service and Privacy Policy to continue.";
+  return null;
+}

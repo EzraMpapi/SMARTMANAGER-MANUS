@@ -1,0 +1,43 @@
+---
+title: SMART MANAGER — Critical End-to-End Workflows
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#ecfdf5'
+    primaryBorderColor: '#059669'
+    lineColor: '#64748b'
+---
+flowchart TB
+  subgraph BANK_FLOW["Bank & MFI / VICOBA lending flow"]
+    CUST["Customer or member + KYC"] --> SHARE["Shares / savings / account"]
+    SHARE --> APPLY["Loan application"] --> SCORE["Credit assessment"]
+    SCORE --> APPROVE["Maker-checker approval"] --> DISBURSE["Disbursement"]
+    DISBURSE --> REPAY["Repayment allocation"] --> ARREARS["Arrears / PAR / collection"]
+    ARREARS --> RECON["Reconciliation + statement"]
+  end
+  subgraph COMM_FLOW["Commercial flow"]
+    LEAD["Lead / customer"] --> ORDER["Quote / order / POS"] --> STOCK["Inventory movement"]
+    STOCK --> PAYMENT["Payment / receipt"] --> GL["GL + finance report"]
+  end
+  subgraph PEOPLE_FLOW["People flow"]
+    EMP["Employee profile"] --> PAYROLL["Payroll / leave"] --> REQUEST["Request / approval"] --> SELF["Employee portal"]
+  end
+  subgraph VERTICAL_FLOW["Vertical service flow"]
+    CLIENT["Patient / student / guest"] --> SERVICE["Service / booking / attendance"]
+    SERVICE --> VSTOCK["Pharmacy / restaurant / inventory"] --> VPAY["Payment"] --> VREPORT["Finance / reporting"]
+  end
+  subgraph GOVERNANCE["Cross-cutting control points"]
+    VALIDATE["Input validation"] --> TENANT["Tenant + role check"] --> AUDIT["Audit event"]
+    POSTING["Balanced journal posting"] --> RECONCILE["Reconciliation"] --> REPORTING["Management / regulatory report"]
+  end
+  APPROVE -.-> VALIDATE
+  PAYMENT -.-> POSTING
+  REQUEST -.-> VALIDATE
+  VSTOCK -.-> POSTING
+  RECON -.-> RECONCILE
+  classDef flow fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+  classDef control fill:#fef2f2,stroke:#dc2626,color:#7f1d1d,stroke-width:1.6px;
+  classDef report fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.6px;
+  class CUST,SHARE,APPLY,SCORE,APPROVE,DISBURSE,REPAY,ARREARS,RECON,LEAD,ORDER,STOCK,PAYMENT,GL,EMP,PAYROLL,REQUEST,SELF,CLIENT,SERVICE,VSTOCK,VPAY,VREPORT flow;
+  class VALIDATE,TENANT,AUDIT control;
+  class POSTING,RECONCILE,REPORTING report;

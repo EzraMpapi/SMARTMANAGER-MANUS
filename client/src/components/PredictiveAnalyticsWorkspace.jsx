@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { AlertCircle, ClipboardList, Factory, Package, Sparkles, TrendingUp, Users, Wallet } from "lucide-react";
+import { rowsOf } from "@/lib/rowsOf";
 
 export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, employees, leaveRequests, runtime }) {
   const {
@@ -15,13 +16,13 @@ export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, em
 
   const cashProjection = useMemo(() => {
     const weeklyExpenseRate = expenseRows.filter((expense) => (today - new Date(expense.date)) / 86400000 <= 56).reduce((sum, expense) => sum + expense.amount, 0) / 8;
-    const currentCash = invoices.rows.reduce((sum, invoice) => sum + (invoice.status === "Paid" ? lineTotal(invoice.items).total : (invoice.amountPaid || 0)), 0) - expenseRows.reduce((sum, expense) => sum + expense.amount, 0);
+    const currentCash = rowsOf(invoices).reduce((sum, invoice) => sum + (invoice.status === "Paid" ? lineTotal(invoice.items).total : (invoice.amountPaid || 0)), 0) - expenseRows.reduce((sum, expense) => sum + expense.amount, 0);
     let running = currentCash;
     const weeks = Array.from({ length: 8 }, (_, index) => {
       const week = index + 1;
       const weekStart = new Date(today.getTime() + index * 7 * 86400000);
       const weekEnd = new Date(today.getTime() + week * 7 * 86400000);
-      const incoming = invoices.rows.filter((invoice) => invoice.status !== "Paid" && new Date(invoice.dueDate) >= weekStart && new Date(invoice.dueDate) < weekEnd).reduce((sum, invoice) => sum + (lineTotal(invoice.items).total - (invoice.amountPaid || 0)), 0);
+      const incoming = rowsOf(invoices).filter((invoice) => invoice.status !== "Paid" && new Date(invoice.dueDate) >= weekStart && new Date(invoice.dueDate) < weekEnd).reduce((sum, invoice) => sum + (lineTotal(invoice.items).total - (invoice.amountPaid || 0)), 0);
       running += incoming - weeklyExpenseRate;
       return { week, balance: running };
     });
@@ -30,8 +31,8 @@ export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, em
 
   const stockDepletion = useMemo(() => {
     const salesBySku = {};
-    invoices.rows.filter((invoice) => (today - new Date(invoice.date)) / 86400000 <= 60).forEach((invoice) => invoice.items.forEach((item) => { if (item.sku) salesBySku[item.sku] = (salesBySku[item.sku] || 0) + item.qty; }));
-    return inventory.rows.map((item) => {
+    rowsOf(invoices).filter((invoice) => (today - new Date(invoice.date)) / 86400000 <= 60).forEach((invoice) => invoice.items.forEach((item) => { if (item.sku) salesBySku[item.sku] = (salesBySku[item.sku] || 0) + item.qty; }));
+    return rowsOf(inventory).map((item) => {
       const dailyRate = (salesBySku[item.sku] || 0) / 60;
       return { sku: item.sku, name: item.name, daysLeft: dailyRate > 0 ? Math.round(item.qty / dailyRate) : null };
     }).filter((item) => item.daysLeft !== null && item.daysLeft <= 21).sort((a, b) => a.daysLeft - b.daysLeft);
@@ -39,7 +40,7 @@ export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, em
 
   const churnRisk = useMemo(() => {
     const byCustomer = {};
-    invoices.rows.forEach((invoice) => { (byCustomer[invoice.customer] = byCustomer[invoice.customer] || []).push(new Date(invoice.date)); });
+    rowsOf(invoices).forEach((invoice) => { (byCustomer[invoice.customer] = byCustomer[invoice.customer] || []).push(new Date(invoice.date)); });
     return Object.entries(byCustomer).filter(([, dates]) => dates.length >= 2).map(([customer, dates]) => {
       dates.sort((a, b) => a - b);
       const intervals = dates.slice(1).map((date, index) => (date - dates[index]) / 86400000);
@@ -49,9 +50,9 @@ export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, em
     }).filter((customer) => customer.ratio >= 2).sort((a, b) => b.ratio - a.ratio);
   }, [invoices.rows, today]);
 
-  const turnoverRisk = useMemo(() => employees.rows.filter((employee) => employee.status === "Active").map((employee) => {
+  const turnoverRisk = useMemo(() => rowsOf(employees).filter((employee) => employee.status === "Active").map((employee) => {
     const tenureDays = employee.hireDate ? (today - new Date(employee.hireDate)) / 86400000 : null;
-    const recentLeave = leaveRequests.rows.filter((leave) => leave.employee === employee.name && (today - new Date(leave.startDate)) / 86400000 <= 90).length;
+    const recentLeave = rowsOf(leaveRequests).filter((leave) => leave.employee === employee.name && (today - new Date(leave.startDate)) / 86400000 <= 90).length;
     const flags = [];
     if (tenureDays !== null && tenureDays < 90) flags.push("New hire (under 90 days)");
     if (recentLeave >= 3) flags.push(`${recentLeave} leave requests in the last 90 days`);
@@ -60,7 +61,7 @@ export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, em
 
   const salesGrowth = useMemo(() => {
     const byMonth = {};
-    invoices.rows.forEach((invoice) => { const month = invoice.date.slice(0, 7); byMonth[month] = (byMonth[month] || 0) + (invoice.status === "Paid" ? lineTotal(invoice.items).total : (invoice.amountPaid || 0)); });
+    rowsOf(invoices).forEach((invoice) => { const month = invoice.date.slice(0, 7); byMonth[month] = (byMonth[month] || 0) + (invoice.status === "Paid" ? lineTotal(invoice.items).total : (invoice.amountPaid || 0)); });
     const months = Object.entries(byMonth).sort(([a], [b]) => a.localeCompare(b));
     if (months.length < 2) return { growthRate: null, nextMonthProjection: null };
     const values = months.map(([, value]) => value);
@@ -71,8 +72,8 @@ export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, em
     return { growthRate: mean > 0 ? Math.round((slope / mean) * 1000) / 10 : 0, nextMonthProjection: mean + slope * (values.length - meanIndex) };
   }, [invoices.rows, lineTotal]);
 
-  const budgetOverruns = useMemo(() => projects.rows.filter((project) => project.status !== "Completed" && project.status !== "Cancelled" && project.budget > 0).map((project) => {
-    const spent = projectExpenses.rows.filter((expense) => expense.projectId === project.id).reduce((sum, expense) => sum + expense.amount, 0);
+  const budgetOverruns = useMemo(() => rowsOf(projects).filter((project) => project.status !== "Completed" && project.status !== "Cancelled" && project.budget > 0).map((project) => {
+    const spent = rowsOf(projectExpenses).filter((expense) => expense.projectId === project.id).reduce((sum, expense) => sum + expense.amount, 0);
     const start = new Date(project.startDate);
     const end = project.endDate ? new Date(project.endDate) : null;
     const elapsed = Math.max(1, (today - start) / 86400000);
@@ -86,8 +87,8 @@ export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, em
     structuring: expenseRows.filter((expense) => expense.amount >= poApprovalThreshold * 0.9 && expense.amount < poApprovalThreshold),
   }), [detectUnusualExpenses, expenseRows, poApprovalThreshold]);
 
-  const maintenanceNeeds = useMemo(() => machines.rows.map((machine) => {
-    const record = maintenance.rows.filter((item) => item.machine === machine.name).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+  const maintenanceNeeds = useMemo(() => rowsOf(machines).map((machine) => {
+    const record = rowsOf(maintenance).filter((item) => item.machine === machine.name).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
     if (!record?.nextDueDate) return null;
     return { machine: machine.name, daysUntil: Math.round((new Date(record.nextDueDate) - today) / 86400000) };
   }).filter((machine) => machine && machine.daysUntil <= 21), [machines.rows, maintenance.rows, today]);
@@ -124,7 +125,7 @@ function ScenarioPlanner({ invoices, expenseRows, employees, runtime }) {
   const [expenseCutPct, setExpenseCutPct] = useState(10);
   const baseline = useMemo(() => {
     const pnl = computePnLFigures(invoices, expenseRows);
-    const activeEmployees = employees.rows.filter((employee) => employee.status === "Active");
+    const activeEmployees = rowsOf(employees).filter((employee) => employee.status === "Active");
     const averageSalary = activeEmployees.length ? activeEmployees.reduce((sum, employee) => sum + employee.salary, 0) / activeEmployees.length : 0;
     return { pnl, averageSalary, activeEmployees, categories: [...new Set(expenseRows.map((expense) => expense.category))] };
   }, [computePnLFigures, employees.rows, expenseRows, invoices]);

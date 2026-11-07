@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background-color: #F0F4F8; background-image: radial-gradient(#C9D6E2 1px, transparent 1px); background-size: 20px 20px; color: #34495E; font-family: Arial, Helvetica, sans-serif; }
+    .frame { min-height: 720px; padding-top: 64px; padding-left: 76px; padding-right: 76px; display: flex; flex-direction: column; }
+    .kicker { color: #2ECC71; font-size: 14px; font-weight: 700; letter-spacing: 2.4px; text-transform: uppercase; }
+    .top-rule { width: 88px; min-height: 4px; background: #2ECC71; margin-top: 18px; }
+    /* Reduced bottom spacing to avoid overflow */
+    .hero { display: grid; grid-template-columns: 1.6fr 0.8fr; gap: 56px; align-items: end; flex: 1; padding-top: 56px; margin-bottom: 20px; }
+    .hero-copy { align-self: end; }
+    h1 { margin: 0; color: #0F4C81; font-size: 64px; line-height: 1.02; letter-spacing: -1.8px; font-weight: 700; max-width: 720px; }
+    .subtitle { margin-top: 24px; font-size: 25px; line-height: 1.28; font-weight: 300; max-width: 650px; }
+    .scope { margin-top: 46px; border-top: 1px dashed #8EA8BC; padding-top: 18px; max-width: 670px; font-size: 16px; line-height: 1.45; }
+    .motif { align-self: center; justify-self: center; width: 300px; min-height: 300px; border: 1px solid #8EA8BC; display: grid; place-items: center; position: relative; }
+    .ring { width: 212px; min-height: 212px; border: 2px solid #0F4C81; border-radius: 50%; display: grid; place-items: center; }
+    .ring-inner { width: 118px; min-height: 118px; border: 7px solid #2ECC71; border-radius: 50%; display: grid; place-items: center; color: #0F4C81; font-weight: 700; font-size: 16px; text-align: center; line-height: 1.15; }
+    .motif-labels { position: absolute; bottom: -58px; left: 0; right: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; font-size: 11px; color: #0F4C81; text-transform: uppercase; letter-spacing: 0.7px; }
+    .motif-labels span { border-top: 2px solid #2ECC71; padding-top: 8px; }
+    .footer { display: flex; justify-content: space-between; border-top: 1px dashed #8EA8BC; padding-top: 16px; padding-bottom: 12px; font-size: 12px; color: #60798C; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="frame">
+      <div class="kicker">SMART MANAGER · SECURITY ARCHITECTURE BRIEFING</div>
+      <div class="top-rule"></div>
+      <div class="hero">
+        <section class="hero-copy">
+          <h1>Secure identity hydration</h1>
+          <p class="subtitle">One server-side snapshot, fail-closed authorization, and evidence-driven preview testing.</p>
+          <p class="scope"><strong>Scope:</strong> additive authentication hardening across the existing React/Vite + Express/tRPC + Supabase ERP. Existing modules, UI direction, RLS, and data remain preserved.</p>
+        </section>
+        <section class="motif" aria-label="Security motif">
+          <div class="ring"><div class="ring-inner">IDENTITY<br/>SNAPSHOT</div></div>
+          <div class="motif-labels"><span>Tenant</span><span>Permission</span><span>Evidence</span></div>
+        </section>
+      </div>
+      <div class="footer"><span>Auth identity snapshot · implementation and verification workflow</span><span>2026</span></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const monitorSource = readFileSync(new URL("./schemaDriftMonitor.ts", import.meta.url), "utf8");
 const handlerSource = readFileSync(new URL("./scheduledSchemaDriftMonitor.ts", import.meta.url), "utf8");
-const routeSource = readFileSync(new URL("./_core/index.ts", import.meta.url), "utf8");
+const routeSource = readFileSync(new URL("./_core/apiApp.ts", import.meta.url), "utf8");
 const schemaSource = readFileSync(new URL("../drizzle/schema.ts", import.meta.url), "utf8");
 
 describe("daily schema-drift monitor contract", () => {
@@ -30,6 +30,9 @@ describe("daily schema-drift monitor contract", () => {
     expect(handlerSource).toContain("sdk.authenticateRequest");
     expect(handlerSource).toContain("!user.isCron || !user.taskUid");
     expect(handlerSource).toContain('error: "cron-only"');
+    expect(handlerSource).toContain("httpStatusFromError");
+    expect(handlerSource).toContain("Scheduled schema drift monitor failed.");
+    expect(handlerSource).not.toContain("stack: error instanceof Error ? error.stack");
     expect(routeSource).toContain('app.post("/api/scheduled/schemaDriftMonitor", scheduledSchemaDriftMonitorHandler)');
   });
 });

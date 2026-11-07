@@ -1,0 +1,2381 @@
+{
+  "result": {
+    "lints": [
+      {
+        "cache_key": "rls_enabled_no_policy_public_platform_admin_actions",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
+        "detail": "Table \\`public.platform_admin_actions\\` has RLS enabled, but no policies exist",
+        "facing": "EXTERNAL",
+        "level": "INFO",
+        "metadata": {
+          "name": "platform_admin_actions",
+          "schema": "public",
+          "type": "table"
+        },
+        "name": "rls_enabled_no_policy",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+        "title": "RLS Enabled No Policy"
+      },
+      {
+        "cache_key": "anon_security_definer_function_executable_public_cancel_booking_p_locator text, p_surname text, p_refund_minor bigint, p_refund_pct smallint",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable without signing in. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if it is not meant to be public.",
+        "detail": "Function `public.cancel_booking(p_locator text, p_surname text, p_refund_minor bigint, p_refund_pct smallint)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/cancel_booking`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_locator text, p_surname text, p_refund_minor bigint, p_refund_pct smallint",
+          "language": "plpgsql",
+          "name": "cancel_booking",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "anon_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable",
+        "title": "Public Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "anon_security_definer_function_executable_public_extend_hold_p_hold_token uuid, p_ttl_seconds integer",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable without signing in. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if it is not meant to be public.",
+        "detail": "Function `public.extend_hold(p_hold_token uuid, p_ttl_seconds integer)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/extend_hold`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_hold_token uuid, p_ttl_seconds integer",
+          "language": "plpgsql",
+          "name": "extend_hold",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "anon_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable",
+        "title": "Public Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "anon_security_definer_function_executable_public_get_booking_p_locator text, p_surname text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable without signing in. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if it is not meant to be public.",
+        "detail": "Function `public.get_booking(p_locator text, p_surname text)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/get_booking`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_locator text, p_surname text",
+          "language": "plpgsql",
+          "name": "get_booking",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "anon_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable",
+        "title": "Public Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "anon_security_definer_function_executable_public_hold_seats_p_service_key text, p_seats smallint[], p_ttl_seconds integer",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable without signing in. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if it is not meant to be public.",
+        "detail": "Function `public.hold_seats(p_service_key text, p_seats smallint[], p_ttl_seconds integer)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/hold_seats`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_service_key text, p_seats smallint[], p_ttl_seconds integer",
+          "language": "plpgsql",
+          "name": "hold_seats",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "anon_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable",
+        "title": "Public Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "anon_security_definer_function_executable_public_release_hold_p_hold_token uuid",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable without signing in. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if it is not meant to be public.",
+        "detail": "Function `public.release_hold(p_hold_token uuid)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/release_hold`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_hold_token uuid",
+          "language": "plpgsql",
+          "name": "release_hold",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "anon_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable",
+        "title": "Public Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "anon_security_definer_function_executable_public_seat_availability_p_service_key text, p_capacity smallint",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable without signing in. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if it is not meant to be public.",
+        "detail": "Function `public.seat_availability(p_service_key text, p_capacity smallint)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/seat_availability`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_service_key text, p_capacity smallint",
+          "language": "plpgsql",
+          "name": "seat_availability",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "anon_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable",
+        "title": "Public Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_auth_identity_snapshot_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.auth_identity_snapshot()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/auth_identity_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "auth_identity_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_add_beneficiary_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_add_beneficiary(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_add_beneficiary`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_add_beneficiary",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_add_collateral_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_add_collateral(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_add_collateral`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_add_collateral",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_add_group_member_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_add_group_member(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_add_group_member`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_add_group_member",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_add_guarantor_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_add_guarantor(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_add_guarantor`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_add_guarantor",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_create_account_type_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_create_account_type(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_create_account_type`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_create_account_type",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_create_aml_alert_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_create_aml_alert(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_create_aml_alert`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_create_aml_alert",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_create_group_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_create_group(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_create_group`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_create_group",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_create_loan_product_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_create_loan_product(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_create_loan_product`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_create_loan_product",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_create_payment_instruction_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_create_payment_instruction(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_create_payment_instruction`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_create_payment_instruction",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_create_reconciliation_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_create_reconciliation(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_create_reconciliation`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_create_reconciliation",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_create_standing_order_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_create_standing_order(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_create_standing_order`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_create_standing_order",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_customer_statement_p_account_id uuid, p_from date, p_to date",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_customer_statement(p_account_id uuid, p_from date, p_to date)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_customer_statement`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_account_id uuid, p_from date, p_to date",
+          "language": "sql",
+          "name": "bank_customer_statement",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_decide_loan_application_p_application_id uuid, p_decision text, p_note text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_decide_loan_application(p_application_id uuid, p_decision text, p_note text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_decide_loan_application`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_application_id uuid, p_decision text, p_note text",
+          "language": "plpgsql",
+          "name": "bank_decide_loan_application",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_disburse_loan_p_application_id uuid, p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_disburse_loan(p_application_id uuid, p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_disburse_loan`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_application_id uuid, p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_disburse_loan",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_is_privileged_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_is_privileged()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_is_privileged`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "bank_is_privileged",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_move_cash_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_move_cash(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_move_cash`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_move_cash",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_open_account_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_open_account(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_open_account`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_open_account",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_post_transaction_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_post_transaction(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_post_transaction`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_post_transaction",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_record_repayment_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_record_repayment(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_record_repayment`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_record_repayment",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_record_share_purchase_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_record_share_purchase(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_record_share_purchase`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_record_share_purchase",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_register_customer_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_register_customer(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_register_customer`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_register_customer",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_resolve_aml_alert_p_alert_id uuid, p_decision text, p_note text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_resolve_aml_alert(p_alert_id uuid, p_decision text, p_note text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_resolve_aml_alert`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_alert_id uuid, p_decision text, p_note text",
+          "language": "plpgsql",
+          "name": "bank_resolve_aml_alert",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_restructure_loan_p_loan_id uuid, p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_restructure_loan(p_loan_id uuid, p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_restructure_loan`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_loan_id uuid, p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_restructure_loan",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_run_daily_controls_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_run_daily_controls()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_run_daily_controls`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "bank_run_daily_controls",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_run_standing_orders_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_run_standing_orders()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_run_standing_orders`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "bank_run_standing_orders",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_score_loan_application_p_application_id uuid, p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_score_loan_application(p_application_id uuid, p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_score_loan_application`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_application_id uuid, p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_score_loan_application",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_setup_institution_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_setup_institution(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_setup_institution`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_setup_institution",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_submit_loan_application_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_submit_loan_application(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_submit_loan_application`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_submit_loan_application",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_update_kyc_p_customer_id uuid, p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_update_kyc(p_customer_id uuid, p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_update_kyc`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_customer_id uuid, p_payload jsonb",
+          "language": "plpgsql",
+          "name": "bank_update_kyc",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_bank_write_off_loan_p_loan_id uuid, p_note text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.bank_write_off_loan(p_loan_id uuid, p_note text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/bank_write_off_loan`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_loan_id uuid, p_note text",
+          "language": "plpgsql",
+          "name": "bank_write_off_loan",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_billing_access_snapshot_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.billing_access_snapshot()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/billing_access_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "billing_access_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_billing_create_payment_intent_p_plan_id uuid, p_billing_cycle text, p_phone text, p_description text, p_idempotency_key text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.billing_create_payment_intent(p_plan_id uuid, p_billing_cycle text, p_phone text, p_description text, p_idempotency_key text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/billing_create_payment_intent`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_plan_id uuid, p_billing_cycle text, p_phone text, p_description text, p_idempotency_key text",
+          "language": "plpgsql",
+          "name": "billing_create_payment_intent",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_billing_is_manager_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.billing_is_manager()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/billing_is_manager`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "billing_is_manager",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_billing_snapshot_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.billing_snapshot()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/billing_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "billing_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_billing_start_free_plan_p_plan_code text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.billing_start_free_plan(p_plan_code text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/billing_start_free_plan`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_plan_code text",
+          "language": "plpgsql",
+          "name": "billing_start_free_plan",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_billing_upsert_plan_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.billing_upsert_plan(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/billing_upsert_plan`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "billing_upsert_plan",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_billing_upsert_profile_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.billing_upsert_profile(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/billing_upsert_profile`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "billing_upsert_profile",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_cancel_booking_p_locator text, p_surname text, p_refund_minor bigint, p_refund_pct smallint",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.cancel_booking(p_locator text, p_surname text, p_refund_minor bigint, p_refund_pct smallint)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/cancel_booking`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_locator text, p_surname text, p_refund_minor bigint, p_refund_pct smallint",
+          "language": "plpgsql",
+          "name": "cancel_booking",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_community_groups_can_approve_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.community_groups_can_approve()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/community_groups_can_approve`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "community_groups_can_approve",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_community_groups_can_disburse_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.community_groups_can_disburse()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/community_groups_can_disburse`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "community_groups_can_disburse",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_community_groups_can_operate_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.community_groups_can_operate()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/community_groups_can_operate`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "community_groups_can_operate",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_community_groups_is_privileged_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.community_groups_is_privileged()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/community_groups_is_privileged`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "community_groups_is_privileged",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_complete_pos_return_p_idempotency_key text, p_transaction_id uuid, p_items jsonb, p_reason text, p_refund_total numeric",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.complete_pos_return(p_idempotency_key text, p_transaction_id uuid, p_items jsonb, p_reason text, p_refund_total numeric)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/complete_pos_return`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_idempotency_key text, p_transaction_id uuid, p_items jsonb, p_reason text, p_refund_total numeric",
+          "language": "plpgsql",
+          "name": "complete_pos_return",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_complete_pos_sale_p_idempotency_key text, p_doc_number text, p_items jsonb, p_payments jsonb, p_subtotal numeric, p_tax numeric, p_total numeric",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.complete_pos_sale(p_idempotency_key text, p_doc_number text, p_items jsonb, p_payments jsonb, p_subtotal numeric, p_tax numeric, p_total numeric)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/complete_pos_sale`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_idempotency_key text, p_doc_number text, p_items jsonb, p_payments jsonb, p_subtotal numeric, p_tax numeric, p_total numeric",
+          "language": "plpgsql",
+          "name": "complete_pos_sale",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_complete_pos_sale_p_idempotency_key text, p_doc_number text, p_items jsonb, p_payments jsonb, p_subtotal numeric, p_tax numeric, p_total numeric, p_customer_id uuid, p_customer_name text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.complete_pos_sale(p_idempotency_key text, p_doc_number text, p_items jsonb, p_payments jsonb, p_subtotal numeric, p_tax numeric, p_total numeric, p_customer_id uuid, p_customer_name text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/complete_pos_sale`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_idempotency_key text, p_doc_number text, p_items jsonb, p_payments jsonb, p_subtotal numeric, p_tax numeric, p_total numeric, p_customer_id uuid, p_customer_name text",
+          "language": "plpgsql",
+          "name": "complete_pos_sale",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_create_company_and_owner_p_name text, p_industry text, p_country text, p_currency text, p_full_name text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.create_company_and_owner(p_name text, p_industry text, p_country text, p_currency text, p_full_name text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/create_company_and_owner`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_name text, p_industry text, p_country text, p_currency text, p_full_name text",
+          "language": "plpgsql",
+          "name": "create_company_and_owner",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_current_company_id_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.current_company_id()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/current_company_id`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "current_company_id",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_employee_portal_action_p_action text, p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.employee_portal_action(p_action text, p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/employee_portal_action`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_action text, p_payload jsonb",
+          "language": "plpgsql",
+          "name": "employee_portal_action",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_employee_portal_snapshot_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.employee_portal_snapshot()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/employee_portal_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "employee_portal_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_ensure_current_company_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.ensure_current_company()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/ensure_current_company`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "ensure_current_company",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_extend_hold_p_hold_token uuid, p_ttl_seconds integer",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.extend_hold(p_hold_token uuid, p_ttl_seconds integer)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/extend_hold`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_hold_token uuid, p_ttl_seconds integer",
+          "language": "plpgsql",
+          "name": "extend_hold",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_fin_can_approve_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.fin_can_approve()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/fin_can_approve`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "fin_can_approve",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_fin_can_manage_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.fin_can_manage()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/fin_can_manage`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "fin_can_manage",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_fin_can_view_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.fin_can_view()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/fin_can_view`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "fin_can_view",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_fin_has_role_p_roles text[]",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.fin_has_role(p_roles text[])` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/fin_has_role`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_roles text[]",
+          "language": "sql",
+          "name": "fin_has_role",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_fin_require_p_capability text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.fin_require(p_capability text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/fin_require`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_capability text",
+          "language": "plpgsql",
+          "name": "fin_require",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_fleet_action_p_action text, p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.fleet_action(p_action text, p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/fleet_action`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_action text, p_payload jsonb",
+          "language": "plpgsql",
+          "name": "fleet_action",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_fleet_is_manager_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.fleet_is_manager()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/fleet_is_manager`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "fleet_is_manager",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_fleet_snapshot_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.fleet_snapshot()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/fleet_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "fleet_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_get_booking_p_locator text, p_surname text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.get_booking(p_locator text, p_surname text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/get_booking`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_locator text, p_surname text",
+          "language": "plpgsql",
+          "name": "get_booking",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_get_current_profile_identity_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.get_current_profile_identity()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/get_current_profile_identity`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "get_current_profile_identity",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_hold_seats_p_service_key text, p_seats smallint[], p_ttl_seconds integer",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.hold_seats(p_service_key text, p_seats smallint[], p_ttl_seconds integer)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/hold_seats`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_service_key text, p_seats smallint[], p_ttl_seconds integer",
+          "language": "plpgsql",
+          "name": "hold_seats",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_hospitality_action_p_action text, p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.hospitality_action(p_action text, p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/hospitality_action`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_action text, p_payload jsonb",
+          "language": "plpgsql",
+          "name": "hospitality_action",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_hospitality_pos_action_p_action text, p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.hospitality_pos_action(p_action text, p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/hospitality_pos_action`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_action text, p_payload jsonb",
+          "language": "plpgsql",
+          "name": "hospitality_pos_action",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_hospitality_pos_snapshot_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.hospitality_pos_snapshot()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/hospitality_pos_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "hospitality_pos_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_hospitality_reconcile_end_of_day_p_property_id uuid, p_business_date date",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.hospitality_reconcile_end_of_day(p_property_id uuid, p_business_date date)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/hospitality_reconcile_end_of_day`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_property_id uuid, p_business_date date",
+          "language": "plpgsql",
+          "name": "hospitality_reconcile_end_of_day",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_hospitality_service_action_p_action text, p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.hospitality_service_action(p_action text, p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/hospitality_service_action`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_action text, p_payload jsonb",
+          "language": "plpgsql",
+          "name": "hospitality_service_action",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_hospitality_snapshot_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.hospitality_snapshot()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/hospitality_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "hospitality_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_hr_calculate_tanzania_payroll_p_company_id uuid, p_gross_pay numeric, p_period_start date, p_period_end date",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.hr_calculate_tanzania_payroll(p_company_id uuid, p_gross_pay numeric, p_period_start date, p_period_end date)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/hr_calculate_tanzania_payroll`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_company_id uuid, p_gross_pay numeric, p_period_start date, p_period_end date",
+          "language": "plpgsql",
+          "name": "hr_calculate_tanzania_payroll",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_hr_can_manage_employee_p_employee_id uuid",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.hr_can_manage_employee(p_employee_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/hr_can_manage_employee`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_employee_id uuid",
+          "language": "sql",
+          "name": "hr_can_manage_employee",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_hr_current_employee_id_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.hr_current_employee_id()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/hr_current_employee_id`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "hr_current_employee_id",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_hr_is_privileged_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.hr_is_privileged()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/hr_is_privileged`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "hr_is_privileged",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_hr_payroll_configuration_status_p_company_id uuid, p_on_date date",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.hr_payroll_configuration_status(p_company_id uuid, p_on_date date)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/hr_payroll_configuration_status`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_company_id uuid, p_on_date date",
+          "language": "sql",
+          "name": "hr_payroll_configuration_status",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_join_company_with_code_p_join_code text, p_full_name text, p_role text, p_customer_ref text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.join_company_with_code(p_join_code text, p_full_name text, p_role text, p_customer_ref text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/join_company_with_code`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_join_code text, p_full_name text, p_role text, p_customer_ref text",
+          "language": "plpgsql",
+          "name": "join_company_with_code",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_list_my_companies_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.list_my_companies()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/list_my_companies`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "list_my_companies",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_list_workspace_members_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.list_workspace_members()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/list_workspace_members`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "list_workspace_members",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_money_agent_action_p_action text, p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.money_agent_action(p_action text, p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/money_agent_action`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_action text, p_payload jsonb",
+          "language": "plpgsql",
+          "name": "money_agent_action",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_money_agent_can_customer_portal_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.money_agent_can_customer_portal()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/money_agent_can_customer_portal`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "money_agent_can_customer_portal",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_money_agent_can_view_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.money_agent_can_view()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/money_agent_can_view`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "money_agent_can_view",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_money_agent_customer_snapshot_p_limit integer",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.money_agent_customer_snapshot(p_limit integer)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/money_agent_customer_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_limit integer",
+          "language": "plpgsql",
+          "name": "money_agent_customer_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_money_agent_snapshot_p_limit integer",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.money_agent_snapshot(p_limit integer)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/money_agent_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_limit integer",
+          "language": "plpgsql",
+          "name": "money_agent_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_platform_admin_record_action_p_action text, p_target_type text, p_target_id text, p_reason text, p_confirmation_text text, p_details jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.platform_admin_record_action(p_action text, p_target_type text, p_target_id text, p_reason text, p_confirmation_text text, p_details jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/platform_admin_record_action`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_action text, p_target_type text, p_target_id text, p_reason text, p_confirmation_text text, p_details jsonb",
+          "language": "plpgsql",
+          "name": "platform_admin_record_action",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_platform_admin_snapshot_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.platform_admin_snapshot()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/platform_admin_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "platform_admin_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_pos_accept_sync_device_sequence_p_device_id uuid, p_sequence bigint, p_payload_hash text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.pos_accept_sync_device_sequence(p_device_id uuid, p_sequence bigint, p_payload_hash text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/pos_accept_sync_device_sequence`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_device_id uuid, p_sequence bigint, p_payload_hash text",
+          "language": "plpgsql",
+          "name": "pos_accept_sync_device_sequence",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_pos_open_shift_p_register_id uuid, p_terminal_id uuid, p_cashier_id uuid, p_business_date date, p_opening_float numeric, p_open_idempotency_key text, p_open_request_hash text, p_shift_number text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.pos_open_shift(p_register_id uuid, p_terminal_id uuid, p_cashier_id uuid, p_business_date date, p_opening_float numeric, p_open_idempotency_key text, p_open_request_hash text, p_shift_number text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/pos_open_shift`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_register_id uuid, p_terminal_id uuid, p_cashier_id uuid, p_business_date date, p_opening_float numeric, p_open_idempotency_key text, p_open_request_hash text, p_shift_number text",
+          "language": "plpgsql",
+          "name": "pos_open_shift",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_pos_record_cash_movement_p_shift_id uuid, p_movement_type text, p_amount numeric, p_reason text, p_reference text, p_idempotency_key text, p_request_hash text, p_approval_request_id uuid",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.pos_record_cash_movement(p_shift_id uuid, p_movement_type text, p_amount numeric, p_reason text, p_reference text, p_idempotency_key text, p_request_hash text, p_approval_request_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/pos_record_cash_movement`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_shift_id uuid, p_movement_type text, p_amount numeric, p_reason text, p_reference text, p_idempotency_key text, p_request_hash text, p_approval_request_id uuid",
+          "language": "plpgsql",
+          "name": "pos_record_cash_movement",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_pos_require_operate_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.pos_require_operate()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/pos_require_operate`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "pos_require_operate",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_property_action_p_action text, p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.property_action(p_action text, p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/property_action`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_action text, p_payload jsonb",
+          "language": "plpgsql",
+          "name": "property_action",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_property_snapshot_p_limit integer",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.property_snapshot(p_limit integer)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/property_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_limit integer",
+          "language": "plpgsql",
+          "name": "property_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_property_tenant_snapshot_p_limit integer",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.property_tenant_snapshot(p_limit integer)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/property_tenant_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_limit integer",
+          "language": "plpgsql",
+          "name": "property_tenant_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_record_pos_sync_event_p_idempotency_key text, p_status text, p_transaction_id uuid, p_message text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.record_pos_sync_event(p_idempotency_key text, p_status text, p_transaction_id uuid, p_message text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/record_pos_sync_event`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_idempotency_key text, p_status text, p_transaction_id uuid, p_message text",
+          "language": "plpgsql",
+          "name": "record_pos_sync_event",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_release_hold_p_hold_token uuid",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.release_hold(p_hold_token uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/release_hold`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_hold_token uuid",
+          "language": "plpgsql",
+          "name": "release_hold",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_remove_workspace_member_p_member_user_id uuid",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.remove_workspace_member(p_member_user_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/remove_workspace_member`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_member_user_id uuid",
+          "language": "plpgsql",
+          "name": "remove_workspace_member",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_restaurant_action_p_action text, p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.restaurant_action(p_action text, p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/restaurant_action`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_action text, p_payload jsonb",
+          "language": "plpgsql",
+          "name": "restaurant_action",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_restaurant_operations_action_p_action text, p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.restaurant_operations_action(p_action text, p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/restaurant_operations_action`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_action text, p_payload jsonb",
+          "language": "plpgsql",
+          "name": "restaurant_operations_action",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_restaurant_operations_snapshot_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.restaurant_operations_snapshot()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/restaurant_operations_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "restaurant_operations_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_restaurant_snapshot_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.restaurant_snapshot()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/restaurant_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "restaurant_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_restaurant_tanzania_action_p_action text, p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.restaurant_tanzania_action(p_action text, p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/restaurant_tanzania_action`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_action text, p_payload jsonb",
+          "language": "plpgsql",
+          "name": "restaurant_tanzania_action",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_restaurant_tanzania_snapshot_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.restaurant_tanzania_snapshot()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/restaurant_tanzania_snapshot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "plpgsql",
+          "name": "restaurant_tanzania_snapshot",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_seat_availability_p_service_key text, p_capacity smallint",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.seat_availability(p_service_key text, p_capacity smallint)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/seat_availability`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_service_key text, p_capacity smallint",
+          "language": "plpgsql",
+          "name": "seat_availability",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_set_current_profile_avatar_p_avatar_url text, p_avatar_storage_key text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.set_current_profile_avatar(p_avatar_url text, p_avatar_storage_key text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/set_current_profile_avatar`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_avatar_url text, p_avatar_storage_key text",
+          "language": "plpgsql",
+          "name": "set_current_profile_avatar",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_supplier_update_delivery_date_p_po_doc_number text, p_new_expected_date text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.supplier_update_delivery_date(p_po_doc_number text, p_new_expected_date text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/supplier_update_delivery_date`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_po_doc_number text, p_new_expected_date text",
+          "language": "plpgsql",
+          "name": "supplier_update_delivery_date",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_switch_current_company_p_company_id uuid",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.switch_current_company(p_company_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/switch_current_company`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_company_id uuid",
+          "language": "plpgsql",
+          "name": "switch_current_company",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_update_current_profile_identity_p_payload jsonb",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.update_current_profile_identity(p_payload jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/update_current_profile_identity`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_payload jsonb",
+          "language": "plpgsql",
+          "name": "update_current_profile_identity",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_update_workspace_member_role_p_member_user_id uuid, p_role text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.update_workspace_member_role(p_member_user_id uuid, p_role text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/update_workspace_member_role`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_member_user_id uuid, p_role text",
+          "language": "plpgsql",
+          "name": "update_workspace_member_role",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_workforce_decide_role_assignment_p_assignment_id uuid, p_decision text, p_idempotency_key text, p_request_hash text, p_decision_note text, p_expected_version bigint",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.workforce_decide_role_assignment(p_assignment_id uuid, p_decision text, p_idempotency_key text, p_request_hash text, p_decision_note text, p_expected_version bigint)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/workforce_decide_role_assignment`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_assignment_id uuid, p_decision text, p_idempotency_key text, p_request_hash text, p_decision_note text, p_expected_version bigint",
+          "language": "plpgsql",
+          "name": "workforce_decide_role_assignment",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_workforce_has_permission_p_permission_code text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.workforce_has_permission(p_permission_code text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/workforce_has_permission`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_permission_code text",
+          "language": "sql",
+          "name": "workforce_has_permission",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_workforce_is_privileged_",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.workforce_is_privileged()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/workforce_is_privileged`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "",
+          "language": "sql",
+          "name": "workforce_is_privileged",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_workforce_request_role_assignment_p_target_profile_id uuid, p_role_id uuid, p_idempotency_key text, p_request_hash text, p_effective_from timestamp with time zone, p_effective_to timestamp with time zone, p_employee_id uuid, p_reason text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.workforce_request_role_assignment(p_target_profile_id uuid, p_role_id uuid, p_idempotency_key text, p_request_hash text, p_effective_from timestamp with time zone, p_effective_to timestamp with time zone, p_employee_id uuid, p_reason text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/workforce_request_role_assignment`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_target_profile_id uuid, p_role_id uuid, p_idempotency_key text, p_request_hash text, p_effective_from timestamp with time zone, p_effective_to timestamp with time zone, p_employee_id uuid, p_reason text",
+          "language": "plpgsql",
+          "name": "workforce_request_role_assignment",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "authenticated_security_definer_function_executable_public_workforce_require_p_permission_code text",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "detail": "Function `public.workforce_require(p_permission_code text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/workforce_require`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "arguments": "p_permission_code text",
+          "language": "plpgsql",
+          "name": "workforce_require",
+          "schema": "public",
+          "security_definer": true
+        },
+        "name": "authenticated_security_definer_function_executable",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function"
+      },
+      {
+        "cache_key": "auth_leaked_password_protection",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Leaked password protection is currently disabled.",
+        "detail": "Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.",
+        "facing": "EXTERNAL",
+        "level": "WARN",
+        "metadata": {
+          "entity": "Auth",
+          "type": "auth"
+        },
+        "name": "auth_leaked_password_protection",
+        "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+        "title": "Leaked Password Protection Disabled"
+      }
+    ]
+  }
+}

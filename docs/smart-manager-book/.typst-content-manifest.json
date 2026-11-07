@@ -1,0 +1,14 @@
+{
+  "task_kind": "new-document",
+  "output": "pdf",
+  "signals": ["professional-enterprise-manual", "trilingual", "docx-companion"],
+  "hard_constraints": ["editable-docx", "print-ready-pdf", "English", "Kiswahili", "Français", "use-supplied-logo", "use-supplied-owner-portrait"],
+  "content_features": {
+    "code_blocks": 0,
+    "defined_terms": 36,
+    "portrait_images": 1,
+    "landscape_diagrams": 6,
+    "wide_tables": 7,
+    "longform_prose": 1
+  }
+}

@@ -1,0 +1,43 @@
+<slide id="overview">
+  <background color="paper"/>
+  <text id="overview-breadcrumb" x="64" y="44" width="480" height="20" font="caption" size="12" color="muted" wrap="false">04  /  CONFIRMED DATA & ACTIONS</text>
+  <text id="overview-title" x="64" y="76" width="980" height="52" font="heading" size="34" color="ink" wrap="false">The executive view is data-bound, not demo-driven</text>
+  <text id="overview-intro" x="64" y="132" width="1060" height="32" font="body" size="18" color="muted">Each visible region derives from existing company hooks and routes users through existing handlers; the component adds no request, write, or fabricated metric.</text>
+  <shape id="finance-source" type="rect" x="64" y="226" width="250" height="112" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="finance-rule" type="rect" x="64" y="226" width="250" height="4" fill="accent"/>
+  <icon id="finance-source-icon" name="wallet" x="86" y="252" width="24" height="24" color="brand"/>
+  <text id="finance-source-title" x="122" y="250" width="160" height="24" font="body" size="18" color="ink" wrap="false">Invoices + expenses</text>
+  <text id="finance-source-body" x="86" y="286" width="190" height="24" font="caption" size="14" color="muted">Collected, receivables, trend</text>
+  <shape id="crm-source" type="rect" x="64" y="374" width="250" height="112" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="crm-rule" type="rect" x="64" y="374" width="250" height="4" fill="accent"/>
+  <icon id="crm-source-icon" name="users" x="86" y="400" width="24" height="24" color="brand"/>
+  <text id="crm-source-title" x="122" y="398" width="160" height="24" font="body" size="18" color="ink" wrap="false">CRM + inventory</text>
+  <text id="crm-source-body" x="86" y="434" width="190" height="24" font="caption" size="14" color="muted">Pipeline, stock attention</text>
+  <shape id="people-source" type="rect" x="966" y="226" width="250" height="112" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="people-rule" type="rect" x="966" y="226" width="250" height="4" fill="accent"/>
+  <icon id="people-source-icon" name="calendar-clock" x="988" y="252" width="24" height="24" color="brand"/>
+  <text id="people-source-title" x="1024" y="250" width="160" height="24" font="body" size="18" color="ink" wrap="false">Leave + work orders</text>
+  <text id="people-source-body" x="988" y="286" width="190" height="24" font="caption" size="14" color="muted">Approvals and attention</text>
+  <shape id="subscription-source" type="rect" x="966" y="374" width="250" height="112" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="subscription-rule" type="rect" x="966" y="374" width="250" height="4" fill="accent"/>
+  <icon id="subscription-source-icon" name="badge-check" x="988" y="400" width="24" height="24" color="brand"/>
+  <text id="subscription-source-title" x="1024" y="398" width="160" height="24" font="body" size="18" color="ink" wrap="false">Subscriptions</text>
+  <text id="subscription-source-body" x="988" y="434" width="190" height="24" font="caption" size="14" color="muted">Existing active-state context</text>
+  <shape id="overview-core" type="rect" x="410" y="238" width="460" height="260" fill="brand" stroke="brand" stroke-width="1"/>
+  <shape id="overview-rule" type="rect" x="410" y="238" width="460" height="4" fill="accent"/>
+  <icon id="overview-icon" name="layout-dashboard" x="438" y="270" width="30" height="30" color="accent"/>
+  <text id="overview-core-label" x="484" y="274" width="270" height="20" font="caption" size="12" color="#D9E6DF" wrap="false">ENTERPRISE DASHBOARD OVERVIEW</text>
+  <text id="overview-core-title" x="438" y="326" width="390" height="32" font="heading" size="24" color="#FFFFFF" wrap="false">Executive role view only</text>
+  <text id="overview-core-body" x="438" y="378" width="386" height="72" font="body" size="18" color="#D9E6DF" line-height="1.35">KPI cards, financial movement, attention queue, confirmed activity, approvals, and quick actions render from the supplied hook results.</text>
+  <shape id="left-arrow-one" type="line" x="314" y="282" width="96" height="50" stroke="accent" stroke-width="2" arrow-end="arrow"/>
+  <shape id="left-arrow-two" type="line" x="314" y="430" width="96" height="-50" stroke="accent" stroke-width="2" arrow-end="arrow"/>
+  <shape id="right-arrow-one" type="line" x="870" y="282" width="96" height="50" stroke="accent" stroke-width="2" arrow-end="arrow"/>
+  <shape id="right-arrow-two" type="line" x="870" y="430" width="96" height="-50" stroke="accent" stroke-width="2" arrow-end="arrow"/>
+  <shape id="render-card" type="rect" x="64" y="548" width="360" height="60" fill="panel" stroke="hairline" stroke-width="1"/>
+  <text id="render-card-text" x="84" y="565" width="320" height="24" font="caption" size="14" color="ink" align="center" wrap="false">Truthful loading • partial error • empty</text>
+  <shape id="action-card" type="rect" x="460" y="548" width="360" height="60" fill="panel" stroke="hairline" stroke-width="1"/>
+  <text id="action-card-text" x="480" y="565" width="320" height="24" font="caption" size="14" color="ink" align="center" wrap="false">Existing onNavigate / onQuickAction</text>
+  <shape id="no-fetch-card" type="rect" x="856" y="548" width="360" height="60" fill="#FFF9EE" stroke="#C5A059" stroke-width="1"/>
+  <text id="no-fetch-card-text" x="876" y="565" width="320" height="24" font="caption" size="14" color="ink" align="center" wrap="false">No duplicate fetch or new server call</text>
+  <text id="overview-page" x="1158" y="657" width="58" height="28" font="caption" size="14" color="muted" align="right" wrap="false">05</text>
+</slide>

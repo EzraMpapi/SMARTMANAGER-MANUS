@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280, initial-scale=1.0" />
+  <title>Start free. Grow with a clear monthly contract.</title>
+  <style>
+    * { box-sizing: border-box; }
+    html,body { height: 100%; margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #071611; color: #f5f7f6; font-family: Arial, Helvetica, sans-serif; padding-top: 42px; padding-left: 76px; padding-right: 76px; }
+    .header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #315c4d; padding-top: 0; }
+    .brand { color: #58e58d; font-weight: 800; letter-spacing: 1.7px; font-size: 15px; }
+    .eyebrow { color: #d6b36a; text-transform: uppercase; font-size: 12px; font-weight: 700; letter-spacing: 2px; }
+    h1 { font-size: 45px; line-height: 1.05; letter-spacing: -1.4px; margin: 30px 0 7px; color: #ffffff; }
+    .intro { margin: 0; font-size: 18px; color: #c6dad0; line-height: 1.35; }
+    .model { display: grid; grid-template-columns: 31% 69%; gap: 38px; margin-top: 20px; }
+    .free { border-top: 6px solid #58e58d; border-bottom: 1px solid #315c4d; min-height: 310px; padding-top: 12px; }
+    .free-label { color: #58e58d; font-size: 14px; letter-spacing: 2px; font-weight: 800; }
+    .free-price { margin-top: 12px; color: #ffffff; font-size: 51px; line-height: 1; font-weight: 800; letter-spacing: -2px; }
+    .free-period { margin-top: 8px; color: #d6b36a; font-size: 21px; font-weight: 700; }
+    .free-copy { margin-top: 18px; max-width: 285px; color: #b7cec3; font-size: 15px; line-height: 1.45; }
+    .free-copy strong { color: #ffffff; }
+    .paid-title { display: flex; justify-content: space-between; align-items: baseline; border-top: 6px solid #1c79d3; padding-top: 15px; }
+    .paid-title h2 { margin: 0; color: #ffffff; font-size: 22px; }
+    .paid-title span { color: #d6b36a; font-size: 13px; letter-spacing: 1.4px; font-weight: 700; text-transform: uppercase; }
+    .plans { display: grid; grid-template-columns: 1fr 1fr; column-gap: 34px; row-gap: 0; margin-top: 10px; }
+    .plan { display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid #315c4d; min-height: 55px; padding-top: 13px; }
+    .plan-name { color: #f5f7f6; font-weight: 800; font-size: 17px; letter-spacing: 0.2px; }
+    .plan-price { color: #d6b36a; font-size: 18px; font-weight: 800; white-space: nowrap; }
+    .plan:last-child { border-bottom: 1px solid #315c4d; }
+    .promise { margin-top: 16px; color: #c6dad0; font-size: 17px; line-height: 1.3; }
+    .promise strong { color: #58e58d; }
+    .footer { margin-top: 12px; border-top: 1px solid #315c4d; display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 20px; padding-top: 10px; }
+    .foot-item { color: #9eb7ab; font-size: 12px; line-height: 1.35; }
+    .foot-item b { display: block; color: #ffffff; font-size: 12px; letter-spacing: 0.6px; margin-bottom: 3px; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="header"><div class="brand">SMART MANAGER ERP</div><div class="eyebrow">Verified subscription model</div></div>
+    <h1>Start free. Grow with a clear monthly contract.</h1>
+    <p class="intro">A simple customer story: explore the operating foundation first, then extend access through an exact, server-verified package.</p>
+    <div class="model">
+      <section class="free">
+        <div class="free-label">FREE ENTRY PLAN</div>
+        <div class="free-price">TZS 0</div>
+        <div class="free-period">FREE_15 • 15 days</div>
+        <p class="free-copy"><strong>No payment.</strong> No automatic charge. When Free access ends, the workspace requires a paid plan; it does not silently create a paid entitlement.</p>
+      </section>
+      <section>
+        <div class="paid-title"><h2>Six paid monthly packages</h2><span>1 paid month + 1 bonus month</span></div>
+        <div class="plans">
+          <div class="plan"><span class="plan-name">TWIGA</span><span class="plan-price">TZS 5,000 / month</span></div>
+          <div class="plan"><span class="plan-name">TEMBO</span><span class="plan-price">TZS 10,000 / month</span></div>
+          <div class="plan"><span class="plan-name">SIMBA</span><span class="plan-price">TZS 15,000 / month</span></div>
+          <div class="plan"><span class="plan-name">SIMBA SC</span><span class="plan-price">TZS 4,500 / month</span></div>
+          <div class="plan"><span class="plan-name">YANGA SC</span><span class="plan-price">TZS 9,000 / month</span></div>
+          <div class="plan"><span class="plan-name">AZAM FC</span><span class="plan-price">TZS 7,000 / month</span></div>
+        </div>
+        <p class="promise"><strong>Every paid plan provides two calendar months of access:</strong> one paid calendar month plus one promotional bonus calendar month.</p>
+      </section>
+    </div>
+    <div class="footer">
+      <div class="foot-item"><b>MONTHLY-ONLY</b>No Annual checkout contract is offered.</div>
+      <div class="foot-item"><b>CALENDAR MONTHS</b>Expiry uses calendar-month arithmetic, not a fixed 60-day assumption.</div>
+      <div class="foot-item"><b>SERVER-VERIFIED</b>Package, amount, tenant, provider order, and payment state are checked.</div>
+      <div class="foot-item"><b>IDEMPOTENT</b>Repeat payment requests are protected from duplicate entitlement creation.</div>
+    </div>
+  </div>
+</body>
+</html>

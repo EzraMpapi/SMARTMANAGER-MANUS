@@ -1,0 +1,15 @@
+<slide id="inventory">
+  <background color="paper"/>
+  <shape id="gold-rule" type="line" x="60" y="64" width="150" height="0" stroke="accent" stroke-width="3"/>
+  <text id="title" x="60" y="92" width="950" height="42" font="heading" size="34" color="brand" wrap="false">Sura 10: Inventory huunganisha muktadha na nidhamu</text>
+  <text id="summary" x="60" y="145" width="800" height="90" font="body" size="20" color="ink" line-height="1.32"><p>Bidhaa, eneo, mzunguko na kiwango cha kuagiza upya huanza na muktadha—si kwa kuonyesha rekodi za ndani.</p></text>
+  <shape id="concept-frame" type="rect" x="60" y="290" width="740" height="295" fill="surface" stroke="muted" stroke-width="1"/>
+  <image id="inventory-concept" src="https://private-us-east-1.manuscdn.com/sessionFile/clrc1zfRAjd1ZizZGBswnB/sandbox/slides_resource_iihtg3520cn2vcfk9iksk-f0417240-e2b-prod-gcp-us-east1_1787809466200_na1fn_L2hvbWUvdWJ1bnR1L3NtYXJ0bWFuYWdlci10cmFpbmluZy1hc3NldHMvY2hhcHRlci0wMS9pbnZlbnRvcnktd29ya2Zsb3ctY29uY2VwdA.png?x-oss-process=image/resize,w_1560,h_1560/format,webp&Expires=1789430400&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvY2xyYzF6ZlJBamQxWml6WkdCc3duQi9zYW5kYm94L3NsaWRlc19yZXNvdXJjZV9paWh0ZzM1MjBjbjJ2Y2ZrOWlrc2stZjA0MTcyNDAtZTJiLXByb2QtZ2NwLXVzLWVhc3QxXzE3ODc4MDk0NjYyMDBfbmExZm5fTDJodmJXVXZkV0oxYm5SMUwzTnRZWEowYldGdVlXZGxjaTEwY21GcGJtbHVaeTFoYzNObGRITXZZMmhoY0hSbGNpMHdNUzlwYm5abGJuUnZjbmt0ZDI5eWEyWnNiM2N0WTI5dVkyVndkQS5wbmc~eC1vc3MtcHJvY2Vzcz1pbWFnZS9yZXNpemUsd18xNTYwLGhfMTU2MC9mb3JtYXQsd2VicCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc4OTQzMDQwMH19fV19&Key-Pair-Id=K2QY5QTL8JSY6C&Signature=MEUCIQDkBofCz3kEbEKbSRkczF19fi2soR2IJyQflT1kHmGqIAIgUlMKkPK~pauJ3OEzETzpAloX8~oyasPEtzeKrHsvK9A_" x="74" y="304" width="712" height="235" fit="contain"/>
+  <text id="concept-caption" x="74" y="548" width="712" height="20" font="caption" size="13" color="muted" align="center" wrap="false">TASWIRA YA MAELEZO • SI SKU, IDADI, ENEO, VALUE AU TRANSFER HALISI</text>
+  <shape id="boundary-card" type="rect" x="850" y="290" width="330" height="295" fill="#F7F1E5" stroke="accent" stroke-width="1"/>
+  <text id="boundary-title" x="880" y="320" width="270" height="28" font="body" size="21" color="brand" wrap="false">Inventory boundary</text>
+  <text id="boundary-body" x="880" y="375" width="250" height="145" font="body" size="18" color="ink" line-height="1.33"><p>Module shell si proof ya item, quantity, movement, transfer, adjustment au value.</p><p>Detail UI bado haijapitishwa.</p></text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="#E0D9CE" stroke-width="1"/>
+  <text id="footer-title" x="60" y="675" width="560" height="18" font="caption" color="muted" wrap="false">SMART MANAGER ERP • Sura 10–12 Operations Foundation</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="18" font="caption" color="muted" align="right" wrap="false">04</text>
+</slide>

@@ -1,0 +1,1617 @@
+=== GIT ===
+## [32mmain[m...[31morigin/main[m
+[31m??[m 01_system_context.mmd
+[31m??[m 01_system_context.png
+[31m??[m 02_application_layers.mmd
+[31m??[m 02_application_layers.png
+[31m??[m 03_module_ecosystem.mmd
+[31m??[m 03_module_ecosystem.png
+[31m??[m 04_financial_data_plane.mmd
+[31m??[m 04_financial_data_plane.png
+[31m??[m 05_security_tenancy.mmd
+[31m??[m 05_security_tenancy.png
+[31m??[m 06_integrations_automation.mmd
+[31m??[m 06_integrations_automation.png
+[31m??[m 07_deployment_runtime.mmd
+[31m??[m 07_deployment_runtime.png
+[31m??[m 08_critical_workflows.mmd
+[31m??[m 08_critical_workflows.png
+[31m??[m ARCHITECTURE_DIAGRAM_QA.md
+[31m??[m BANK_MFI_VICOBA_ARCHITECTURE.mmd
+[31m??[m BANK_MFI_VICOBA_ARCHITECTURE.png
+[31m??[m SMART_MANAGER_ARCHITECTURE_DIAGRAMS_SOURCE_AND_IMAGES.zip
+[31m??[m SMART_MANAGER_ARCHITECTURE_DIAGRAM_SET.pdf
+[31m??[m SMART_MANAGER_ARCHITECTURE_DIAGRAM_SET_CONTACT_SHEET.png
+[31m??[m SMART_MANAGER_ARCHITECTURE_GUIDE.md
+[31m??[m SMART_MANAGER_WHOLE_PROJECT_ARCHITECTURE.mmd
+[31m??[m SMART_MANAGER_WHOLE_PROJECT_ARCHITECTURE.pdf
+[31m??[m SMART_MANAGER_WHOLE_PROJECT_ARCHITECTURE.png
+[31m??[m UI_UX_DISCOVERY_SNAPSHOT.txt
+[31m??[m api_integration_blueprint/
+[31m??[m live_architecture/
+2982c27d27a7122b5ee487519fb109c844fd66f5
+2026-08-23T10:44:45+00:00
+fix: restore vertical access and persist dashboard settings
+=== PACKAGE SCRIPTS ===
+{
+  "scripts": {
+    "dev": "NODE_ENV=development tsx watch server/_core/index.ts",
+    "prebuild": "pnpm run verify:supabase-schema",
+    "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js && esbuild server/_core/apiApp.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/api.js",
+    "start": "NODE_ENV=production node dist/index.js",
+    "check": "tsc --noEmit",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "pretest:browser": "SUPABASE_URL=https://e2e.supabase.invalid SUPABASE_ANON_KEY=e2e-anon-key vite build --mode e2e --sourcemap=false --minify=esbuild",
+    "test:browser": "playwright test",
+    "verify:supabase-schema": "node server/verifySupabaseSchema.mjs",
+    "db:push": "drizzle-kit generate && drizzle-kit migrate"
+  },
+  "dependencies": [
+    "@aws-sdk/client-s3",
+    "@aws-sdk/s3-request-presigner",
+    "@hookform/resolvers",
+    "@radix-ui/react-accordion",
+    "@radix-ui/react-alert-dialog",
+    "@radix-ui/react-aspect-ratio",
+    "@radix-ui/react-avatar",
+    "@radix-ui/react-checkbox",
+    "@radix-ui/react-collapsible",
+    "@radix-ui/react-context-menu",
+    "@radix-ui/react-dialog",
+    "@radix-ui/react-dropdown-menu",
+    "@radix-ui/react-hover-card",
+    "@radix-ui/react-label",
+    "@radix-ui/react-menubar",
+    "@radix-ui/react-navigation-menu",
+    "@radix-ui/react-popover",
+    "@radix-ui/react-progress",
+    "@radix-ui/react-radio-group",
+    "@radix-ui/react-scroll-area",
+    "@radix-ui/react-select",
+    "@radix-ui/react-separator",
+    "@radix-ui/react-slider",
+    "@radix-ui/react-slot",
+    "@radix-ui/react-switch",
+    "@radix-ui/react-tabs",
+    "@radix-ui/react-toggle",
+    "@radix-ui/react-toggle-group",
+    "@radix-ui/react-tooltip",
+    "@supabase/supabase-js",
+    "@tanstack/react-query",
+    "@trpc/client",
+    "@trpc/react-query",
+    "@trpc/server",
+    "axios",
+    "class-variance-authority",
+    "clsx",
+    "cmdk",
+    "cookie",
+    "date-fns",
+    "dotenv",
+    "drizzle-orm",
+    "embla-carousel-react",
+    "express",
+    "framer-motion",
+    "input-otp",
+    "jose",
+    "jspdf",
+    "lucide-react",
+    "mysql2",
+    "nanoid",
+    "next-themes",
+    "react",
+    "react-day-picker",
+    "react-dom",
+    "react-hook-form",
+    "react-resizable-panels",
+    "recharts",
+    "sonner",
+    "streamdown",
+    "superjson",
+    "tailwind-merge",
+    "tailwindcss-animate",
+    "vaul",
+    "wouter",
+    "xlsx",
+    "zod"
+  ],
+  "devDependencies": [
+    "@builder.io/vite-plugin-jsx-loc",
+    "@playwright/test",
+    "@rollup/rollup-linux-x64-gnu",
+    "@tailwindcss/typography",
+    "@tailwindcss/vite",
+    "@testing-library/react",
+    "@types/express",
+    "@types/google.maps",
+    "@types/node",
+    "@types/react",
+    "@types/react-dom",
+    "@vitejs/plugin-react",
+    "@vitest/coverage-v8",
+    "add",
+    "autoprefixer",
+    "drizzle-kit",
+    "esbuild",
+    "jsdom",
+    "playwright",
+    "pnpm",
+    "postcss",
+    "prettier",
+    "tailwindcss",
+    "tsx",
+    "tw-animate-css",
+    "typescript",
+    "vite",
+    "vite-plugin-manus-runtime",
+    "vitest"
+  ]
+}
+=== ROOT ===
+./.env.example
+./.git/COMMIT_EDITMSG
+./.git/FETCH_HEAD
+./.git/HEAD
+./.git/ORIG_HEAD
+./.git/config
+./.git/description
+./.git/index
+./.git/packed-refs
+./.github/dependabot.yml
+./.gitignore
+./.gitkeep
+./.manus-logs/browserConsole.log
+./.prettierignore
+./.prettierrc
+./.support_migration_request.json
+./.tmp-apply-tenant-bootstrap-migration.json
+./.tmp-auth-metadata-diagnosis.json
+./.tmp-company-inventory.json
+./.tmp-generic-table-contracts.json
+./.tmp-purpose-built-table-contracts.json
+./.tmp-rls-policy-audit.json
+./.tmp-tenant-function-audit.json
+./.tmp-tenant-resolution-diagnosis.json
+./01_system_context.mmd
+./01_system_context.png
+./02_application_layers.mmd
+./02_application_layers.png
+./03_module_ecosystem.mmd
+./03_module_ecosystem.png
+./04_financial_data_plane.mmd
+./04_financial_data_plane.png
+./05_security_tenancy.mmd
+./05_security_tenancy.png
+./06_integrations_automation.mmd
+./06_integrations_automation.png
+./07_deployment_runtime.mmd
+./07_deployment_runtime.png
+./08_critical_workflows.mmd
+./08_critical_workflows.png
+./ACCOUNT_SECURITY_OPERATIONS.md
+./ANDROID_TWA_PACKAGING.md
+./ARCHITECTURE_DIAGRAM_QA.md
+./AUTHENTICATED_MOBILE_ACTION_BAR_EVIDENCE.md
+./AUTH_INVESTIGATION.md
+./AUTH_ONBOARDING_DESIGN.md
+./AUTH_ONBOARDING_VALIDATION.md
+./AUTH_WORKSPACE_AUDIT.md
+./BACKUP_POLICY.md
+./BANK_MFI_ARCHITECTURE_AUDIT.md
+./BANK_MFI_DOMAIN_SPEC.md
+./BANK_MFI_SECURITY_ADVISOR.md
+./BANK_MFI_VICOBA_ARCHITECTURE.mmd
+./BANK_MFI_VICOBA_ARCHITECTURE.png
+./BIRD_WEBHOOK_READINESS.md
+./BRANCH_PROTECTION.md
+./BRANDING_VALIDATION_NOTES.md
+./BROWSER_EXPORT_ACCEPTANCE_EVIDENCE.md
+./CHANGELOG.md
+./COMMERCIAL_READINESS_AUDIT.md
+./CRM_SCORE_TRUTHFULNESS_EVIDENCE.md
+./CUSTOMER_SUPPORT_WORKFLOWS_ARCHITECTURE.md
+./DASHBOARD_AUTHENTICATED_VISUAL_ACCEPTANCE.md
+./DASHBOARD_DIRECTIVE_TRUTHFULNESS.md
+./DEPARTMENTAL_BUDGETS.md
+./DEPARTMENTAL_COST_CENTERS.md
+./ENTERPRISE_TRANSFORMATION_TRACEABILITY.md
+./FINANCE_WORKSPACE_UPGRADE_EVIDENCE.md
+./FORENSIC_AUDIT_REPORT.md
+./FORENSIC_RECOVERY_REPORT.md
+./GITHUB_WORKFLOW.md
+./HARDENING_RELEASE_REPORT.md
+./HR_WORKSPACE_UPGRADE_EVIDENCE.md
+./INTERACTION_AUDIT.md
+./INVENTORY_WORKSPACE_UPGRADE_EVIDENCE.md
+./LIVE_MARKET_VERIFICATION.md
+./MANUFACTURING_WORKSPACE_UPGRADE_EVIDENCE.md
+./MARKET_INTELLIGENCE_SPEC.md
+./MARKET_SOURCE_FINDINGS.md
+./MOBILE_AUTH_RELEASE_EVIDENCE.md
+./MOBILE_AUTH_TEST_MATRIX.md
+./MONEY_AGENT_IMPLEMENTATION.md
+./OFFLINE_BOUNDARY_ACCEPTANCE_EVIDENCE.md
+./PASTED_CONTENT_3_TRACEABILITY.md
+./PASTED_CONTENT_4_TRACEABILITY.md
+./PASTED_CONTENT_5_TRACEABILITY.md
+./PASTED_CONTENT_7_TRACEABILITY.md
+./PASTED_CONTENT_8_TRACEABILITY.md
+./POS_ACCEPTANCE_EVIDENCE.md
+./POS_AUDIT_AND_IMPLEMENTATION_PLAN.md
+./POS_CONTROLLED_STAGING_RETRY_ACCEPTANCE_EVIDENCE.md
+./POS_OFFLINE_SYNC_CONTRACT.md
+./POS_PRINT_DIALOG_HANDOFF_EVIDENCE.md
+./POS_RECEIPT_TRACEABILITY.md
+./POS_STAGING_TRANSACTION_ACCEPTANCE.md
+./POS_TRANSPORT_RETRY_ACCEPTANCE_WORKLOG.md
+./POS_TRANSPORT_RETRY_DENIAL_DEVICE_ACCEPTANCE.md
+./PROCUREMENT_WORKSPACE_UPGRADE_EVIDENCE.md
+./PRODUCTION_HARDENING_AUDIT.md
+./PROPERTY_MANAGEMENT_IMPLEMENTATION.md
+./README.md
+./REAL_TIME_DATE_AUDIT.md
+./RELEASE_NOTES.md
+./REPOSITORY_TRACKING.md
+./REPRESENTATIVE_MODULE_ACCEPTANCE_EVIDENCE.md
+./RLS_ACCEPTANCE_STATUS.md
+./SALES_ACCEPTANCE_EVIDENCE.md
+./SALES_LIFECYCLE_WORKLOG.md
+./SALES_SCREENSHOT_ERROR_NOTES.md
+./SECRETS_SETUP.md
+./SERVER_FEATURE_INVENTORY.md
+./SETTINGS_ACCEPTANCE_EVIDENCE.md
+./SMART_MANAGER_ARCHITECTURE_DIAGRAMS_SOURCE_AND_IMAGES.zip
+./SMART_MANAGER_ARCHITECTURE_DIAGRAM_SET.pdf
+./SMART_MANAGER_ARCHITECTURE_DIAGRAM_SET_CONTACT_SHEET.png
+./SMART_MANAGER_ARCHITECTURE_GUIDE.md
+./SMART_MANAGER_WHOLE_PROJECT_ARCHITECTURE.mmd
+./SMART_MANAGER_WHOLE_PROJECT_ARCHITECTURE.pdf
+./SMART_MANAGER_WHOLE_PROJECT_ARCHITECTURE.png
+./SQUARE_APP_ICON_HANDOFF.md
+./SUPABASE_CONNECTIVITY_AUDIT_REPORT.md
+./SUPABASE_PERSISTENCE_AUDIT.md
+./SUPABASE_PERSISTENCE_GUIDE.md
+./SUPABASE_SCHEMA_COMPLETE.md
+./SUPABASE_SETTINGS_STORAGE.md
+./SUPPORT_WORKSPACE_UPGRADE_EVIDENCE.md
+./SYSTEM_DISCOVERY_AND_PRIORITY.md
+./TEAM_INVITATIONS_DESIGN.md
+./TRA_ENHANCEMENTS_CONTRACT.md
+./TRA_INTEGRATION_AUDIT.md
+./TRA_OFFICIAL_SOURCE_EVIDENCE.md
+./TRA_UI_VERIFICATION_NOTES.md
+./UI_UX_DISCOVERY_SNAPSHOT.txt
+./WEBHOOK_DELIVERY_OPERATIONS.md
+./WORKSPACE_BRANDING_DESIGN.md
+./YESTERDAY_UPDATE_VERIFICATION_REPORT.md
+./animated-logo-verification.md
+./api/index.ts
+./api_integration_blueprint/01_integration_topology.mmd
+./api_integration_blueprint/01_integration_topology.png
+./api_integration_blueprint/02_sync_flow.mmd
+./api_integration_blueprint/02_sync_flow.png
+./api_integration_blueprint/03_auth_tenancy.mmd
+./api_integration_blueprint/03_auth_tenancy.png
+./api_integration_blueprint/04_canonical_data_model.mmd
+./api_integration_blueprint/04_canonical_data_model.png
+./api_integration_blueprint/05_financial_control_flow.mmd
+./api_integration_blueprint/05_financial_control_flow.png
+./api_integration_blueprint/06_webhook_state_machine.mmd
+./api_integration_blueprint/06_webhook_state_machine.png
+./api_integration_blueprint/API_INTEGRATION_BLUEPRINT_CONTACT_SHEET.png
+./api_integration_blueprint/API_INTEGRATION_BLUEPRINT_QA.md
+./api_integration_blueprint/SMART_MANAGER_EXTERNAL_ERP_API_INTEGRATION_BLUEPRINT.md
+./api_integration_blueprint/SMART_MANAGER_EXTERNAL_ERP_API_INTEGRATION_BLUEPRINT_PACKAGE.zip
+./api_integration_blueprint/integrations-v1.openapi.yaml
+./browser-tests/authGatewayButtons.spec.ts
+./browser-tests/communityGroupsWorkspace.spec.ts
+./browser-tests/healthcareWorkspace.spec.ts
+./browser-tests/microfinanceWorkspace.spec.ts
+./browser-tests/moneyAgentWorkspace.spec.ts
+./browser-tests/patientSmsConsent.spec.ts
+./browser-tests/pharmacyWorkspace.spec.ts
+./browser-tests/propertyManagementWorkspace.spec.ts
+./browser-tests/schoolWorkspace.spec.ts
+./browser-tests/sessionRecovery.spec.ts
+./browser-tests/signupWizard.spec.ts
+./ci-automation-guide.md
+./client/index.html
+./codebase_module_inventory_scan.txt
+./community_groups_rls_pentest_report.md
+./community_groups_security_audit.md
+./components.json
+./docs_MARKET_SOURCE_FINDINGS.md
+./docs_MARKET_UI_VERIFICATION.md
+./drizzle.config.ts
+./drizzle/0000_nosy_bloodstorm.sql
+./drizzle/0001_nasty_senator_kelly.sql
+./drizzle/0002_tiresome_spot.sql
+./drizzle/0003_dazzling_vindicator.sql
+./drizzle/0004_productive_carlie_cooper.sql
+./drizzle/0005_dark_cerise.sql
+./drizzle/0006_cloudy_magus.sql
+./drizzle/0007_thin_millenium_guard.sql
+./drizzle/0008_clumsy_virginia_dare.sql
+./drizzle/0009_strong_leper_queen.sql
+./drizzle/0010_fair_harrier.sql
+./drizzle/0011_volatile_stryfe.sql
+./drizzle/0012_nice_blockbuster.sql
+./drizzle/0013_wealthy_rockslide.sql
+./drizzle/0014_aspiring_guardian.sql
+./drizzle/0015_steady_the_spike.sql
+./drizzle/relations.ts
+./drizzle/schema.ts
+./generate_executive_pdf.py
+./healthcare_appointment_reminders_apply.json
+./healthcare_appointment_reminders_migration.json
+./healthcare_appointment_reminders_migration.sql
+./healthcare_fhir_sources.md
+./healthcare_patient_portal_consent_rls_migration.sql
+./healthcare_portal_reference_reconciliation_migration.sql
+./healthcare_portal_reference_summary_settings_migration.sql
+./live-guard-findings.md
+./live_architecture/01_live_context.mmd
+./live_architecture/01_live_context.png
+./live_architecture/02_live_frontend_composition.mmd
+./live_architecture/02_live_frontend_composition.png
+./live_architecture/03_live_module_map.mmd
+./live_architecture/03_live_module_map.png
+./live_architecture/04_live_auth_workflow.mmd
+./live_architecture/04_live_auth_workflow.png
+./live_architecture/05_inferred_runtime_data.mmd
+./live_architecture/05_inferred_runtime_data.png
+./live_architecture/06_live_business_workflow.mmd
+./live_architecture/06_live_business_workflow.png
+./live_architecture/07_live_deployment_observation.mmd
+./live_architecture/07_live_deployment_observation.png
+./live_architecture/LIVE_ARCHITECTURE_DIAGRAM_CONTACT_SHEET.png
+./live_architecture/LIVE_SITE_ARCHITECTURE_GUIDE.md
+./live_architecture/LIVE_SITE_ARCHITECTURE_QA.md
+./live_architecture/SMART_MANAGER_LIVE_ARCHITECTURE_PACKAGE.zip
+./live_architecture/SMART_MANAGER_LIVE_SITE_ARCHITECTURE_REPORT.pdf
+./live_architecture/live_homepage.png
+./live_architecture/live_homepage.webp
+./live_architecture/live_workspace_entry.png
+./live_architecture/live_workspace_entry.webp
+./live_verification_notes.md
+./master-bug-inventory.md
+./microfinance_credit_scoring_escalations_migration.sql
+./microfinance_first_run_review.md
+./microfinance_production_migration.sql
+./module-map-inventory.md
+./module_inventory.md
+./module_nav_scan.txt
+./node_modules/.modules.yaml
+./node_modules/.pnpm-workspace-state.json
+./package.json
+./patches/wouter@3.7.1.patch
+./pharmacy_module_design.md
+./pharmacy_module_migration.sql
+./playwright.config.ts
+=== CLIENT SOURCES ===
+client/src/App.tsx
+client/src/BusinessSphereDashboard.jsx
+client/src/_core/hooks/useAuth.ts
+client/src/components/AIChatBox.tsx
+client/src/components/AdminQualityDashboard.jsx
+client/src/components/AdminUserDirectoryView.tsx
+client/src/components/AnimatedGoldMesh.tsx
+client/src/components/BankMfiWorkspace.jsx
+client/src/components/BrandLogo.tsx
+client/src/components/CommercialCommandCenters.jsx
+client/src/components/ComplianceAuditLogView.tsx
+client/src/components/DashboardLayout.tsx
+client/src/components/DashboardLayoutSkeleton.tsx
+client/src/components/DashboardPreferencesDrawer.tsx
+client/src/components/EmployeePortalWorkspace.jsx
+client/src/components/EnterpriseAuthViews.jsx
+client/src/components/EnterpriseColumnCustomizer.tsx
+client/src/components/EnterpriseLayout.tsx
+client/src/components/ErrorBoundary.tsx
+client/src/components/ExecutiveCommandCenter.jsx
+client/src/components/FinanceCommandCenters.jsx
+client/src/components/FleetWorkspace.jsx
+client/src/components/HealthcareClinicWorkspace.jsx
+client/src/components/HospitalityWorkspace.jsx
+client/src/components/IntelligenceCommandCenters.jsx
+client/src/components/LoginModuleEcosystem.jsx
+client/src/components/ManusDialog.tsx
+client/src/components/Map.tsx
+client/src/components/MicrofinanceGovernanceDialogs.jsx
+client/src/components/MicrofinanceWorkspace.jsx
+client/src/components/MoneyAgentWorkspace.jsx
+client/src/components/OperationsCommandCenters.jsx
+client/src/components/PatientSmsConsentSettings.jsx
+client/src/components/PeopleCommandCenters.jsx
+client/src/components/PharmacyWorkspace.jsx
+client/src/components/PredictiveAnalyticsWorkspace.jsx
+client/src/components/PropertyManagementWorkspace.jsx
+client/src/components/PublicAuthGateway.jsx
+client/src/components/RestaurantWorkspace.jsx
+client/src/components/SalesDetailWorkspace.jsx
+client/src/components/SchoolWorkspace.jsx
+client/src/components/SectorCommandCenters.jsx
+client/src/components/SubscriptionBillingWorkspace.jsx
+client/src/components/TraPortalModule.jsx
+client/src/components/UserFeedbackModal.jsx
+client/src/components/VerticalCommandCenters.jsx
+client/src/components/WorkspacePresenceBadge.tsx
+client/src/components/ui/accordion.tsx
+client/src/components/ui/alert-dialog.tsx
+client/src/components/ui/alert.tsx
+client/src/components/ui/aspect-ratio.tsx
+client/src/components/ui/avatar.tsx
+client/src/components/ui/badge.tsx
+client/src/components/ui/breadcrumb.tsx
+client/src/components/ui/button-group.tsx
+client/src/components/ui/button.tsx
+client/src/components/ui/calendar.tsx
+client/src/components/ui/card.tsx
+client/src/components/ui/carousel.tsx
+client/src/components/ui/chart.tsx
+client/src/components/ui/checkbox.tsx
+client/src/components/ui/collapsible.tsx
+client/src/components/ui/command.tsx
+client/src/components/ui/context-menu.tsx
+client/src/components/ui/dialog.tsx
+client/src/components/ui/drawer.tsx
+client/src/components/ui/dropdown-menu.tsx
+client/src/components/ui/empty.tsx
+client/src/components/ui/field.tsx
+client/src/components/ui/form.tsx
+client/src/components/ui/hover-card.tsx
+client/src/components/ui/input-group.tsx
+client/src/components/ui/input-otp.tsx
+client/src/components/ui/input.tsx
+client/src/components/ui/item.tsx
+client/src/components/ui/kbd.tsx
+client/src/components/ui/label.tsx
+client/src/components/ui/menubar.tsx
+client/src/components/ui/navigation-menu.tsx
+client/src/components/ui/pagination.tsx
+client/src/components/ui/popover.tsx
+client/src/components/ui/progress.tsx
+client/src/components/ui/radio-group.tsx
+client/src/components/ui/resizable.tsx
+client/src/components/ui/scroll-area.tsx
+client/src/components/ui/select.tsx
+client/src/components/ui/separator.tsx
+client/src/components/ui/sheet.tsx
+client/src/components/ui/sidebar.tsx
+client/src/components/ui/skeleton.tsx
+client/src/components/ui/slider.tsx
+client/src/components/ui/sonner.tsx
+client/src/components/ui/spinner.tsx
+client/src/components/ui/switch.tsx
+client/src/components/ui/table.tsx
+client/src/components/ui/tabs.tsx
+client/src/components/ui/textarea.tsx
+client/src/components/ui/toggle-group.tsx
+client/src/components/ui/toggle.tsx
+client/src/components/ui/tooltip.tsx
+client/src/const.ts
+client/src/contexts/DashboardPreferencesContext.tsx
+client/src/contexts/LanguageContext.tsx
+client/src/contexts/ThemeContext.tsx
+client/src/dashboardContracts.js
+client/src/hooks/useComposition.ts
+client/src/hooks/useMobile.tsx
+client/src/hooks/usePersistFn.ts
+client/src/hooks/useSupabaseRealtime.ts
+client/src/index.css
+client/src/lib/accountPasskeys.d.ts
+client/src/lib/accountPasskeys.js
+client/src/lib/auditEvidenceExport.js
+client/src/lib/authErrors.ts
+client/src/lib/authOnboarding.ts
+client/src/lib/authSessionStorage.d.ts
+client/src/lib/authSessionStorage.js
+client/src/lib/communityGroups.ts
+client/src/lib/complianceApprovalExport.ts
+client/src/lib/emailTemplateSafety.ts
+client/src/lib/guardedPersistenceClient.ts
+client/src/lib/onboardingProgress.js
+client/src/lib/organizationIndustryFocus.js
+client/src/lib/posDeviceProfiles.js
+client/src/lib/posPendingQueue.js
+client/src/lib/posReconciliationExport.js
+client/src/lib/posTransactionEngine.js
+client/src/lib/proactiveSessionRenewal.js
+client/src/lib/publicSupabaseConfig.ts
+client/src/lib/runtimeTelemetry.js
+client/src/lib/runtimeTelemetry.ts
+client/src/lib/supportMetrics.js
+client/src/lib/traPortalRoute.ts
+client/src/lib/trpc.ts
+client/src/lib/trpcAuthRecovery.ts
+client/src/lib/utils.ts
+client/src/main.tsx
+client/src/pages/ComponentShowcase.tsx
+client/src/pages/Home.tsx
+client/src/pages/NotFound.tsx
+=== SERVER SOURCES ===
+server/_core/apiApp.ts
+server/_core/context.ts
+server/_core/cookies.ts
+server/_core/dataApi.ts
+server/_core/env.ts
+server/_core/heartbeat.ts
+server/_core/httpError.ts
+server/_core/imageGeneration.ts
+server/_core/index.ts
+server/_core/llm.ts
+server/_core/map.ts
+server/_core/notification.ts
+server/_core/oauth.ts
+server/_core/sdk.ts
+server/_core/storageProxy.ts
+server/_core/systemRouter.ts
+server/_core/trpc.ts
+server/_core/types/cookie.d.ts
+server/_core/types/manusTypes.ts
+server/_core/vite.ts
+server/_core/voiceTranscription.ts
+server/accountPasskeys.test.ts
+server/accountPasskeysUi.test.ts
+server/adminQualityAndFeedback.test.ts
+server/adminSecurityFollowup.test.ts
+server/ai.router.test.ts
+server/aiApprovals.test.ts
+server/aiApprovals.ts
+server/aiConfirmedMutation.test.ts
+server/androidPackaging.test.ts
+server/animatedLogoUi.test.ts
+server/appBootstrap.test.ts
+server/auditEvidenceExport.test.ts
+server/auditLogs.test.ts
+server/auditLogs.ts
+server/auth.errors.test.ts
+server/auth.logout.test.ts
+server/authBrandLocalization.test.ts
+server/authExperience.test.ts
+server/authJourneySimulation.test.ts
+server/authOnboarding.test.ts
+server/authVisualRegression.test.ts
+server/backupVerification.ts
+server/backupWebhook.ts
+server/bankMfiOperations.test.ts
+server/bankMfiOperations.ts
+server/bankMfiSecurity.test.ts
+server/campaignIntegrity.test.ts
+server/ciWorkflowContracts.test.ts
+server/clientMutationContract.test.ts
+server/collaborationEmailLinkCheck.test.ts
+server/collaborationHub.test.ts
+server/collaborationPersistenceBoundaries.test.ts
+server/commandPaletteKeyboard.test.ts
+server/commercialCommandCenters.test.ts
+server/communityGroups.test.ts
+server/communityGroupsRlsPenetration.test.ts
+server/communityGroupsSchema.test.ts
+server/communityGroupsSecurity.test.ts
+server/complianceApprovalExport.test.ts
+server/complianceApprovalRoute.test.ts
+server/crmLeadTruthfulness.test.ts
+server/crmPersistenceBoundaries.test.ts
+server/dashboard.callback.test.ts
+server/dashboard.httpHandler.test.ts
+server/dashboard.integration.test.ts
+server/dashboard.persistence.test.ts
+server/dashboard.reportFlow.test.ts
+server/dashboard.scheduled.test.ts
+server/dashboardContracts.test.ts
+server/dashboardPreferences.ts
+server/dashboardQualityContracts.test.ts
+server/dashboardReports.ts
+server/dashboardTruthfulness.test.ts
+server/db.ts
+server/documentDownloadBoundaries.test.ts
+server/documentsNotebookPersistence.test.ts
+server/e2eUserJourney.test.ts
+server/emailCenter.runtime.test.ts
+server/emailLivePreview.test.ts
+server/emailSignatureAndAttachments.test.ts
+server/emailTemplateWorkflow.test.ts
+server/emailTemplateWorkflow.ts
+server/employeePortalContracts.test.ts
+server/employeeSelfServiceWorkflowContracts.test.ts
+server/enterpriseTableControls.test.ts
+server/executiveCommandCenter.test.ts
+server/financeCommandCenters.test.ts
+server/financeLedgerContracts.test.ts
+server/financePersistenceBoundaries.test.ts
+server/fleetManagement.ts
+server/fleetManagementContracts.test.ts
+server/guardedClientMutation.test.ts
+server/guardedServerBoundary.test.ts
+server/healthcareInteroperability.test.ts
+server/healthcareInteroperability.ts
+server/healthcareOperations.test.ts
+server/healthcareOperations.ts
+server/healthcarePortalReconciliation.test.ts
+server/healthcarePortalReconciliation.ts
+server/healthcarePortalReconciliationWorkflow.test.ts
+server/healthcarePortalReconciliationWorkflow.ts
+server/healthcareReminderWebhook.test.ts
+server/healthcareReminderWebhook.ts
+server/healthcareReminders.test.ts
+server/healthcareReminders.ts
+server/healthcareRouter.integration.test.ts
+server/healthcareSelfService.test.ts
+server/healthcareSelfService.ts
+server/hospitalityContracts.test.ts
+server/hrPersistenceBoundaries.test.ts
+server/httpError.test.ts
+server/industryFocusOnboardingAudit.test.ts
+server/intelligenceCommandCenters.test.ts
+server/inventoryPersistenceBoundaries.test.ts
+server/loginModuleEcosystem.test.ts
+server/maintenancePersistenceBoundaries.test.ts
+server/manufacturingPersistenceBoundaries.test.ts
+server/marketGovernance.ts
+server/marketIntelligence.test.ts
+server/marketIntelligence.ts
+server/microfinanceOperations.test.ts
+server/microfinanceOperations.ts
+server/microfinanceRouter.integration.test.ts
+server/mobileAuthEvidence.test.ts
+server/mobileAuthMatrix.test.ts
+server/mobileDefectFixes.test.ts
+server/mobileSignupVisualE2E.test.ts
+server/moneyAgentContracts.test.ts
+server/moneyAgentOperations.ts
+server/notificationChannelPersistence.test.ts
+server/notificationHistory.ts
+server/offlineBoundaryUi.test.ts
+server/onboardingTour.test.ts
+server/operationsCommandCenters.test.ts
+server/organizationIndustryFocus.test.ts
+server/passkeyLogin.test.ts
+server/passkeyLoginUi.test.ts
+server/passkeyReadinessUi.test.ts
+server/passkeyRegistrationNotification.ts
+server/passwordAccountProvisioning.test.ts
+server/passwordAccountProvisioning.ts
+server/peopleCommandCenters.test.ts
+server/persistenceBoundary.test.ts
+server/pharmacyOperations.test.ts
+server/pharmacyOperations.ts
+server/posCashierAcceptance.test.ts
+server/posCheckoutIntegration.test.ts
+server/posCustomerCreditMigration.test.ts
+server/posDeviceProfiles.test.ts
+server/posHistoryFallback.test.ts
+server/posOperationalTools.test.ts
+server/posOperationalToolsUi.test.ts
+server/posPendingQueue.test.ts
+server/posPostConfirmationFallback.test.ts
+server/posReceiptRefresh.test.ts
+server/posReconciliationDashboard.test.ts
+server/posReturnAuditFormatMigration.test.ts
+server/posReturnMigration.test.ts
+server/posRpcPrivilegeHardeningMigration.test.ts
+server/posSaleAuditFormatMigration.test.ts
+server/posStagingAcceptanceScript.test.ts
+server/posSyncReconciliationMigration.test.ts
+server/posTransactionEngine.test.ts
+server/posTransactionMigration.test.ts
+server/posUxEnhancements.test.ts
+server/proactiveSessionRenewal.test.ts
+server/procurementPersistenceBoundaries.test.ts
+server/projectsPersistenceBoundaries.test.ts
+server/propertyManagement.ts
+server/propertyManagementContracts.test.ts
+server/propertyManagementOperations.ts
+server/protocolClosure.test.ts
+server/publicAuthGatewayLexical.test.ts
+server/publicInteractionContracts.test.ts
+server/publicPasskeyEntry.test.ts
+server/quarterlySecurityReminderScope.test.ts
+server/reportDeliveryAvailability.test.ts
+server/reportScheduleSessionToken.test.ts
+server/reportSchedules.sendNow.test.ts
+server/reportSchedules.service.test.ts
+server/reportSchedules.ts
+server/resendSenderConfiguration.test.ts
+server/restaurantFnbContracts.test.ts
+server/restaurantManagement.ts
+server/roleChangeApprovals.test.ts
+server/roleChangeApprovals.ts
+server/routers.ts
+server/runMigrations.mjs
+server/salesInteractionContracts.test.ts
+server/scheduledAppointmentReminders.ts
+server/scheduledDashboardReport.ts
+server/scheduledMarketHealthDigest.ts
+server/scheduledMicrofinanceParCollectionsEscalation.test.ts
+server/scheduledMicrofinanceParCollectionsEscalation.ts
+server/scheduledPortalReferenceReconciliationDigest.test.ts
+server/scheduledPortalReferenceReconciliationDigest.ts
+server/scheduledSchemaDriftMonitor.ts
+server/scheduledSubscriptionTrialLifecycle.ts
+server/scheduledTraVatAnomaly.ts
+server/scheduledTraZReportArchive.ts
+server/schemaContracts.json
+server/schemaDriftChecker.test.ts
+server/schemaDriftChecker.ts
+server/schemaDriftMonitor.test.ts
+server/schemaDriftMonitor.ts
+server/schemaDriftRouter.test.ts
+server/schoolOperations.test.ts
+server/schoolOperations.ts
+server/sectorCommandCenters.test.ts
+server/sessionRefreshTableReload.test.ts
+server/settingsAndRoleRegression.test.ts
+server/settingsBackendContracts.test.ts
+server/signupWizard.headless.test.ts
+server/signupWizard.runtime.test.ts
+server/smartAssistant.live.test.ts
+server/smartAssistant.test.ts
+server/smartAssistant.ts
+server/stabilityProtocol.test.ts
+server/staticHtmlCacheControl.test.ts
+server/storage.ts
+server/subscriptionBilling.ts
+server/subscriptionBillingContracts.test.ts
+server/supabase.authRls.test.ts
+server/supabase.config.test.ts
+server/supabase.credentials.test.ts
+server/supabase.schemaContract.test.ts
+server/supabasePersistence.ts
+server/supplyChainPersistenceBoundaries.test.ts
+server/supportInboxClient.test.ts
+server/supportMetrics.test.ts
+server/supportOperations.test.ts
+server/supportOperations.ts
+server/supportPersistenceBoundaries.test.ts
+server/supportPolicyAuthenticatedRoles.test.ts
+server/supportTicketPersistence.test.ts
+server/supportWorkspaceContracts.test.ts
+server/tanzaniaPayrollContracts.test.ts
+server/teamInvitations.test.ts
+server/teamInvitations.ts
+server/tenantAuditViewer.test.ts
+server/traBranchSummary.ts
+server/traFiscal.provider.test.ts
+server/traFiscal.ts
+server/traFiscalRouter.ts
+server/traGatewayAlerts.ts
+server/traGovernance.test.ts
+server/traPortalRoute.test.ts
+server/traVatAnomaly.trend.test.ts
+server/traVatAnomaly.ts
+server/traZReportArchive.ts
+server/transactionalEmail.test.ts
+server/transactionalEmail.ts
+server/trpcAuthRecovery.test.ts
+server/vatReportTaxRate.test.ts
+server/vercelConfig.test.ts
+server/verifySupabaseSchema.mjs
+server/verifySupabaseSchemaBuildGuard.test.ts
+server/verticalCommandCenters.test.ts
+server/vite.hmr.test.ts
+server/webhooks.test.ts
+server/webhooks.ts
+server/whatsAppSecurity.test.ts
+server/whatsappProvider.test.ts
+server/whatsappProvider.ts
+server/workspaceBranding.test.ts
+server/workspaceBranding.ts
+server/workspaceLexicalSafety.test.ts
+server/workspaceSessionRecovery.test.ts
+server/workspaceSettings.ts
+=== SUPABASE MIGRATIONS ===
+supabase/migrations/20260812_001_complete_erp_schema_baseline.sql
+supabase/migrations/20260814_002_guarded_first_tenant_bootstrap.sql
+supabase/migrations/20260816_003_user_table_preferences.sql
+supabase/migrations/20260816_004_pos_transaction_engine.sql
+supabase/migrations/20260816_005_pos_return_engine.sql
+supabase/migrations/20260816_006_pos_customer_credit.sql
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql
+supabase/migrations/20260816_008_harden_pos_rpc_privileges.sql
+supabase/migrations/20260816_009_fix_pos_sale_audit_format.sql
+supabase/migrations/20260816_010_fix_pos_return_audit_format.sql
+supabase/migrations/20260817_011_support_workflow_core.sql
+supabase/migrations/20260817_012_support_policy_authenticated_roles.sql
+supabase/migrations/20260817_sales_document_contract_repair.sql
+supabase/migrations/20260817_sales_order_acceptance_followup.sql
+supabase/migrations/20260821_013_employee_portal_core.sql
+supabase/migrations/20260821_014_employee_portal_security_remediation.sql
+supabase/migrations/20260822_015_tanzania_payroll_calculation_engine.sql
+supabase/migrations/20260822_016_payroll_configuration_status_fix.sql
+supabase/migrations/20260822_017_leave_decision_immutability.sql
+supabase/migrations/20260822_018_hospitality_core.sql
+supabase/migrations/20260822_019_hospitality_pos_and_services.sql
+supabase/migrations/20260822_020_hospitality_guest_engagement.sql
+supabase/migrations/20260822_021_hospitality_helper_access_remediation.sql
+supabase/migrations/20260822_022_hospitality_finance_reconciliation.sql
+supabase/migrations/20260822_023_subscription_billing_harakapay_core.sql
+supabase/migrations/20260822_024_subscription_billing_plan_admin_visibility.sql
+supabase/migrations/20260822_025_subscription_billing_function_execute_hardening.sql
+supabase/migrations/20260822_026_subscription_billing_helper_execute_hardening.sql
+supabase/migrations/20260822_027_subscription_billing_fk_indexes.sql
+supabase/migrations/20260822_028_subscription_trials_and_official_catalog.sql
+supabase/migrations/20260822_029_subscription_trial_function_execute_hardening.sql
+supabase/migrations/20260822_030_subscription_plan_admin_controls.sql
+supabase/migrations/20260822_031_fleet_management_core.sql
+supabase/migrations/20260822_032_restaurant_fnb_management_core.sql
+supabase/migrations/20260822_033_restaurant_fnb_operations_extension.sql
+supabase/migrations/20260822_034_harden_restaurant_helper_privileges.sql
+supabase/migrations/20260823_001_money_agent_core.sql
+supabase/migrations/20260823_015_bank_mfi_core.sql
+supabase/migrations/20260823_016_bank_mfi_security_hardening.sql
+supabase/migrations/20260823_017_bank_mfi_internal_helper_hardening.sql
+supabase/migrations/20260823_018_bank_mfi_credit_ledger_repair.sql
+supabase/migrations/20260823_019_bank_mfi_disbursement_account.sql
+supabase/migrations/20260823_020_bank_mfi_workflow_completion.sql
+supabase/migrations/20260823_035_community_groups_module.sql
+supabase/migrations/20260823_036_community_groups_security_hardening.sql
+supabase/migrations/20260823_037_community_groups_schema_contract.sql
+supabase/migrations/20260823_040_property_management_core.sql
+supabase/migrations/20260823_041_community_groups_insert_relationship_guard.sql
+supabase/migrations/20260823_042_community_groups_relationship_guard_insert_fix_v2.sql
+supabase/migrations/20260823_043_community_groups_relationship_guard_approval_fix.sql
+supabase/migrations/20260823_044_community_groups_document_creator_guard.sql
+=== ROUTE/WORKSPACE TERMS ===
+server/settingsAndRoleRegression.test.ts:7:const contextSource = readFileSync(new URL("../client/src/contexts/DashboardPreferencesContext.tsx", import.meta.url), "utf8");
+server/settingsAndRoleRegression.test.ts:24:    expect(routerSource).toContain("getDashboardPreferences(ctx.req)");
+server/settingsAndRoleRegression.test.ts:25:    expect(routerSource).toContain("saveDashboardPreferences(ctx.req, input)");
+server/dashboardPreferences.ts:21:export type DashboardPreferences = z.infer<typeof dashboardPreferencesInput>;
+server/dashboardPreferences.ts:23:export const DEFAULT_DASHBOARD_PREFERENCES: DashboardPreferences = {
+server/dashboardPreferences.ts:41:function normalizePreferences(value: unknown): DashboardPreferences {
+server/dashboardPreferences.ts:59:  if (!ENV.supabaseUrl || !ENV.supabaseAnonKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Dashboard preference storage is not configured." });
+server/dashboardPreferences.ts:68:    if (response.status === 403) throw new TRPCError({ code: "FORBIDDEN", message: "Dashboard preferences are not available for this workspace." });
+server/dashboardPreferences.ts:69:    throw new TRPCError({ code: "BAD_REQUEST", message: "Dashboard preferences could not be saved. Refresh and try again." });
+server/dashboardPreferences.ts:74:export async function getDashboardPreferences(req: CreateExpressContextOptions["req"]) {
+server/dashboardPreferences.ts:81:export async function saveDashboardPreferences(req: CreateExpressContextOptions["req"], input: DashboardPreferences) {
+server/propertyManagementContracts.test.ts:10:const dashboard = read("client/src/BusinessSphereDashboard.jsx");
+server/propertyManagementContracts.test.ts:11:const workspace = read("client/src/components/PropertyManagementWorkspace.jsx");
+server/propertyManagementContracts.test.ts:110:    expect(dashboard).toContain("LazyPropertyManagementWorkspace");
+server/propertyManagementContracts.test.ts:112:    expect(dashboard).toContain('primaryModules: ["property-management"');
+server/moneyAgentContracts.test.ts:10:const dashboard = read("client/src/BusinessSphereDashboard.jsx");
+server/moneyAgentContracts.test.ts:11:const workspace = read("client/src/components/MoneyAgentWorkspace.jsx");
+server/moneyAgentContracts.test.ts:116:    expect(dashboard).toContain("LazyMoneyAgentWorkspace");
+server/bankMfiSecurity.test.ts:11:const workspace = readFileSync(new URL("../client/src/components/BankMfiWorkspace.jsx", import.meta.url), "utf8");
+client/src/App.tsx:6:type LazyModule = { default: ComponentType<any> };
+client/src/App.tsx:8:function lazyWithRecovery(load: () => Promise<LazyModule>, key: string) {
+client/src/App.tsx:28:import { Route, Switch } from "wouter";
+client/src/App.tsx:33:import { DashboardPreferencesProvider } from "./contexts/DashboardPreferencesContext";
+client/src/App.tsx:41:const BusinessSphereDashboard = lazyWithRecovery(
+client/src/App.tsx:43:  () => import("./BusinessSphereDashboard"),
+client/src/App.tsx:46:const PatientSmsConsentSettings = lazyWithRecovery(
+client/src/App.tsx:48:  () => import("./components/PatientSmsConsentSettings"),
+client/src/App.tsx:52:function DashboardRouteFallback() {
+client/src/App.tsx:75:function Router() {
+client/src/App.tsx:79:      <Route path={"/"} component={Home} />
+client/src/App.tsx:80:      <Route path={"/app"}>{() => <Suspense fallback={<DashboardRouteFallback />}>{isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />}</Suspense>}</Route>
+client/src/App.tsx:81:      <Route path={"/patient/sms-preferences"}>{() => <Suspense fallback={<DashboardRouteFallback />}><PatientSmsConsentSettings /></Suspense>}</Route>
+client/src/App.tsx:82:      <Route path={"/404"} component={NotFound} />
+client/src/App.tsx:84:      <Route component={NotFound} />
+client/src/App.tsx:102:          <DashboardPreferencesProvider>
+client/src/App.tsx:105:              <Router />
+client/src/App.tsx:107:          </DashboardPreferencesProvider>
+client/src/dashboardContracts.js:52:export function buildDashboardMetric({
+server/commandPaletteKeyboard.test.ts:4:const source = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+server/verifySupabaseSchemaBuildGuard.test.ts:6:const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+server/collaborationPersistenceBoundaries.test.ts:5:const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+server/collaborationPersistenceBoundaries.test.ts:10:const workspaces = source.slice(source.indexOf("function TeamWorkspaces("), source.indexOf("function WorkspaceFormPanel("));
+server/collaborationPersistenceBoundaries.test.ts:11:const workspaceForm = source.slice(source.indexOf("function WorkspaceFormPanel("), source.indexOf("/* ----------------------------------- FILE SHARING"));
+server/collaborationPersistenceBoundaries.test.ts:58:    expect(workspaces).toContain("if (deletingWorkspaceId) return;");
+server/collaborationPersistenceBoundaries.test.ts:59:    expect(workspaces).toContain("Workspace was not created.");
+server/collaborationPersistenceBoundaries.test.ts:60:    expect(workspaces).toContain("Workspace was not deleted.");
+server/collaborationPersistenceBoundaries.test.ts:61:    expect(workspaces).toContain("disabled={deletingWorkspaceId === w.id}");
+server/collaborationPersistenceBoundaries.test.ts:63:    expect(workspaceForm).toContain('{saving ? "Saving…" : "Create Workspace"}');
+client/src/lib/trpc.ts:2:import type { AppRouter } from "../../../server/routers";
+client/src/lib/trpc.ts:4:export const trpc = createTRPCReact<AppRouter>();
+server/collaborationHub.test.ts:6:  const dashboardSource = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+server/collaborationHub.test.ts:12:    expect(dashboardSource).toContain("Team Workspaces");
+server/collaborationHub.test.ts:100:    expect(dashboardSource).toContain("Cross-Workspace Employee Membership Matrix");
+client/src/lib/onboardingProgress.js:24:export function sanitizeOnboardingProgress(progress, validModuleIds = []) {
+client/src/lib/onboardingProgress.js:25:  const allowedModules = new Set(validModuleIds);
+client/src/lib/onboardingProgress.js:33:    selectedModules: Array.isArray(progress?.selectedModules)
+client/src/lib/onboardingProgress.js:34:      ? progress.selectedModules.filter((moduleId) => typeof moduleId === "string" && allowedModules.has(moduleId))
+client/src/lib/onboardingProgress.js:43:export function hasOnboardingProgress(progress, validModuleIds = []) {
+client/src/lib/onboardingProgress.js:44:  const safe = sanitizeOnboardingProgress(progress, validModuleIds);
+client/src/lib/onboardingProgress.js:45:  const selectedModulesDifferFromDefault = validModuleIds.length > 0
+client/src/lib/onboardingProgress.js:46:    ? safe.selectedModules.length !== validModuleIds.length || validModuleIds.some((moduleId) => !safe.selectedModules.includes(moduleId))
+client/src/lib/onboardingProgress.js:47:    : safe.selectedModules.length > 0;
+client/src/lib/onboardingProgress.js:56:      || selectedModulesDifferFromDefault
+client/src/lib/onboardingProgress.js:65:export function readOnboardingProgress(validModuleIds = []) {
+client/src/lib/onboardingProgress.js:71:    return parsed?.version === 1 ? sanitizeOnboardingProgress(parsed, validModuleIds) : null;
+client/src/lib/onboardingProgress.js:77:export function writeOnboardingProgress(progress, validModuleIds = []) {
+client/src/lib/onboardingProgress.js:80:    const safe = sanitizeOnboardingProgress(progress, validModuleIds);
+client/src/lib/onboardingProgress.js:81:    if (!hasOnboardingProgress(safe, validModuleIds)) {
+client/src/lib/guardedPersistenceClient.ts:4:import type { AppRouter } from "../../../server/routers";
+client/src/lib/guardedPersistenceClient.ts:38:export const guardedPersistenceClient = createTRPCProxyClient<AppRouter>({
+server/collaborationEmailLinkCheck.test.ts:4:const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+client/src/pages/Home.tsx:146:            {/* Noble Dashboard Preview Card */}
+client/src/pages/Home.tsx:153:                    <span className="rounded-md bg-[#16A34A]/10 border border-[#16A34A]/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#16A34A]">Live Workspace</span>
+client/src/pages/Home.tsx:183:              ["One Workspace", "Centralize customer, inventory, finance, and people workflows in one command center."],
+client/src/pages/Home.tsx:227:                Launch Workspace <ArrowRight size={18} />
+client/src/pages/ComponentShowcase.tsx:897:                <TabsTrigger value="settings">Settings</TabsTrigger>
+client/src/pages/ComponentShowcase.tsx:944:                    <CardTitle>Settings</CardTitle>
+client/src/pages/ComponentShowcase.tsx:951:                      Settings content goes here.
+client/src/lib/complianceApprovalExport.ts:53:  const headers = ["Record type", "Timestamp", "Module", "Action", "Status / severity", "Actor", "Target", "Details", "Record ID"];
+server/clientMutationContract.test.ts:4:const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+client/src/components/PropertyManagementWorkspace.jsx:55:export function PropertyManagementWorkspace({ currentUser }) {
+client/src/lib/auditEvidenceExport.js:8:  const header = ["Timestamp", "Module", "Action", "Actor", "Details"];
+client/src/components/MoneyAgentWorkspace.jsx:67:export function MoneyAgentWorkspace({ currentUser }) {
+client/src/components/BankMfiWorkspace.jsx:54:export function BankMfiWorkspace({ company, onLoansLoad, onNavigate }) {
+server/ciWorkflowContracts.test.ts:5:const dashboard = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+server/subscriptionBillingContracts.test.ts:11:const workspace = read("client/src/components/SubscriptionBillingWorkspace.jsx");
+server/subscriptionBillingContracts.test.ts:18:const dashboard = read("client/src/BusinessSphereDashboard.jsx");
+server/subscriptionBillingContracts.test.ts:105:    ["Feature flags JSON", "Module entitlements JSON", "Official global package", "Save audited plan"].forEach((marker) => expect(workspace).toContain(marker));
+server/campaignIntegrity.test.ts:4:const source = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+server/manufacturingPersistenceBoundaries.test.ts:5:const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+client/src/components/SubscriptionBillingWorkspace.jsx:21:  Settings2,
+client/src/components/SubscriptionBillingWorkspace.jsx:67:export function SubscriptionBillingWorkspace({ accessToken, company, onBack }) {
+client/src/components/SubscriptionBillingWorkspace.jsx:262:            <button type="button" onClick={() => { setProfileForm(normalizeProfile(snapshot?.profile)); setEditingProfile(true); }} className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3.5 py-2 text-[12px] font-semibold text-white transition hover:bg-white/15"><Settings2 size={15} /> Billing details</button>
+client/src/components/SubscriptionBillingWorkspace.jsx:281:          ["overview", "Overview", BarChart3], ["plans", "Plans", Sparkles], ["payments", "Payments", CreditCard], ["invoices", "Invoices", ReceiptText], ["usage", "Usage", Users], ["admin", "Plan settings", Settings2],
+client/src/components/SubscriptionBillingWorkspace.jsx:290:      {tab === "admin" && <PlanSettings plans={plans} onAdd={() => setPlanEditor(emptyPlan())} onEdit={(plan) => setPlanEditor(planToForm(plan))} />}
+client/src/components/SubscriptionBillingWorkspace.jsx:305:  return <div className="space-y-4"><div className="grid gap-4 xl:grid-cols-[1.3fr_.7fr]"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start"><div><p className="text-[10px] font-bold uppercase tracking-[.15em] text-slate-400">Subscription overview</p><div className="mt-3 flex flex-wrap items-center gap-2"><h2 className="text-[22px] font-bold tracking-[-.04em] text-slate-950">{activePlan?.name || "Choose a subscription plan"}</h2>{subscription && <StatusBadge value={subscription.status} />}</div><p className="mt-2 max-w-xl text-[13px] leading-6 text-slate-500">{activePlan?.description || "Plan pricing and included limits are configured by a billing administrator. No plan or price is assumed by Smart Manager."}</p></div><button type="button" onClick={onChoosePlan} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#15191F] px-4 py-2.5 text-[12px] font-bold text-white transition hover:bg-slate-800"><ArrowUpRight size={15} /> {active ? "Change plan" : "Select plan"}</button></div><div className="mt-5 grid gap-3 sm:grid-cols-3"><StatCard label="Billing cycle" value={subscription?.billing_cycle || "—"} icon={RefreshCw} /><StatCard label="Amount" value={subscription ? money(subscription.amount, subscription.currency) : "—"} icon={CircleDollarSign} /><StatCard label="Renewal / expiry" value={subscription?.expires_at ? dateOnly(subscription.expires_at) : "—"} icon={Clock3} /></div></div><div className="rounded-2xl border border-[#E6D38C] bg-[linear-gradient(145deg,#FFFBEB,#FFFFFF)] p-5 shadow-sm"><div className="flex items-center gap-2 text-[#8B6914]"><ShieldCheck size={18} /><p className="text-[11px] font-bold uppercase tracking-[.13em]">Verified payment protection</p></div><p className="mt-3 text-[17px] font-bold tracking-[-.03em] text-slate-950">Every activation is server-confirmed.</p><p className="mt-2 text-[12.5px] leading-5 text-slate-600">Payments activate a plan only after the provider order, amount, and tenant are verified. Browser state never grants subscription access.</p><div className="mt-4 flex items-center gap-2 text-[11px] font-semibold text-[#8B6914]"><LockKeyhole size={13} /> Workspace: {company?.name || "Current company"}</div></div></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Completed payments" value={String(payments.filter((item) => item.status === "Completed").length)} icon={BadgeCheck} /><StatCard label="Paid billing total" value={money(completedRevenue, subscription?.currency || "TZS")} icon={Banknote} /><StatCard label="Invoices" value={String(invoices.length)} icon={FileText} /><StatCard label="Pending payment" value={payments.some((item) => item.status === "Pending") ? "Awaiting action" : "None"} icon={Clock3} /></div></div>;
+client/src/components/SubscriptionBillingWorkspace.jsx:364:function PlanSettings({ plans, onAdd, onEdit }) { return <div className="space-y-4"><div className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center"><div><h2 className="text-[17px] font-bold text-slate-950">Subscription plan settings</h2><p className="mt-1 text-[12px] text-slate-500">Create and publish real plans with actual prices, limits, and entitlements. Draft plans are intentionally hidden from checkout.</p></div><button onClick={onAdd} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#15191F] px-4 py-2.5 text-[12px] font-bold text-white"><Plus size={15} /> Add plan</button></div>{plans.length === 0 ? <NoData icon={Settings2} title="No active plans" text="Add a plan and set it to Active when its pricing and features are approved." /> : <div className="grid gap-4 lg:grid-cols-2">{plans.map((plan) => <button key={plan.id} onClick={() => onEdit(plan)} className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-[#D4AF37] hover:shadow-md"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.13em] text-slate-400">{plan.code}</p><h3 className="mt-1 text-[17px] font-bold text-slate-950">{plan.name}</h3></div><ChevronRight className="text-slate-300 transition group-hover:text-[#B88918]" size={18} /></div><div className="mt-4 flex flex-wrap gap-2 text-[11px]"><StatusBadge value={plan.status} /><span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">Monthly: {plan.monthly_price === null || plan.monthly_price === undefined ? "Not set" : money(plan.monthly_price, plan.currency)}</span><span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">Annual: {plan.annual_price === null || plan.annual_price === undefined ? "Not set" : money(plan.annual_price, plan.currency)}</span></div></button>)}</div>}</div>; }
+client/src/components/SubscriptionBillingWorkspace.jsx:375:  return <Modal title={values.planId ? "Edit subscription plan" : "Add subscription plan"} subtitle="Price, features, limits, and trial rules are audited server-side. Only platform administrators can save a global official package." onClose={onClose}><form onSubmit={onSubmit} className="space-y-3"><div className="grid gap-3 sm:grid-cols-2"><Field label="Plan code" required><input required value={values.code} onChange={(event) => set("code", event.target.value)} className={inputClass} placeholder="BUSINESS" /></Field><Field label="Plan name" required><input required value={values.name} onChange={(event) => set("name", event.target.value)} className={inputClass} placeholder="Business" /></Field></div><Field label="Description"><textarea value={values.description} onChange={(event) => set("description", event.target.value)} rows={2} className={inputClass} /></Field><div className="grid gap-3 sm:grid-cols-3"><Field label="Status"><select value={values.status} onChange={(event) => set("status", event.target.value)} className={inputClass}><option>Draft</option><option>Active</option><option>Archived</option></select></Field><Field label="Monthly price (TZS)"><input type="number" min="0" step="0.01" value={values.monthlyPrice} onChange={(event) => set("monthlyPrice", event.target.value)} className={inputClass} /></Field><Field label="Trial days"><input type="number" min="0" max="90" value={values.trialDays} onChange={(event) => set("trialDays", event.target.value)} className={inputClass} /></Field></div><div className="grid gap-3 sm:grid-cols-3"><Field label="Category"><select value={values.planCategory} onChange={(event) => set("planCategory", event.target.value)} className={inputClass}><option>Business</option><option>Football</option></select></Field><Field label="Badge"><input value={values.badge} onChange={(event) => set("badge", event.target.value)} className={inputClass} placeholder="Popular" /></Field><Field label="Visual theme"><select value={values.visualTheme} onChange={(event) => set("visualTheme", event.target.value)} className={inputClass}><option value="standard">Standard</option><option value="twiga">Twiga</option><option value="tembo">Tembo</option><option value="simba">Simba</option><option value="simba-sc">Simba SC abstract</option><option value="yanga-sc">Yanga SC abstract</option><option value="azam-fc">Azam FC abstract</option></select></Field></div><div className="grid gap-3 sm:grid-cols-2"><Field label="Annual price"><input type="number" min="0" step="0.01" value={values.annualPrice} onChange={(event) => set("annualPrice", event.target.value)} className={inputClass} /></Field><Field label="Currency"><input value={values.currency} onChange={(event) => set("currency", event.target.value.toUpperCase())} maxLength={3} className={inputClass} /></Field></div><div className="grid gap-3 sm:grid-cols-2"><Field label="Included users"><input type="number" min="0" value={values.includedUsers} onChange={(event) => set("includedUsers", event.target.value)} className={inputClass} /></Field><Field label="Included branches"><input type="number" min="0" value={values.includedBranches} onChange={(event) => set("includedBranches", event.target.value)} className={inputClass} /></Field><Field label="Included transactions"><input type="number" min="0" value={values.includedTransactions} onChange={(event) => set("includedTransactions", event.target.value)} className={inputClass} /></Field><Field label="Included storage (MB)"><input type="number" min="0" value={values.includedStorageMb} onChange={(event) => set("includedStorageMb", event.target.value)} className={inputClass} /></Field></div><Field label="Feature flags JSON" hint='Example: {"advancedReports": true}'><textarea value={values.featuresJson} onChange={(event) => set("featuresJson", event.target.value)} rows={4} className={`${inputClass} font-mono text-[11px]`} /></Field><Field label="Module entitlements JSON" hint='Example: ["finance", "inventory"]'><textarea value={values.moduleEntitlementsJson} onChange={(event) => set("moduleEntitlementsJson", event.target.value)} rows={3} className={`${inputClass} font-mono text-[11px]`} /></Field><div className="grid gap-2 sm:grid-cols-2"><label className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-[12px] font-semibold text-slate-700"><input type="checkbox" checked={values.recommended} onChange={(event) => set("recommended", event.target.checked)} /> Mark as recommended</label><label className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-[12px] font-semibold text-slate-700"><input type="checkbox" checked={values.isGlobal} onChange={(event) => set("isGlobal", event.target.checked)} /> Official global package</label></div><SubmitRow submitting={submitting} onClose={onClose} label="Save audited plan" /></form></Modal>;
+client/src/contexts/LanguageContext.tsx:19:    connectedModules: "Connected business modules",
+client/src/contexts/LanguageContext.tsx:22:    liveWorkspace: "Live Workspace",
+client/src/contexts/LanguageContext.tsx:26:    oneWorkspace: "One Workspace",
+client/src/contexts/LanguageContext.tsx:27:    oneWorkspaceDesc: "Centralize customer, inventory, finance, and people workflows in one command center.",
+client/src/contexts/LanguageContext.tsx:37:    launchWorkspace: "Launch Workspace",
+client/src/contexts/LanguageContext.tsx:54:    connectedModules: "Moduli zilizounganishwa",
+client/src/contexts/LanguageContext.tsx:57:    liveWorkspace: "Kituo cha Kazi",
+client/src/contexts/LanguageContext.tsx:61:    oneWorkspace: "Sehemu Moja",
+client/src/contexts/LanguageContext.tsx:62:    oneWorkspaceDesc: "Unganisha wateja, bidhaa, fedha, na rasilimali watu katika sehemu moja.",
+client/src/contexts/LanguageContext.tsx:72:    launchWorkspace: "Fungua Dashibodi",
+server/scheduledPortalReferenceReconciliationDigest.ts:6:import { getPortalReferenceDailySummaryForCompany, getPortalReferenceDigestSettingsByTaskUid, resolvePortalReferenceDigestRecipients } from "./healthcarePortalReconciliationWorkflow";
+server/scheduledPortalReferenceReconciliationDigest.ts:41:    const settings = await getPortalReferenceDigestSettingsByTaskUid(taskUid);
+client/src/contexts/DashboardPreferencesContext.tsx:4:interface DashboardPreferences {
+client/src/contexts/DashboardPreferencesContext.tsx:16:interface DashboardPreferencesContextType {
+client/src/contexts/DashboardPreferencesContext.tsx:17:  preferences: DashboardPreferences;
+client/src/contexts/DashboardPreferencesContext.tsx:18:  updatePreference: <K extends keyof DashboardPreferences>(key: K, value: DashboardPreferences[K]) => void;
+client/src/contexts/DashboardPreferencesContext.tsx:34:const defaultPreferences: DashboardPreferences = {
+client/src/contexts/DashboardPreferencesContext.tsx:55:function normalizePreferences(value: Partial<DashboardPreferences> | null | undefined): DashboardPreferences {
+client/src/contexts/DashboardPreferencesContext.tsx:67:const DashboardPreferencesContext = createContext<DashboardPreferencesContextType | undefined>(undefined);
+client/src/contexts/DashboardPreferencesContext.tsx:69:export function DashboardPreferencesProvider({ children }: { children: React.ReactNode }) {
+client/src/contexts/DashboardPreferencesContext.tsx:74:  const [preferences, setPreferences] = useState<DashboardPreferences>(() => {
+client/src/contexts/DashboardPreferencesContext.tsx:103:  const persist = (next: DashboardPreferences, previous: DashboardPreferences) => {
+client/src/contexts/DashboardPreferencesContext.tsx:109:        setPersistenceError(error.message || "Dashboard preferences could not be saved.");
+client/src/contexts/DashboardPreferencesContext.tsx:115:  const updatePreference = <K extends keyof DashboardPreferences>(key: K, value: DashboardPreferences[K]) => {
+client/src/contexts/DashboardPreferencesContext.tsx:160:    <DashboardPreferencesContext.Provider value={{ preferences, updatePreference, resetPreferences, formatMoney, formatLocalDate, isPersisting: saveMutation.isPending, persistenceError }}>
+client/src/contexts/DashboardPreferencesContext.tsx:162:    </DashboardPreferencesContext.Provider>
+client/src/contexts/DashboardPreferencesContext.tsx:166:export function useDashboardPreferences() {
+client/src/contexts/DashboardPreferencesContext.tsx:167:  const context = useContext(DashboardPreferencesContext);
+client/src/contexts/DashboardPreferencesContext.tsx:169:    throw new Error("useDashboardPreferences must be used within DashboardPreferencesProvider");
+client/src/components/SchoolWorkspace.jsx:5:  ReceiptText, School, Search, Send, Settings2, ShieldCheck, UserCheck, UserPlus, Users,
+client/src/components/SchoolWorkspace.jsx:116:export function SchoolWorkspace({ onNavigate }) {
+client/src/components/SchoolWorkspace.jsx:193:    {tab === "Academics" && <div className="space-y-5"><section className="grid gap-5 xl:grid-cols-2"><Panel title="Academic years and terms" description="Only an active academic year can receive approved admissions.">{!can("canConfigure") ? <Denied>Academic configuration is restricted to school administration and academic leadership.</Denied> : <div className="grid gap-5 md:grid-cols-2"><form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); run(() => yearCreate.mutateAsync({ ...year, notes: "" }), "Academic year saved."); setYear({ name: "", startDate: "", endDate: "", active: false }); }}><Field label="Academic year"><Input required value={year.name} onChange={(event) => setYear({ ...year, name: event.target.value })} placeholder="e.g. 2027" /></Field><Field label="Starts"><Input required type="date" value={year.startDate} onChange={(event) => setYear({ ...year, startDate: event.target.value })} /></Field><Field label="Ends"><Input required type="date" value={year.endDate} onChange={(event) => setYear({ ...year, endDate: event.target.value })} /></Field><label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={year.active} onChange={(event) => setYear({ ...year, active: event.target.checked })} /> Make active</label><Button type="submit" disabled={yearCreate.isPending}><CalendarCheck2 size={16} /> Save academic year</Button></form><form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); run(() => termCreate.mutateAsync({ ...term, notes: "" }), "Term saved."); setTerm({ name: "", academicYearId: id, startDate: "", endDate: "", active: false }); }}><Field label="Term"><Input required value={term.name} onChange={(event) => setTerm({ ...term, name: event.target.value })} /></Field><Field label="Academic year"><Select required value={term.academicYearId} onChange={(event) => setTerm({ ...term, academicYearId: event.target.value })}><Options items={years} label="Select year" /></Select></Field><Field label="Starts"><Input required type="date" value={term.startDate} onChange={(event) => setTerm({ ...term, startDate: event.target.value })} /></Field><Field label="Ends"><Input required type="date" value={term.endDate} onChange={(event) => setTerm({ ...term, endDate: event.target.value })} /></Field><label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={term.active} onChange={(event) => setTerm({ ...term, active: event.target.checked })} /> Make active</label><Button type="submit" disabled={termCreate.isPending}><CalendarCheck2 size={16} /> Save term</Button></form></div>}</Panel><Panel title="Departments and subjects" description="Subject codes are unique per school and subjects can be designated compulsory.">{!can("canConfigure") ? <Denied>Academic configuration is restricted.</Denied> : <div className="grid gap-5 md:grid-cols-2"><form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); run(() => departmentCreate.mutateAsync({ name: department.name, headTeacherId: department.headTeacherId === id ? undefined : department.headTeacherId, notes: "" }), "Department saved."); setDepartment({ name: "", headTeacherId: id }); }}><Field label="Department"><Input required value={department.name} onChange={(event) => setDepartment({ ...department, name: event.target.value })} /></Field><Field label="Department head"><Select value={department.headTeacherId} onChange={(event) => setDepartment({ ...department, headTeacherId: event.target.value })}><Options items={teachers} label="No assigned head" /></Select></Field><Button type="submit" disabled={departmentCreate.isPending}><Settings2 size={16} /> Save department</Button></form><form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); run(() => subjectCreate.mutateAsync({ name: subject.name, code: subject.code, departmentId: subject.departmentId === id ? undefined : subject.departmentId, compulsory: subject.compulsory, notes: "" }), "Subject saved."); setSubject({ name: "", code: "", departmentId: id, compulsory: false }); }}><Field label="Subject"><Input required value={subject.name} onChange={(event) => setSubject({ ...subject, name: event.target.value })} /></Field><Field label="Code"><Input value={subject.code} onChange={(event) => setSubject({ ...subject, code: event.target.value })} /></Field><Field label="Department"><Select value={subject.departmentId} onChange={(event) => setSubject({ ...subject, departmentId: event.target.value })}><Options items={departments} label="No department" /></Select></Field><label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={subject.compulsory} onChange={(event) => setSubject({ ...subject, compulsory: event.target.checked })} /> Compulsory subject</label><Button type="submit" disabled={subjectCreate.isPending}><BookOpenCheck size={16} /> Save subject</Button></form></div>}</Panel></section><section className="grid gap-5 xl:grid-cols-3"><Panel title="Class" description="Class capacity is checked before active enrollment.">{!can("canConfigure") ? <Denied>Class configuration is restricted.</Denied> : <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); run(() => classCreate.mutateAsync({ ...schoolClass, capacity: number(schoolClass.capacity), classTeacherId: schoolClass.classTeacherId === id ? undefined : schoolClass.classTeacherId, notes: "" }), "Class saved."); setSchoolClass({ name: "", academicYearId: id, level: "", capacity: "40", classTeacherId: id }); }}><Field label="Class name"><Input required value={schoolClass.name} onChange={(event) => setSchoolClass({ ...schoolClass, name: event.target.value })} /></Field><Field label="Level"><Input required value={schoolClass.level} onChange={(event) => setSchoolClass({ ...schoolClass, level: event.target.value })} placeholder="e.g. Form 1" /></Field><Field label="Academic year"><Select required value={schoolClass.academicYearId} onChange={(event) => setSchoolClass({ ...schoolClass, academicYearId: event.target.value })}><Options items={years} label="Select year" /></Select></Field><Field label="Capacity"><Input required min="1" type="number" value={schoolClass.capacity} onChange={(event) => setSchoolClass({ ...schoolClass, capacity: event.target.value })} /></Field><Field label="Class teacher"><Select value={schoolClass.classTeacherId} onChange={(event) => setSchoolClass({ ...schoolClass, classTeacherId: event.target.value })}><Options items={teachers} label="Unassigned" /></Select></Field><Button type="submit" disabled={classCreate.isPending}><School size={16} /> Save class</Button></form>}</Panel><Panel title="Stream" description="Streams refine placements beneath an academic class.">{!can("canConfigure") ? <Denied>Stream configuration is restricted.</Denied> : <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); run(() => streamCreate.mutateAsync({ ...stream, capacity: number(stream.capacity), classTeacherId: stream.classTeacherId === id ? undefined : stream.classTeacherId, notes: "" }), "Stream saved."); setStream({ name: "", classId: id, capacity: "40", classTeacherId: id }); }}><Field label="Stream name"><Input required value={stream.name} onChange={(event) => setStream({ ...stream, name: event.target.value })} /></Field><Field label="Class"><Select required value={stream.classId} onChange={(event) => setStream({ ...stream, classId: event.target.value })}><Options items={classes} label="Select class" /></Select></Field><Field label="Capacity"><Input required min="1" type="number" value={stream.capacity} onChange={(event) => setStream({ ...stream, capacity: event.target.value })} /></Field><Field label="Class teacher"><Select value={stream.classTeacherId} onChange={(event) => setStream({ ...stream, classTeacherId: event.target.value })}><Options items={teachers} label="Unassigned" /></Select></Field><Button type="submit" disabled={streamCreate.isPending}><Users size={16} /> Save stream</Button></form>}</Panel><Panel title="Grading scale" description="Bands must be valid and non-overlapping on the protected server.">{!can("canConfigure") ? <Denied>Grading configuration is restricted.</Denied> : <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); try { run(() => scaleCreate.mutateAsync({ name: gradeScale.name, bands: bandsFromText(gradeScale.bands), active: gradeScale.active, notes: "" }), "Grading scale saved."); } catch (error) { toast.error(apiError(error)); } }}><Field label="Scale name"><Input required value={gradeScale.name} onChange={(event) => setGradeScale({ ...gradeScale, name: event.target.value })} /></Field><Field label="Bands"><Textarea required value={gradeScale.bands} onChange={(event) => setGradeScale({ ...gradeScale, bands: event.target.value })} /></Field><label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={gradeScale.active} onChange={(event) => setGradeScale({ ...gradeScale, active: event.target.checked })} /> Make active</label><Button type="submit" disabled={scaleCreate.isPending}><Settings2 size={16} /> Save scale</Button></form>}</Panel></section></div>}
+client/src/components/SchoolWorkspace.jsx:203:    {tab === "Reports & audit" && <div className="space-y-5"><section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{reportsQuery.isLoading ? <Loading /> : [["Attendance rate", `${number(reportsQuery.data?.learners?.attendanceRate).toFixed(1)}%`, CalendarCheck2], ["Average score", `${number(reportsQuery.data?.academics?.averageScore).toFixed(1)}%`, GraduationCap], ["Fees collected", money(reportsQuery.data?.finance?.collected), WalletCards], ["Open loans", reportsQuery.data?.services?.openLibraryLoans || 0, Library]].map(([label, value, Icon]) => <article key={label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><Icon size={19} className="text-indigo-600" /><p className="mt-3 text-2xl font-bold text-slate-900">{value}</p><p className="text-xs font-semibold text-slate-500">{label}</p></article>)}</section><section className="grid gap-5 xl:grid-cols-2"><Panel title="Tanzania-ready school finance summary" description="Financial reporting uses protected invoices, payments, and scholarship decisions in TZS.">{reportsQuery.isLoading ? <Loading /> : <div className="grid gap-3 sm:grid-cols-2"><div className="rounded-xl bg-slate-50 p-4"><p className="text-xs font-bold uppercase text-slate-500">Invoiced</p><p className="mt-1 text-xl font-bold">{money(reportsQuery.data?.finance?.invoiced)}</p></div><div className="rounded-xl bg-emerald-50 p-4"><p className="text-xs font-bold uppercase text-emerald-700">Collected</p><p className="mt-1 text-xl font-bold">{money(reportsQuery.data?.finance?.collected)}</p></div><div className="rounded-xl bg-rose-50 p-4"><p className="text-xs font-bold uppercase text-rose-700">Outstanding</p><p className="mt-1 text-xl font-bold">{money(reportsQuery.data?.finance?.outstanding)}</p></div><div className="rounded-xl bg-indigo-50 p-4"><p className="text-xs font-bold uppercase text-indigo-700">Approved scholarships</p><p className="mt-1 text-xl font-bold">{money(reportsQuery.data?.finance?.scholarshipsApproved)}</p></div></div>}</Panel><Panel title="School Management audit trail" description="Audit entries preserve secure action context for authorised governance review.">{!can("canGovern") ? <Denied>Audit visibility is restricted to School Management governance roles.</Denied> : auditQuery.isLoading ? <Loading /> : auditQuery.data?.length ? <div className="space-y-2">{auditQuery.data.slice(0, 40).map((record) => <div key={record.id} className="rounded-xl bg-slate-50 p-3"><div className="flex items-center justify-between gap-3"><p className="font-semibold">{record.name}</p><Status value={record.status} /></div><p className="mt-1 text-xs text-slate-600">{record.entity || "School record"} · {record.actorName || "Workspace user"} · {record.recordedAt ? new Date(record.recordedAt).toLocaleString("en-TZ") : "—"}</p>{record.notes && <p className="mt-1 text-sm text-slate-700">{record.notes}</p>}</div>)}</div> : <Notice>No School Management audit events have been recorded.</Notice>}</Panel></section></div>}
+server/scheduledPortalReferenceReconciliationDigest.test.ts:13:  getPortalReferenceDigestSettingsByTaskUid: settingsByTaskMock,
+client/src/components/RestaurantWorkspace.jsx:2:import { AlertCircle, Banknote, ChefHat, CheckCircle2, ClipboardList, CookingPot, CreditCard, LayoutDashboard, LoaderCircle, Package, Plus, ReceiptText, RefreshCw, Search, Send, Table2, UtensilsCrossed, UsersRound, WalletCards } from "lucide-react";
+client/src/components/RestaurantWorkspace.jsx:16:export function RestaurantWorkspace({ rpc, configured = true, currentUser }) {
+client/src/components/RestaurantWorkspace.jsx:30:  const tabs = [["overview", "Overview", LayoutDashboard], ["service", "POS & tables", UtensilsCrossed], ["kitchen", "Kitchen display", CookingPot], ["menu", "Menu & recipes", ClipboardList], ["guests", "Reservations & guests", UsersRound], ["stock", "Stock & control", Package], ["team", "Team & shifts", UsersRound], ["purchasing", "Suppliers & purchasing", ClipboardList], ["reports", "Revenue & reports", ReceiptText]];
+server/maintenancePersistenceBoundaries.test.ts:5:const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+server/scheduledMicrofinanceParCollectionsEscalation.ts:6:import { getMicrofinanceEscalationSettingsByTaskUid, getMicrofinanceParCollectionsSummaryForCompany, resolveMicrofinanceEscalationRecipients } from "./microfinanceOperations";
+server/scheduledMicrofinanceParCollectionsEscalation.ts:43:    const settings = await getMicrofinanceEscalationSettingsByTaskUid(taskUid);
+client/src/components/PharmacyWorkspace.jsx:42:export function PharmacyWorkspace({ onNavigate }) {
+client/src/components/PatientSmsConsentSettings.jsx:16:export default function PatientSmsConsentSettings() {
+client/src/components/MicrofinanceWorkspace.jsx:10:import { CreditScoringSettingsDialog, EscalationGovernancePanel, EscalationSettingsDialog } from "./MicrofinanceGovernanceDialogs";
+client/src/components/MicrofinanceWorkspace.jsx:39:export function MicrofinanceWorkspace() {
+client/src/components/MicrofinanceWorkspace.jsx:50:  const scoring = trpc.microfinance.creditScoringSettings.useQuery(undefined, { enabled: tab === "credit" || tab === "governance", retry: false });
+client/src/components/MicrofinanceWorkspace.jsx:51:  const escalation = trpc.microfinance.escalationSettings.useQuery(undefined, { enabled: tab === "governance", retry: false });
+client/src/components/MicrofinanceWorkspace.jsx:53:  const refresh = async () => { await utils.microfinance.dashboard.invalidate(); if (tab === "governance") { await Promise.all([utils.microfinance.auditHistory.invalidate(), utils.microfinance.escalationSettings.invalidate(), utils.microfinance.escalationHistory.invalidate()]); } if (tab === "credit") await utils.microfinance.creditScoringSettings.invalidate(); };
+client/src/components/MicrofinanceWorkspace.jsx:69:  const saveScoring = trpc.microfinance.saveCreditScoringSettings.useMutation(mutateOptions("Credit scoring rules saved"));
+client/src/components/MicrofinanceWorkspace.jsx:70:  const saveEscalation = trpc.microfinance.saveEscalationSettings.useMutation(mutateOptions("Daily escalation configuration saved"));
+client/src/components/MicrofinanceWorkspace.jsx:100:    <CreditScoringSettingsDialog open={dialog === "credit-scoring"} onClose={() => setDialog(null)} mutation={saveScoring} settings={scoring.data?.settings} busy={busy}/>
+client/src/components/MicrofinanceWorkspace.jsx:101:    <EscalationSettingsDialog open={dialog === "par-escalation"} onClose={() => setDialog(null)} mutation={saveEscalation} settings={escalation.data?.settings} busy={busy}/>
+server/authJourneySimulation.test.ts:4:const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+server/authJourneySimulation.test.ts:7:describe("Authentication Journey Simulation (Sign-in, Signup Progression, Workspace Entry)", () => {
+client/src/components/MicrofinanceGovernanceDialogs.jsx:11:export function CreditScoringSettingsDialog({ open, onClose, mutation, settings, busy }) {
+client/src/components/MicrofinanceGovernanceDialogs.jsx:20:export function EscalationSettingsDialog({ open, onClose, mutation, settings, busy }) {
+client/src/components/MicrofinanceGovernanceDialogs.jsx:26:  return <DialogShell title="Daily PAR and collections escalation" description="Only aggregate portfolio risk is delivered; borrower and transaction details remain in the secured workspace." onClose={onClose}><form onSubmit={(event) => { event.preventDefault(); mutation.mutate({ recipientMode: form.recipientMode, roleRecipients: form.roleRecipients, managedRecipients: form.managedRecipients.split(/[;,]/).map((value) => value.trim()).filter(Boolean), scheduleLocalTime: form.scheduleLocalTime, timezone: "Africa/Dar_es_Salaam", par30AlertThreshold: Number(form.par30AlertThreshold), overdueAmountAlertThreshold: Number(form.overdueAmountAlertThreshold), deliveryEnabled: form.deliveryEnabled }); }} className="space-y-4"><ErrorText error={mutation.error}/><div className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Activation creates a recurring delivery only after you explicitly enable it below. The schedule runs in <strong>Africa/Dar_es_Salaam</strong>.</div><div className="grid gap-3 sm:grid-cols-2"><Field label="Recipient model"><select aria-label="Recipient model" className={fieldClass} value={form.recipientMode} onChange={(e) => setForm({ ...form, recipientMode: e.target.value })}><option value="roles">Selected workspace roles</option><option value="managed">Administrator-managed email list</option><option value="both">Selected roles and managed list</option></select></Field><Field label="Daily local time"><input aria-label="Daily local time" className={fieldClass} type="time" value={form.scheduleLocalTime} onChange={(e) => setForm({ ...form, scheduleLocalTime: e.target.value })}/></Field><Field label="PAR 30 escalation threshold (%)"><input aria-label="PAR 30 escalation threshold" className={fieldClass} type="number" min="0" max="100" step="0.1" value={form.par30AlertThreshold} onChange={(e) => setForm({ ...form, par30AlertThreshold: e.target.value })}/></Field><Field label="Overdue amount threshold (TZS)"><input aria-label="Overdue amount threshold" className={fieldClass} type="number" min="0" value={form.overdueAmountAlertThreshold} onChange={(e) => setForm({ ...form, overdueAmountAlertThreshold: e.target.value })}/></Field></div>{needsRoleRecipients && <Field label="Workspace recipient roles" hint="Only active workspace users assigned a selected role are eligible to receive the aggregate-only escalation."><div className="mt-2 grid gap-2 sm:grid-cols-2">{escalationRecipientRoles.map((role) => <label key={role} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><input aria-label={`Recipient role ${role}`} type="checkbox" checked={form.roleRecipients.includes(role)} onChange={() => toggleRole(role)}/>{role}</label>)}</div></Field>}{form.recipientMode !== "roles" && <Field label="Approved recipient emails" hint="Separate addresses with commas or semicolons."><input aria-label="Approved recipient emails" className={fieldClass} type="text" value={form.managedRecipients} onChange={(e) => setForm({ ...form, managedRecipients: e.target.value })}/></Field>}<label className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950"><input aria-label="Enable daily PAR escalation" className="mt-1" type="checkbox" checked={form.deliveryEnabled} onChange={(e) => setForm({ ...form, deliveryEnabled: e.target.checked })}/><span><strong>Enable daily escalation delivery</strong><br/><span className="text-emerald-800">The system sends only when a configured portfolio threshold is reached and records privacy-safe delivery telemetry.</span></span></label><div className="flex justify-end gap-2"><Button type="button" onClick={onClose} className="border border-slate-300 bg-white text-slate-700">Cancel</Button><Button type="submit" disabled={busy || (needsRoleRecipients && form.roleRecipients.length === 0)} className="bg-emerald-700 text-white hover:bg-emerald-800">Save escalation settings</Button></div></form></DialogShell>;
+client/src/components/SalesDetailWorkspace.jsx:3:export function SalesDetailWorkspace({ subscriptions }) {
+server/scheduledMicrofinanceParCollectionsEscalation.test.ts:12:vi.mock("./microfinanceOperations", () => ({ getMicrofinanceEscalationSettingsByTaskUid: settingsByTaskMock, getMicrofinanceParCollectionsSummaryForCompany: summaryMock, resolveMicrofinanceEscalationRecipients: recipientsMock }));
+client/src/components/PredictiveAnalyticsWorkspace.jsx:4:export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, employees, leaveRequests, runtime }) {
+client/src/components/HospitalityWorkspace.jsx:16:export function HospitalityWorkspace({rpc,configured=true,currentUser}) {
+client/src/components/LoginModuleEcosystem.jsx:2:import { BarChart3, Bell, Brain, Briefcase, ClipboardCheck, Factory, FileText, Gauge, Headphones, HeartPulse, Hotel, Kanban, LayoutDashboard, Package, School, ShoppingBag, ShoppingCart, Tablets, Truck, Users, UtensilsCrossed, Wallet } from "lucide-react";
+client/src/components/LoginModuleEcosystem.jsx:10:  dashboard: { id: "dashboard", icon: LayoutDashboard, labels: { en: "Dashboard", sw: "Dashibodi" } },
+client/src/components/LoginModuleEcosystem.jsx:56:export function getLoginModulesForIndustry(industry = "general") {
+client/src/components/LoginModuleEcosystem.jsx:61:function ModuleNode({ module, lang }) {
+client/src/components/LoginModuleEcosystem.jsx:70:export function LoginModuleEcosystem({ variant = "desktop", industry = "general" }) {
+client/src/components/LoginModuleEcosystem.jsx:72:  const modules = getLoginModulesForIndustry(industry);
+client/src/components/LoginModuleEcosystem.jsx:83:    {modules.map((module) => <ModuleNode key={module.id} module={module} lang={lang} />)}
+client/src/components/LoginModuleEcosystem.jsx:87:export const loginModuleEcosystemModules = Object.values(MODULE_CATALOG).map(({ id, labels }) => ({ id, label: labels.en }));
+client/src/components/EnterpriseLayout.tsx:4:export function EnterpriseModuleHeader({
+client/src/components/EnterpriseLayout.tsx:31:export function ScrollableModuleTabs({
+client/src/components/EnterpriseLayout.tsx:97:        aria-label="Module views"
+server/loginModuleEcosystem.test.ts:3:import { getLoginModulesForIndustry } from "../client/src/components/LoginModuleEcosystem.jsx";
+server/loginModuleEcosystem.test.ts:5:const ecosystem = readFileSync(new URL("../client/src/components/LoginModuleEcosystem.jsx", import.meta.url), "utf8");
+server/loginModuleEcosystem.test.ts:17:    expect(getLoginModulesForIndustry("retail").map((module) => module.id)).toContain("pos");
+server/loginModuleEcosystem.test.ts:18:    expect(getLoginModulesForIndustry("manufacturing").map((module) => module.id)).toContain("manufacturing");
+server/loginModuleEcosystem.test.ts:19:    expect(getLoginModulesForIndustry("healthcare").map((module) => module.id)).toContain("healthcare");
+server/loginModuleEcosystem.test.ts:25:    expect(authView).toContain('<LoginModuleEcosystem variant="desktop" industry={industry} />');
+server/loginModuleEcosystem.test.ts:26:    expect(authView).toContain('<LoginModuleEcosystem variant="mobile" industry={industry} />');
+server/schoolOperations.ts:98:async function audit(token: string, companyId: string, actor: VerifiedProfile, action: string, entity: string, recordId: string, details = "") { return insert("sch_audit_logs", token, companyId, { name: action, status: "Recorded", notes: details || null, data: { action, entity, recordId, actorId: actor.id, actorName: actor.full_name || "Workspace user", recordedAt: now() } }); }
+server/schoolOperations.ts:235:export async function getSchoolDashboard(req: CreateExpressContextOptions["req"]) { const { profile, token, access } = await dashboardContext(req); if (!access.canRead) return { access, totals: { activeStudents: 0, pendingAdmissions: 0, todayAttendanceRate: null, outstandingFees: 0, todayCollections: 0, publishedReportCards: 0, pendingApprovals: 0 }, notifications: [], announcements: [], pendingAdmissions: [] }; const [students, admissions, attendanceSessions, attendance, invoices, payments, reportCards, notifications, announcements, approvals] = await Promise.all([rows("sch_students", token, profile.company_id), rows("sch_admissions", token, profile.company_id), rows("sch_attendance_sessions", token, profile.company_id), rows("sch_attendance_records", token, profile.company_id, 5_000), rows("sch_fee_invoices", token, profile.company_id), rows("sch_payments", token, profile.company_id), rows("sch_report_cards", token, profile.company_id), rows("sch_notifications", token, profile.company_id), rows("sch_announcements", token, profile.company_id), rows("sch_approval_requests", token, profile.company_id)]);
+server/authExperience.test.ts:9:const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+client/src/components/EnterpriseAuthViews.jsx:7:import { LoginModuleEcosystem } from "./LoginModuleEcosystem";
+client/src/components/EnterpriseAuthViews.jsx:31:    moduleFocus: "Module focus",
+client/src/components/EnterpriseAuthViews.jsx:110:        <LoginModuleEcosystem variant="desktop" industry={industry} />
+client/src/components/EnterpriseAuthViews.jsx:115:      <main className="relative flex flex-1 items-center justify-center px-4 py-7 sm:px-8 sm:py-10 lg:px-14"><LoginModuleEcosystem variant="mobile" industry={industry} /><section className="relative z-10 w-full max-w-[470px]">
+client/src/components/EmployeePortalWorkspace.jsx:38:export function EmployeePortalWorkspace({ rpc, configured = true, currentUser }) {
+client/src/components/DashboardPreferencesDrawer.tsx:3:import { useDashboardPreferences } from "../contexts/DashboardPreferencesContext";
+client/src/components/DashboardPreferencesDrawer.tsx:6:interface DashboardPreferencesDrawerProps {
+client/src/components/DashboardPreferencesDrawer.tsx:11:export function DashboardPreferencesDrawer({ isOpen, onClose }: DashboardPreferencesDrawerProps) {
+client/src/components/DashboardPreferencesDrawer.tsx:12:  const { preferences, updatePreference, resetPreferences } = useDashboardPreferences();
+client/src/components/DashboardPreferencesDrawer.tsx:83:                <h3 className="text-[16px] font-bold font-heading">Dashboard Preferences</h3>
+client/src/components/DashboardPreferencesDrawer.tsx:104:              Manual Settings
+client/src/components/DashboardPreferencesDrawer.tsx:169:                    <span className="text-[13px] font-semibold text-white">Dashboard Timezone</span>
+client/src/components/DashboardPreferencesDrawer.tsx:204:                <label className="text-[12px] font-bold uppercase tracking-wider text-[#C9A96E]">Dashboard Modules & Widgets</label>
+server/authBrandLocalization.test.ts:5:const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+client/src/components/HealthcareClinicWorkspace.jsx:411:  return <section className="rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,.04)]"><div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-base font-bold text-slate-900">Clinical notifications</h2><p className="mt-1 text-sm text-slate-500">Tenant-scoped care, diagnostics, dispensing, billing, and insurance events.</p></div><span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700"><Bell size={13}/>{notifications.rows.filter((item) => item.status === "Unread").length} unread</span></div>{notifications.rows.length ? <div className="divide-y divide-slate-100">{notifications.rows.map((notification) => { const data = notification.data || {}; return <button key={notification.id} onClick={() => onOpen(notification)} className="flex w-full items-start gap-3 p-4 text-left transition hover:bg-slate-50"><span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${/urgent|attention/i.test(data.severity || "") ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-700"}`}><Bell size={15}/></span><span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2"><span className="text-sm font-bold text-slate-900">{notification.name}</span><StatusPill>{notification.status}</StatusPill></span><span className="mt-1 block text-xs text-slate-500">{data.eventType || "Healthcare"} · {data.patientName || "Workspace event"} · {data.actionLabel || "Open record"}</span></span><ChevronRight className="mt-2 shrink-0 text-slate-400" size={16}/></button>; })}</div> : <EmptyState icon={Bell} title="No healthcare notifications" copy="New clinical, diagnostic, pharmacy, billing, and insurance events will appear here."/>}</section>;
+client/src/components/HealthcareClinicWorkspace.jsx:445:function PortalReferenceAuditPanel({ canManage, canApprove, errors, onExportErrors, exportingErrors, audit, auditQuery, onAuditQueryChange, auditStatus, onAuditStatusChange, auditLoading, approvals, onDecideWithNote, decidingId, recipientDraft, onRecipientDraftChange, summarySettings, onSaveRecipientSettings, savingRecipientSettings }) {
+client/src/components/HealthcareClinicWorkspace.jsx:450:  return <section className="space-y-4"><section className="grid gap-4 xl:grid-cols-2"><article className="rounded-2xl border border-rose-200 bg-rose-50/60 p-5 shadow-[0_1px_2px_rgba(15,23,42,.04)]"><div className="flex items-start justify-between gap-3"><div className="flex gap-3"><span className="grid h-10 w-10 place-items-center rounded-2xl bg-rose-100 text-rose-700"><Download size={18}/></span><div><h3 className="text-sm font-bold text-rose-950">Rejected-row correction export</h3><p className="mt-1 text-xs leading-5 text-rose-900/80">Exports row number, MRN, status, and validation reason only. Portal references and patient contacts are excluded.</p></div></div><span className="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-bold text-rose-700">{errors.length} rows</span></div><button type="button" onClick={onExportErrors} disabled={!errors.length || exportingErrors} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-rose-700 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-50"><Download size={14}/>{exportingErrors ? "Preparing export…" : "Export correction CSV"}</button></article>{canApprove ? <form onSubmit={onSaveRecipientSettings} className="rounded-2xl border border-sky-200 bg-sky-50/60 p-5 shadow-[0_1px_2px_rgba(15,23,42,.04)]"><div className="flex gap-3"><span className="grid h-10 w-10 place-items-center rounded-2xl bg-sky-100 text-sky-700"><Bell size={18}/></span><div><h3 className="text-sm font-bold text-slate-900">Daily email recipients</h3><p className="mt-1 text-xs leading-5 text-slate-600">Configure automatic role recipients, a managed approved list, or both. Sending stays inactive until a delivery time and final approval are supplied.</p></div></div><div className="mt-4 grid gap-3 sm:grid-cols-2"><label className="text-xs font-bold text-slate-700">Recipient model<select value={recipientDraft.recipientMode || "both"} onChange={(event) => onRecipientDraftChange((current) => ({ ...current, recipientMode: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-sky-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800"><option value="roles">Role-based only</option><option value="managed">Managed list only</option><option value="both">Role-based + managed list</option></select></label><label className="text-xs font-bold text-slate-700">Timezone<input value={recipientDraft.timezone || "Africa/Dar_es_Salaam"} onChange={(event) => onRecipientDraftChange((current) => ({ ...current, timezone: event.target.value }))} maxLength={80} className="mt-1.5 w-full rounded-xl border border-sky-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800"/></label></div><label className="mt-3 block text-xs font-bold text-slate-700">Approved managed recipients<textarea value={(recipientDraft.managedRecipients || []).join("\n")} onChange={(event) => updateRecipients(event.target.value)} rows="3" placeholder="administrator@clinic.example" className="mt-1.5 w-full rounded-xl border border-sky-200 bg-white p-3 text-sm font-medium text-slate-800 placeholder:text-slate-400"/></label><p className="mt-2 text-[11px] leading-5 text-slate-500">Role recipients: {(summarySettings?.roleRecipients || ["Clinic Administrator", "Organization Owner", "CEO"]).join(" · ")}. No email is sent from this screen.</p><div className="mt-4 flex items-center justify-between gap-3"><span className="text-xs font-bold text-amber-700">Schedule inactive</span><button disabled={savingRecipientSettings} className="rounded-xl bg-sky-700 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-sky-800 disabled:opacity-50">{savingRecipientSettings ? "Saving…" : "Save recipients"}</button></div></form> : <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5"><h3 className="text-sm font-bold text-slate-900">Daily email configuration</h3><p className="mt-2 text-sm leading-6 text-slate-600">Recipient configuration is restricted to clinic administrators and organisational supervisors.</p></article>}</section>{canApprove && <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,.04)]"><div className="flex flex-col gap-3 border-b border-slate-100 p-5 lg:flex-row lg:items-center lg:justify-between"><div><h3 className="text-sm font-bold text-slate-900">Supervisor decision notes and audit search</h3><p className="mt-1 text-sm text-slate-500">Record a decision context, then search tenant-scoped imports and approval outcomes.</p></div><div className="flex flex-col gap-2 sm:flex-row"><input value={auditQuery} onChange={(event) => onAuditQueryChange(event.target.value)} placeholder="Search MRN, status, reason, note…" aria-label="Search portal reconciliation audit" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-500 focus:bg-white"/><select value={auditStatus} onChange={(event) => onAuditStatusChange(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700"><option value="all">All outcomes</option><option>Pending</option><option>Approved</option><option>Rejected</option><option>Invalid</option><option>Applied</option></select></div></div>{pending.length ? <div className="divide-y divide-slate-100">{pending.map((approval) => <article key={approval.id} className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,.8fr)_auto]"><div><p className="text-sm font-bold text-slate-900">{approval.name}</p><p className="mt-1 text-xs text-slate-500">{approval.reason || "Replacement confirmation required."}</p></div><input value={notes[approval.id] || ""} onChange={(event) => setNotes((current) => ({ ...current, [approval.id]: event.target.value }))} maxLength={400} placeholder="Decision note" aria-label={`Decision note for ${approval.name}`} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-500 focus:bg-white"/><div className="flex gap-2"><button type="button" disabled={decidingId === approval.id} onClick={() => onDecideWithNote(approval.id, "Approved", notes[approval.id] || "")} className="rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-bold text-white disabled:opacity-50">Approve</button><button type="button" disabled={decidingId === approval.id} onClick={() => onDecideWithNote(approval.id, "Rejected", notes[approval.id] || "")} className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-bold text-rose-700 disabled:opacity-50">Reject</button></div></article>)}</div> : <p className="p-5 text-sm text-slate-500">No pending replacement decisions require a supervisor note.</p>}<div className="divide-y divide-slate-100 border-t border-slate-100">{auditLoading ? <p className="p-5 text-sm text-slate-500">Searching reconciliation audit…</p> : audit.length ? audit.map((entry) => <article key={entry.id} className="grid gap-2 p-4 md:grid-cols-[minmax(0,1fr)_auto]"><div><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-bold text-slate-900">{entry.name}</p><StatusPill>{entry.status}</StatusPill></div><p className="mt-1 text-xs text-slate-500">{entry.mrn ? `MRN ${entry.mrn} · ` : ""}{entry.reason || "No additional reason recorded"}{entry.decisionNote ? ` · Note: ${entry.decisionNote}` : ""}</p></div><span className="text-xs text-slate-500">{compactDateTime(entry.decidedAt || entry.createdAt)}</span></article>) : <p className="p-5 text-sm text-slate-500">No matching reconciliation audit records.</p>}</div></section>}</section>;
+client/src/components/HealthcareClinicWorkspace.jsx:465:export function HealthcareClinicWorkspace({ currentUser, company, isLive, onNavigate, onToast }) {
+client/src/components/HealthcareClinicWorkspace.jsx:484:  const canManageReminderSettings = Boolean(resolvedAccess?.canRead?.hc_reminder_settings && resolvedAccess?.canUpdate?.hc_reminder_settings);
+client/src/components/HealthcareClinicWorkspace.jsx:491:  const reminderSettingsQuery = trpc.healthcare.reminderSettings.useQuery(undefined, { enabled: Boolean(isLive && canManageReminderSettings), retry: false, staleTime: 30_000 });
+client/src/components/HealthcareClinicWorkspace.jsx:492:  const reminderDeliveriesQuery = trpc.healthcare.reminderDeliveries.useQuery({ limit: 30 }, { enabled: Boolean(isLive && canManageReminderSettings), retry: false, staleTime: 15_000 });
+client/src/components/HealthcareClinicWorkspace.jsx:493:  const saveReminderSettingsMutation = trpc.healthcare.saveReminderSettings.useMutation();
+client/src/components/HealthcareClinicWorkspace.jsx:502:  const portalReferenceSummarySettingsQuery = trpc.healthcare.portalReferenceSummarySettings.useQuery(undefined, { enabled: Boolean(isLive && canApprovePortalReferences), retry: false, staleTime: 30_000 });
+client/src/components/HealthcareClinicWorkspace.jsx:508:  const savePortalReferenceSummarySettingsMutation = trpc.healthcare.savePortalReferenceSummarySettings.useMutation();
+client/src/components/HealthcareClinicWorkspace.jsx:526:  const reminderSettings = isLive ? (reminderSettingsQuery.data?.settings || DEFAULT_REMINDER_SETTINGS) : DEFAULT_REMINDER_SETTINGS;
+client/src/components/HealthcareClinicWorkspace.jsx:540:  const portalReferenceSummarySettings = isLive ? (portalReferenceScheduleOverride || portalReferenceSummarySettingsQuery.data?.settings) : { recipientMode: "both", roleRecipients: ["Clinic Administrator", "Organization Owner", "CEO"], managedRecipients: [], timezone: "Africa/Dar_es_Salaam", deliveryEnabled: false, scheduleState: "Inactive pending explicit time and activation confirmation" };
+client/src/components/HealthcareClinicWorkspace.jsx:543:    if (isLive && reminderSettingsQuery.data?.settings) setReminderDraft(reminderSettingsQuery.data.settings);
+client/src/components/HealthcareClinicWorkspace.jsx:544:  }, [isLive, reminderSettingsQuery.data?.settings]);
+client/src/components/HealthcareClinicWorkspace.jsx:546:    if (isLive && portalReferenceSummarySettingsQuery.data?.settings) setPortalReferenceSummaryDraft(portalReferenceSummarySettingsQuery.data.settings);
+client/src/components/HealthcareClinicWorkspace.jsx:547:  }, [isLive, portalReferenceSummarySettingsQuery.data?.settings]);
+client/src/components/HealthcareClinicWorkspace.jsx:581:    await Promise.all([portalReferenceQuery.refetch(), portalReferenceWorkflowQuery.refetch(), portalReferenceErrorsQuery.refetch(), canApprovePortalReferences ? portalReferenceSummaryQuery.refetch() : Promise.resolve(), canApprovePortalReferences ? portalReferenceAuditDataQuery.refetch() : Promise.resolve(), canApprovePortalReferences ? portalReferenceSummarySettingsQuery.refetch() : Promise.resolve(), canApprovePortalReferences ? portalReferenceDeliveryHistoryQuery.refetch() : Promise.resolve(), patients.refresh()]);
+client/src/components/HealthcareClinicWorkspace.jsx:622:  const savePortalReferenceSummarySettings = async (event) => {
+client/src/components/HealthcareClinicWorkspace.jsx:626:      const result = await savePortalReferenceSummarySettingsMutation.mutateAsync({ recipientMode: portalReferenceSummaryDraft.recipientMode, managedRecipients: portalReferenceSummaryDraft.managedRecipients || [], timezone: portalReferenceSummaryDraft.timezone || "Africa/Dar_es_Salaam" });
+client/src/components/HealthcareClinicWorkspace.jsx:628:      await portalReferenceSummarySettingsQuery.refetch();
+client/src/components/HealthcareClinicWorkspace.jsx:637:      await Promise.all([portalReferenceSummarySettingsQuery.refetch(), portalReferenceDeliveryHistoryQuery.refetch(), portalReferenceSummaryQuery.refetch()]);
+client/src/components/HealthcareClinicWorkspace.jsx:646:      await Promise.all([portalReferenceSummarySettingsQuery.refetch(), portalReferenceDeliveryHistoryQuery.refetch(), portalReferenceSummaryQuery.refetch()]);
+client/src/components/HealthcareClinicWorkspace.jsx:735:      const result = await saveReminderSettingsMutation.mutateAsync({ leadMinutes: Number(reminderDraft.leadMinutes), consentRequired: reminderDraft.consentRequired !== false, timezone: reminderDraft.timezone || "Africa/Dar_es_Salaam", senderId: reminderDraft.senderId || undefined, enabled: Boolean(reminderDraft.enabled) });
+client/src/components/HealthcareClinicWorkspace.jsx:737:      await reminderSettingsQuery.refetch();
+client/src/components/HealthcareClinicWorkspace.jsx:765:    {tab === "pharmacy" && <section className="rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,.04)]"><div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-base font-bold text-slate-900">Pharmacy dispensing queue</h2><p className="mt-1 text-sm text-slate-500">Dispense approved prescriptions and hand off stock controls to Pharmacy Management.</p></div><button onClick={() => onNavigate?.("pharmacy")} className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100"><PackageCheck size={14}/>Open pharmacy inventory</button></div>{filterRows(prescriptions.rows, ["patientName", "doctorName", "medications"]).length ? <div className="divide-y divide-slate-100">{filterRows(prescriptions.rows, ["patientName", "doctorName", "medications"]).map((prescription) => <div key={prescription.id} className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-bold text-slate-900">{prescription.patientName || prescription.data?.patientName || prescription.name}</p><StatusPill>{prescription.status}</StatusPill></div><p className="mt-1 text-xs text-slate-500">{(prescription.medications || prescription.data?.medications || []).map((medication) => `${medication.name}${medication.dose ? ` · ${medication.dose}` : ""}`).join(", ") || "Medication details unavailable"}</p></div><div className="flex gap-2">{prescription.status !== "Dispensed" && can("prescription", "update") && <button onClick={() => updateStatus("prescription", prescription, "Dispensed", { dispensedAt: new Date().toISOString(), dispensedBy: currentUser?.name || "Workspace user" })} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white">Mark dispensed</button>}<button onClick={() => startEditor("prescription", prescription)} disabled={!can("prescription", "update")} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 disabled:opacity-45" aria-label="Edit prescription"><Edit3 size={14}/></button></div></div>)}</div> : <EmptyState icon={Pill} title="No prescription results" copy="Approved prescriptions will arrive here for dispensing."/>}</section>}
+client/src/components/HealthcareClinicWorkspace.jsx:771:    {tab === "reminders" && (isLive && (reminderSettingsQuery.error || reminderDeliveriesQuery.error) ? <ErrorState error="Appointment reminder configuration could not load." onRetry={() => { reminderSettingsQuery.refetch(); reminderDeliveriesQuery.refetch(); }}/> : <AppointmentRemindersPanel settings={reminderSettings} deliveries={reminderDeliveries} draft={reminderDraft} onDraftChange={setReminderDraft} canManage={canManageReminderSettings} onSave={saveReminderPolicy} saving={saveReminderSettingsMutation.isPending} onTest={testReminderBoundary} testing={testReminderMutation.isPending} role={currentUser?.role}/>)}
+client/src/components/HealthcareClinicWorkspace.jsx:772:    {tab === "portalLinks" && <section className="space-y-4"><PortalReferenceReconciliationPanel reconciliation={portalReferenceReconciliation} search={portalReferenceSearch} onSearchChange={setPortalReferenceSearch} status={portalReferenceStatus} onStatusChange={setPortalReferenceStatus} canManage={canManagePortalReferences} role={currentUser?.role} loading={Boolean(isLive && portalReferenceQuery.isLoading)} error={isLive ? portalReferenceQuery.error?.message : null} onRetry={refreshPortalReferenceWorkflow} onLink={linkPortalReference} linking={linkPortalReferenceMutation.isPending} onRequestReplacement={requestPortalReferenceReplacement} requestingReplacement={requestPortalReferenceReplacementMutation.isPending} onClear={clearPortalReference} clearing={clearPortalReferenceMutation.isPending}/><PortalReferenceWorkflowPanel workflow={portalReferenceWorkflow} summary={portalReferenceSummary} canManage={canManagePortalReferences} canApprove={Boolean(portalReferenceWorkflow.canApprove && canApprovePortalReferences)} role={currentUser?.role} csvText={portalReferenceCsv} onCsvTextChange={setPortalReferenceCsv} onStage={stagePortalReferenceCsv} staging={stagePortalReferenceCsvMutation.isPending} onApply={applyPortalReferenceImport} applyingId={applyPortalReferenceImportMutation.isPending ? true : null} onDecide={decidePortalReferenceApproval} decidingId={decidePortalReferenceApprovalMutation.isPending ? true : null}/><PortalReferenceAuditPanel canManage={canManagePortalReferences} canApprove={Boolean(portalReferenceWorkflow.canApprove && canApprovePortalReferences)} errors={portalReferenceErrors} onExportErrors={exportPortalReferenceErrors} exportingErrors={Boolean(isLive && portalReferenceErrorsQuery.isLoading)} audit={portalReferenceAudit} auditQuery={portalReferenceAuditSearch} onAuditQueryChange={setPortalReferenceAuditSearch} auditStatus={portalReferenceAuditStatus} onAuditStatusChange={setPortalReferenceAuditStatus} auditLoading={Boolean(isLive && portalReferenceAuditDataQuery.isLoading)} approvals={portalReferenceWorkflow.approvals} onDecideWithNote={decidePortalReferenceApproval} decidingId={decidePortalReferenceApprovalMutation.isPending ? true : null} recipientDraft={portalReferenceSummaryDraft} onRecipientDraftChange={setPortalReferenceSummaryDraft} summarySettings={portalReferenceSummarySettings} onSaveRecipientSettings={savePortalReferenceSummarySettings} savingRecipientSettings={savePortalReferenceSummarySettingsMutation.isPending}/><PortalReferenceSchedulePanel canApprove={Boolean(portalReferenceWorkflow.canApprove && canApprovePortalReferences)} settings={portalReferenceSummarySettings} history={portalReferenceDeliveryHistory} historyLoading={Boolean(isLive && portalReferenceDeliveryHistoryQuery.isLoading)} onActivate={activatePortalReferenceDailySchedule} onDeactivate={deactivatePortalReferenceDailySchedule} activating={activatePortalReferenceDailyScheduleMutation.isPending} deactivating={deactivatePortalReferenceDailyScheduleMutation.isPending}/></section>}
+client/src/components/DashboardLayoutSkeleton.tsx:3:export function DashboardLayoutSkeleton() {
+client/src/components/DashboardLayout.tsx:24:import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+client/src/components/DashboardLayout.tsx:27:import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
+client/src/components/DashboardLayout.tsx:31:  { icon: LayoutDashboard, label: "Page 1", path: "/" },
+client/src/components/DashboardLayout.tsx:40:export default function DashboardLayout({
+client/src/components/DashboardLayout.tsx:56:    return <DashboardLayoutSkeleton />
+client/src/components/DashboardLayout.tsx:91:      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
+client/src/components/DashboardLayout.tsx:93:      </DashboardLayoutContent>
+client/src/components/DashboardLayout.tsx:98:type DashboardLayoutContentProps = {
+client/src/components/DashboardLayout.tsx:103:function DashboardLayoutContent({
+client/src/components/DashboardLayout.tsx:106:}: DashboardLayoutContentProps) {
+server/auth.logout.test.ts:2:import { appRouter } from "./routers";
+server/auth.logout.test.ts:47:    const caller = appRouter.createCaller(ctx);
+client/src/components/ComplianceAuditLogView.tsx:12:  const [selectedModule, setSelectedModule] = useState<string>("");
+client/src/components/ComplianceAuditLogView.tsx:26:      module: selectedModule || undefined,
+client/src/components/ComplianceAuditLogView.tsx:83:    const securityApprovals = selectedModule && selectedModule !== "Security" ? [] : roleApprovals.filter((approval) => {
+client/src/components/ComplianceAuditLogView.tsx:230:                    Save Webhook Settings
+client/src/components/ComplianceAuditLogView.tsx:319:            <Filter size={12} /> Filter by Module
+client/src/components/ComplianceAuditLogView.tsx:323:            value={selectedModule}
+client/src/components/ComplianceAuditLogView.tsx:324:            onChange={(e) => setSelectedModule(e.target.value)}
+client/src/components/ComplianceAuditLogView.tsx:326:            <option value="">All Modules</option>
+client/src/components/ComplianceAuditLogView.tsx:373:                  <th className="p-4">Module</th>
+server/restaurantFnbContracts.test.ts:9:const serverRoutes = readFileSync(resolve(root, "server/_core/apiApp.ts"), "utf8");
+server/restaurantFnbContracts.test.ts:11:const dashboard = readFileSync(resolve(root, "client/src/BusinessSphereDashboard.jsx"), "utf8");
+server/restaurantFnbContracts.test.ts:12:const workspace = readFileSync(resolve(root, "client/src/components/RestaurantWorkspace.jsx"), "utf8");
+server/restaurantFnbContracts.test.ts:63:    expect(serverRoutes).toContain('app.post("/api/scheduled/restaurantAlerts", scheduledRestaurantAlertsHandler);');
+server/restaurantFnbContracts.test.ts:69:    expect(dashboard).toContain('import { RestaurantWorkspace } from "./components/RestaurantWorkspace";');
+server/restaurantFnbContracts.test.ts:70:    expect(dashboard).toContain("function RestaurantManagementModule");
+server/restaurantFnbContracts.test.ts:71:    expect(dashboard).toContain('<RestaurantWorkspace rpc={rpc} configured={IS_CONFIGURED && !DEMO_OVERRIDE} currentUser={currentUser} />');
+server/restaurantFnbContracts.test.ts:72:    expect(dashboard).toContain('{active === "restaurant"  && <RestaurantManagementModule  currentUser={currentUser} />}');
+client/src/components/FleetWorkspace.jsx:2:import { AlertCircle, Bell, BusFront, Car, CheckCircle2, ClipboardCheck, Download, Droplets, FileText, Fuel, Gauge, LoaderCircle, MapPinned, Plus, RefreshCw, Route, Search, ShieldAlert, Truck, UsersRound, Wrench, X } from "lucide-react";
+client/src/components/FleetWorkspace.jsx:4:const tabs = [["overview","Fleet overview",Truck],["vehicles","Vehicles",Car],["drivers","Drivers & assignments",UsersRound],["dispatch","Trips & dispatch",Route],["fuel","Fuel & costs",Fuel],["maintenance","Maintenance",Wrench],["compliance","Documents & incidents",ShieldAlert],["analytics","Analytics & reports",Gauge]];
+client/src/components/FleetWorkspace.jsx:18:export function FleetWorkspace({api,currentUser}) {
+client/src/components/FleetWorkspace.jsx:31:  route:{title:"Create route",action:"CREATE_ROUTE",message:"Route saved",fields:[{name:"name",label:"Route name",required:true},{name:"origin",label:"Origin",required:true},{name:"destination",label:"Destination",required:true},{name:"plannedDistanceKm",label:"Planned distance (km)",type:"number",min:"0"},{name:"expectedDurationMinutes",label:"Expected duration (minutes)",type:"number",min:"0"},{name:"tollBudget",label:"Toll budget (TZS)",type:"number",min:"0",value:"0"},{name:"notes",label:"Notes",type:"textarea",wide:true}]},
+client/src/components/FleetWorkspace.jsx:32:  dispatch:{title:"Dispatch trip",action:"DISPATCH_TRIP",message:"Trip dispatched",fields:[{name:"vehicleId",label:"Assigned vehicle",type:"select",required:true,options:vehicleOptions},{name:"driverId",label:"Assigned driver",type:"select",required:true,options:driverOptions},{name:"routeId",label:"Route",type:"select",options:routeOptions},{name:"purpose",label:"Purpose",required:true},{name:"customerReference",label:"Customer / dispatch reference"},{name:"plannedDepartureAt",label:"Planned departure",type:"datetime-local"},{name:"origin",label:"Origin"},{name:"destination",label:"Destination"},{name:"notes",label:"Trip notes",type:"textarea",wide:true}]},
+client/src/components/FleetWorkspace.jsx:42: const content=()=>{ if(!snapshot) return null; if(active==="overview") return <div className="space-y-5"><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Metric label="Fleet availability" value={`${vehicles.filter(v=>v.status==="Available").length}/${vehicles.length}`} detail="Vehicles available to dispatch" Icon={Car}/><Metric label="Distance completed" value={`${Math.round(distance).toLocaleString()} km`} detail={`${trips.filter(t=>t.dispatch_status==="Completed").length} completed trips`} Icon={MapPinned}/><Metric label="Fuel efficiency" value={efficiency === "—" ? "—" : `${efficiency} L/100 km`} detail={`${litres.toFixed(1)} litres recorded`} Icon={Droplets}/><Metric label="Operating cost" value={money(fuelCost+maintenanceCost)} detail={`${money(fuelCost)} fuel · ${money(maintenanceCost)} service`} Icon={Gauge}/></div><div className="grid gap-5 xl:grid-cols-2"><Section title="Open fleet alerts"><DataTable rows={alerts.filter(a=>a.status==="Open").slice(0,8)} columns={[["severity","Severity",v=>badge(v)],["title","Alert"],["due_on","Due",date],["body","Details"]]} empty="No compliance, maintenance, licence, or insurance alerts are currently open."/></Section><Section title="Dispatch board" action={actionButton("Dispatch trip","dispatch",Route)}><DataTable rows={trips.filter(t=>["Dispatched","In Progress","Awaiting Approval"].includes(t.dispatch_status)).slice(0,8)} columns={[["trip_number","Trip"],["vehicle_id","Vehicle",v=>vehicleById(v)?.registration_number],["driver_id","Driver",v=>driverById(v)?.full_name],["dispatch_status","Status",v=>badge(v)],["dispatched_at","Dispatched",dateTime]]} empty="No trips are awaiting completion."/></Section></div></div>;
+client/src/components/FleetWorkspace.jsx:45: if(active==="dispatch") return <div className="space-y-5"><Section title="Routes" action={actionButton("Create route","route",MapPinned)}><DataTable rows={routes} columns={[["name","Route"],["origin","Origin"],["destination","Destination"],["planned_distance_km","Planned distance",v=>v?`${v} km`:"—"],["toll_budget","Toll budget",money]]} empty="Create reusable routes for dispatch planning and cost control."/></Section><Section title="Trip dispatch & completion" action={<div className="flex gap-2">{actionButton("Complete trip","completeTrip",CheckCircle2)}{actionButton("Dispatch trip","dispatch",Route)}</div>}><DataTable rows={trips} columns={[["trip_number","Trip"],["vehicle_id","Vehicle",v=>vehicleById(v)?.registration_number],["driver_id","Driver",v=>driverById(v)?.full_name],["purpose","Purpose"],["distance_km","Distance",v=>v?`${Number(v).toLocaleString()} km`:"—"],["dispatch_status","Status",v=>badge(v)]]} empty="Dispatch requires a valid driver, active assignment, and available vehicle."/></Section></div>;
+server/pharmacyOperations.ts:85:async function audit(token: string, companyId: string, actor: { id: string; full_name: string | null }, action: string, entity: string, recordId: string, details = "") { return insert("phm_audit_logs", token, companyId, { name: action, status: "Recorded", notes: details || null, data: { action, entity, recordId, actorId: actor.id, actorName: actor.full_name || "Workspace user", recordedAt: now() } }); }
+server/pharmacyOperations.ts:155:export async function getPharmacyDashboard(req: CreateExpressContextOptions["req"]) { const { profile, token, access } = await context(req, "read"); const [drugs, batches, sales, dispense, notifications, suppliers, prescriptions] = await Promise.all([rows("phm_drugs", token, profile.company_id), rows("phm_batches", token, profile.company_id), rows("phm_sales", token, profile.company_id), rows("phm_dispense", token, profile.company_id), rows("phm_notifications", token, profile.company_id), rows("phm_suppliers", token, profile.company_id), healthcareRows("hc_prescriptions", token, profile.company_id, 250).catch(() => [])]); const today = new Date().toISOString().slice(0, 10); const expiry90 = new Date(Date.now() + 90 * 86_400_000).toISOString().slice(0, 10); const activeBatches = batches.filter((batch) => ["Active", "Available"].includes(String(batch.status))); const totalStockValue = activeBatches.reduce((sum, batch) => sum + Number(batch.quantityOnHand || 0) * Number(batch.unitCost || 0), 0); const lowStock = drugs.filter((drug) => Number(drug.availableQuantity || 0) <= Number(drug.reorderLevel || 0)); const expiring = activeBatches.filter((batch) => String(batch.expiryDate || "") <= expiry90); return { access, totals: { medicines: drugs.length, activeBatches: activeBatches.length, stockValue: totalStockValue, lowStock: lowStock.length, expiring: expiring.length, todaySales: sales.filter((sale) => String(sale.saleDate || "").slice(0, 10) === today).reduce((sum, sale) => sum + Number(sale.amount || 0), 0), pendingDispenses: prescriptions.filter((record) => /pending|partial/i.test(String(record.status))).length || dispense.filter((record) => /pending|partial/i.test(String(record.status))).length, supplierBalance: suppliers.reduce((sum, supplier) => sum + Number(supplier.outstandingBalance || 0), 0) }, lowStock: lowStock.slice(0, 20), expiring: expiring.sort((a, b) => String(a.expiryDate).localeCompare(String(b.expiryDate))).slice(0, 20), notifications: notifications.filter((item) => item.status !== "Read").slice(0, 20) };
+server/inventoryPersistenceBoundaries.test.ts:5:const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+client/src/components/AdminQualityDashboard.jsx:4:export function AdminQualityDashboard({ compact = false }) {
+client/src/components/WorkspacePresenceBadge.tsx:4:interface WorkspacePresenceBadgeProps {
+client/src/components/WorkspacePresenceBadge.tsx:11:export function WorkspacePresenceBadge({ userName }: WorkspacePresenceBadgeProps) {
+client/src/components/ExecutiveCommandCenter.jsx:35:  buildDashboardMetric,
+client/src/components/ExecutiveCommandCenter.jsx:224:    buildDashboardMetric({ id: "revenue", label: "Total revenue", value: data.billed ? money(data.billed, currency) : null, source: data.invoiceSource, context: data.invoiceRows.length ? `${data.invoiceRows.length} confirmed invoice${data.invoiceRows.length === 1 ? "" : "s"}` : "No confirmed invoice records yet", actionLabel: "Open sales records", onAction: () => onNavigate("sales"), trend: data.salesTrend, status: data.invoiceRows.length ? "confirmed" : "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:225:    buildDashboardMetric({ id: "net-sales", label: "Net sales", value: data.netSales ? money(data.netSales, currency) : null, source: data.invoiceSource, context: data.netSales ? "Paid or partially collected invoice value" : "No confirmed collections yet", actionLabel: "Open receivables", onAction: () => onNavigate("finance"), trend: data.salesTrend, status: data.invoiceRows.length ? "confirmed" : "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:226:    buildDashboardMetric({ id: "gross-profit", label: "Gross profit", value: null, source: "No confirmed cost-of-goods source exposed to the executive dashboard", context: "Gross profit is not inferred from sales minus operating expenses", actionLabel: "Open finance", onAction: () => onNavigate("finance"), status: "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:227:    buildDashboardMetric({ id: "net-profit", label: "Net profit", value: data.invoiceRows.length || data.expenseRows.length ? money(data.grossProfit, currency) : null, source: `${data.invoiceSource} + ${data.expenseSource}`, context: data.invoiceRows.length || data.expenseRows.length ? "Net sales less confirmed operating expenses" : "Add confirmed sales or expenses to calculate net profit", actionLabel: "Open finance", onAction: () => onNavigate("finance"), trend: data.profitTrend, status: data.invoiceRows.length || data.expenseRows.length ? (data.grossProfit < 0 ? "warning" : "confirmed") : "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:228:    buildDashboardMetric({ id: "operating-expenses", label: "Operating expenses", value: data.expenseRows.length ? money(data.operatingExpenses, currency) : null, source: data.expenseSource, context: data.expenseRows.length ? `${data.expenseRows.length} confirmed expense${data.expenseRows.length === 1 ? "" : "s"}` : "No confirmed expense records yet", actionLabel: "Review expenses", onAction: () => onNavigate("finance"), status: data.expenseRows.length ? "confirmed" : "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:229:    buildDashboardMetric({ id: "receivables", label: "Outstanding receivables", value: data.invoiceRows.length ? money(data.receivables, currency) : null, source: data.invoiceSource, context: data.overdueRows.length ? `${data.overdueRows.length} overdue invoice${data.overdueRows.length === 1 ? "" : "s"}` : "No overdue invoice records", actionLabel: "Review receivables", onAction: () => onNavigate("finance"), status: data.overdueRows.length ? "warning" : data.invoiceRows.length ? "confirmed" : "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:230:    buildDashboardMetric({ id: "low-stock", label: "Low-stock items", value: data.inventoryRows.length ? numberFormat.format(data.lowStockRows.length) : null, source: "inventory_items", context: data.inventoryRows.length ? `${data.lowStockRows.length} item${data.lowStockRows.length === 1 ? "" : "s"} at or below reorder threshold` : "No confirmed inventory records", actionLabel: "Review inventory", onAction: () => onNavigate("inventory"), status: data.lowStockRows.length ? "warning" : data.inventoryRows.length ? "confirmed" : "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:231:    buildDashboardMetric({ id: "payables", label: "Outstanding payables", value: null, source: "No confirmed payables source exposed to the executive dashboard", context: "The dashboard will show this when a confirmed supplier-payables source is available", actionLabel: "Open procurement", onAction: () => onNavigate("procurement"), status: "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:232:    buildDashboardMetric({ id: "cash", label: "Cash position", value: null, source: "No confirmed cash-balance source exposed to the executive dashboard", context: "Cash position is not inferred from invoices or expenses", actionLabel: "Open finance", onAction: () => onNavigate("finance"), status: "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:233:    buildDashboardMetric({ id: "inventory", label: "Inventory value", value: data.inventoryRows.length ? money(data.inventoryValue, currency) : null, source: "inventory_items", context: data.inventoryRows.length ? `${data.inventoryRows.length} confirmed SKU${data.inventoryRows.length === 1 ? "" : "s"}` : "No confirmed inventory records", actionLabel: "Review inventory", onAction: () => onNavigate("inventory"), status: data.lowStockRows.length ? "warning" : data.inventoryRows.length ? "confirmed" : "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:234:    buildDashboardMetric({ id: "customers", label: "Active customers", value: data.activeCustomers.size ? numberFormat.format(data.activeCustomers.size) : null, source: data.activeCustomers.size ? "sales_invoices + crm_leads" : "No confirmed customer activity", context: data.activeCustomers.size ? "Unique customers represented in confirmed sales or pipeline rows" : "No confirmed customer activity yet", actionLabel: "Open CRM", onAction: () => onNavigate("crm"), status: data.activeCustomers.size ? "confirmed" : "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:235:    buildDashboardMetric({ id: "employees", label: "Employees", value: data.activeEmployees.length ? numberFormat.format(data.activeEmployees.length) : null, source: "hr_employees", context: data.activeEmployees.length ? "Active employees in the confirmed HR roster" : "No confirmed employee records", actionLabel: "Open HR", onAction: () => onNavigate("hr"), status: data.activeEmployees.length ? "confirmed" : "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:236:    buildDashboardMetric({ id: "orders", label: "Orders", value: data.orderCount ? numberFormat.format(data.orderCount) : null, source: "sales_invoices + pos_transactions", context: data.orderCount ? "Confirmed sales and POS transaction records" : "No confirmed order records", actionLabel: "Open sales", onAction: () => onNavigate("sales"), status: data.orderCount ? "confirmed" : "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:237:    buildDashboardMetric({ id: "approvals", label: "Pending approvals", value: data.pendingLeaveRows.length ? numberFormat.format(data.pendingLeaveRows.length) : data.leaveRows.length ? "0" : null, source: "hr_leave_requests", context: data.leaveRows.length ? "Confirmed leave requests awaiting a decision" : "No confirmed approval queue records", actionLabel: "Review approvals", onAction: () => onNavigate("hr"), status: data.pendingLeaveRows.length ? "warning" : data.leaveRows.length ? "confirmed" : "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:238:    buildDashboardMetric({ id: "sales-target", label: "Sales target", value: null, source: "No confirmed workspace target configured", context: "Configure a management target before showing achievement", actionLabel: "Open reports", onAction: () => onNavigate("reports"), status: "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:239:    buildDashboardMetric({ id: "target-achievement", label: "Target achievement", value: null, source: "No confirmed workspace target configured", context: "Achievement is not calculated without a confirmed target", actionLabel: "Open reports", onAction: () => onNavigate("reports"), status: "insufficient" }),
+client/src/components/ExecutiveCommandCenter.jsx:240:    buildDashboardMetric({ id: "profit-margin", label: "Profit margin", value: data.profitMargin !== null ? `${data.profitMargin.toFixed(1)}%` : null, source: `${data.invoiceSource} + ${data.expenseSource}`, context: data.profitMargin !== null ? "Net profit divided by confirmed net sales" : "Insufficient confirmed sales for a margin calculation", actionLabel: "Open finance", onAction: () => onNavigate("finance"), status: data.profitMargin !== null ? (data.profitMargin < 0 ? "warning" : "confirmed") : "insufficient" }),
+client/src/BusinessSphereDashboard.jsx:3:  LayoutDashboard, Users, ShoppingCart, Package, Wallet, Briefcase,
+client/src/BusinessSphereDashboard.jsx:4:  Factory, Truck, Megaphone, Store, FileText, Brain, Settings,
+client/src/BusinessSphereDashboard.jsx:44:import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
+client/src/BusinessSphereDashboard.jsx:45:import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
+client/src/BusinessSphereDashboard.jsx:49:import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
+client/src/BusinessSphereDashboard.jsx:50:import { getTraPortalLanguage } from "./lib/traPortalRoute";
+client/src/BusinessSphereDashboard.jsx:52:import { HospitalityWorkspace } from "./components/HospitalityWorkspace";
+client/src/BusinessSphereDashboard.jsx:53:import { SubscriptionBillingWorkspace } from "./components/SubscriptionBillingWorkspace";
+client/src/BusinessSphereDashboard.jsx:54:import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
+client/src/BusinessSphereDashboard.jsx:55:import { FleetWorkspace } from "./components/FleetWorkspace";
+client/src/BusinessSphereDashboard.jsx:56:import { RestaurantWorkspace } from "./components/RestaurantWorkspace";
+client/src/BusinessSphereDashboard.jsx:65:import { BankMfiWorkspace } from "./components/BankMfiWorkspace";
+client/src/BusinessSphereDashboard.jsx:67:const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
+client/src/BusinessSphereDashboard.jsx:68:const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
+client/src/BusinessSphereDashboard.jsx:69:const LazyTraPortalModule = lazy(() => import("./components/TraPortalModule").then((module) => ({ default: module.TraPortalModule })));
+client/src/BusinessSphereDashboard.jsx:70:const LazyDashboardPreferencesDrawer = lazy(() => import("./components/DashboardPreferencesDrawer").then((module) => ({ default: module.DashboardPreferencesDrawer })));
+client/src/BusinessSphereDashboard.jsx:72:const LazyHealthcareClinicWorkspace = lazy(() => import("./components/HealthcareClinicWorkspace").then((module) => ({ default: module.HealthcareClinicWorkspace })));
+client/src/BusinessSphereDashboard.jsx:73:const LazyMicrofinanceWorkspace = lazy(() => import("./components/MicrofinanceWorkspace").then((module) => ({ default: module.MicrofinanceWorkspace })));
+client/src/BusinessSphereDashboard.jsx:74:const LazyPharmacyWorkspace = lazy(() => import("./components/PharmacyWorkspace").then((module) => ({ default: module.PharmacyWorkspace })));
+client/src/BusinessSphereDashboard.jsx:75:const LazySchoolWorkspace = lazy(() => import("./components/SchoolWorkspace").then((module) => ({ default: module.SchoolWorkspace })));
+client/src/BusinessSphereDashboard.jsx:76:const LazyMoneyAgentWorkspace = lazy(() => import("./components/MoneyAgentWorkspace").then((module) => ({ default: module.MoneyAgentWorkspace })));
+client/src/BusinessSphereDashboard.jsx:77:const LazyPropertyManagementWorkspace = lazy(() => import("./components/PropertyManagementWorkspace").then((module) => ({ default: module.PropertyManagementWorkspace })));
+client/src/BusinessSphereDashboard.jsx:92:// Get these from: supabase.com → your project → Settings → API
+client/src/BusinessSphereDashboard.jsx:195:// Module handlers may stage a UI row while their request is in flight. This
+client/src/BusinessSphereDashboard.jsx:468:export function isTerminalWorkspaceSessionError(error) {
+client/src/BusinessSphereDashboard.jsx:473:  return isTerminalWorkspaceSessionError(error) ? "SM-AUTH-401" : null;
+client/src/BusinessSphereDashboard.jsx:479:export async function callWorkspaceRpcWithSessionRefresh(name, params, accessToken) {
+client/src/BusinessSphereDashboard.jsx:483:    if (!isTerminalWorkspaceSessionError(firstError) || !getStoredRefreshToken()) {
+client/src/BusinessSphereDashboard.jsx:484:      if (isTerminalWorkspaceSessionError(firstError)) reportSessionRefreshOutcome("terminal_failure", "workspace_rpc");
+client/src/BusinessSphereDashboard.jsx:1647:function mapWorkspaceRow(r) {
+client/src/BusinessSphereDashboard.jsx:1961:  expenses, crm, employees, leaveRequests, workOrders, subscriptions, smartAlerts, enabledModules }) {
+client/src/BusinessSphereDashboard.jsx:2262:            <th>Priority</th><th>Alert</th><th>Module</th><th>Detail</th>
+client/src/BusinessSphereDashboard.jsx:3157:// sidebar at all (allowedModules), and whether the role can create/edit/
+client/src/BusinessSphereDashboard.jsx:3164:// fully real: change your role in Settings and the sidebar genuinely
+client/src/BusinessSphereDashboard.jsx:3166:// Approvals, Notification Channels, Integration Connections, Settings
+client/src/BusinessSphereDashboard.jsx:3179:    allowedModules: ALL_MODULE_IDS, primaryModules: ALL_MODULE_IDS, writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3184:    allowedModules: ALL_MODULE_IDS, primaryModules: ALL_MODULE_IDS, writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3188:    description: "Full visibility and control across every function, with Analytics and Dashboard as primary working views.",
+client/src/BusinessSphereDashboard.jsx:3189:    allowedModules: ALL_MODULE_IDS, primaryModules: ALL_MODULE_IDS, writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3194:    allowedModules: ALL_MODULE_IDS, primaryModules: ["finance", "procurement", "reports", "analytics"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3199:    allowedModules: ALL_MODULE_IDS, primaryModules: ["finance", "reports", "analytics", "procurement", "notifications"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3204:    allowedModules: ALL_MODULE_IDS, primaryModules: ["hr", "analytics", "documents"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3209:    allowedModules: ALL_MODULE_IDS, primaryModules: ["crm", "sales", "marketing", "ecommerce", "analytics", "support", "workflows"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3214:    allowedModules: ALL_MODULE_IDS, primaryModules: ["money-agent", "finance", "reports", "analytics"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3219:    allowedModules: ["dashboard", "money-agent", "finance", "reports", "notifications"], primaryModules: ["money-agent", "reports"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3224:    allowedModules: ["dashboard", "money-agent", "finance", "reports", "notifications"], primaryModules: ["money-agent", "reports"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3229:    allowedModules: ["dashboard", "money-agent", "notifications"], primaryModules: ["money-agent"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3234:    allowedModules: ["dashboard", "money-agent", "reports", "notifications"], primaryModules: ["money-agent", "reports"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3239:    allowedModules: ALL_MODULE_IDS, primaryModules: ["property-management", "finance", "reports", "documents", "notifications"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3244:    allowedModules: ["dashboard", "property-management", "finance", "reports", "documents", "procurement", "crm", "notifications"], primaryModules: ["property-management", "reports"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3249:    allowedModules: ["dashboard", "property-management", "finance", "reports", "documents", "notifications"], primaryModules: ["property-management", "reports"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3254:    allowedModules: ["dashboard", "property-management", "crm", "documents", "notifications"], primaryModules: ["property-management"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3259:    allowedModules: ["dashboard", "property-management", "notifications"], primaryModules: ["property-management"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3264:    allowedModules: ["dashboard", "property-management", "procurement", "documents", "notifications"], primaryModules: ["property-management"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3269:    allowedModules: ["dashboard", "property-management", "finance", "reports", "documents", "notifications"], primaryModules: ["property-management", "finance", "reports"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3274:    allowedModules: ALL_MODULE_IDS, primaryModules: ["procurement", "inventory"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3279:    allowedModules: ALL_MODULE_IDS, primaryModules: ["inventory", "manufacturing", "scm", "pos"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3284:    allowedModules: ALL_MODULE_IDS, primaryModules: ["projects", "documents", "reports"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3289:    allowedModules: ["dashboard", "support", "crm", "collaboration"], primaryModules: ["support", "crm"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3294:    allowedModules: ALL_MODULE_IDS, primaryModules: ["healthcare", "pharmacy", "reports", "notifications"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3299:    allowedModules: ["dashboard", "healthcare", "pharmacy", "documents", "reports", "notifications"], primaryModules: ["healthcare"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3304:    allowedModules: ["dashboard", "healthcare", "documents", "notifications"], primaryModules: ["healthcare"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3309:    allowedModules: ["dashboard", "healthcare", "documents", "notifications"], primaryModules: ["healthcare"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3314:    allowedModules: ["dashboard", "healthcare", "pharmacy", "inventory", "notifications"], primaryModules: ["healthcare", "pharmacy"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3319:    allowedModules: ["dashboard", "healthcare", "notifications"], primaryModules: ["healthcare"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3324:    allowedModules: ["dashboard", "healthcare", "finance", "reports", "notifications"], primaryModules: ["healthcare", "finance", "reports"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3329:    allowedModules: ["dashboard", "school", "reports", "finance", "documents", "notifications"], primaryModules: ["school", "reports"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx:3333:    description: "General staff access — Dashboard and Employee Portal only.",
+client/src/BusinessSphereDashboard.jsx:3334:    allowedModules: ["dashboard", "employee-portal"], primaryModules: ["employee-portal"], writeAccess: "none",
+client/src/BusinessSphereDashboard.jsx:3339:    allowedModules: ALL_MODULE_IDS, primaryModules: [], writeAccess: "none",
+client/src/BusinessSphereDashboard.jsx:3344:    allowedModules: ["dashboard", "money-agent", "notifications"], primaryModules: ["money-agent"], writeAccess: "none",
+client/src/BusinessSphereDashboard.jsx:3349:    allowedModules: ["support"], primaryModules: ["support"], writeAccess: "none",
+client/src/BusinessSphereDashboard.jsx:3354:    allowedModules: ["procurement"], primaryModules: ["procurement"], writeAccess: "none",
+client/src/BusinessSphereDashboard.jsx:3383:// same FinancialDashboard() function Analytics' own Financial tab calls.
+client/src/BusinessSphereDashboard.jsx:3423:  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, live: true },
+client/src/BusinessSphereDashboard.jsx:3903:// (see Settings) — that role can see every module, but without an actual
+client/src/BusinessSphereDashboard.jsx:3909:// reflects whichever demo role is selected in Settings, not a verified
+client/src/BusinessSphereDashboard.jsx:3949:  return recordConfirmedTenantAudit("Organization industry focus changed", "Settings", actor, `${previousFocus || "general"} → ${nextFocus}`);
+client/src/BusinessSphereDashboard.jsx:4027:// companies.tax_rate (Settings, section 46) rather than baked in. A
+client/src/BusinessSphereDashboard.jsx:4380:// Settings already is.
+client/src/BusinessSphereDashboard.jsx:4916:// Microsoft 365 and Google Workspace both require a real OAuth app
+client/src/BusinessSphereDashboard.jsx:4931:    id: "google-workspace", name: "Google Workspace", icon: Globe, functional: false,
+client/src/BusinessSphereDashboard.jsx:5200:    description: "Route a contract for decision: notify the approver and record that the decision will carry a biometric signature in Approvals.",
+client/src/BusinessSphereDashboard.jsx:5264:  "On Route": "#F59E0B",
+client/src/BusinessSphereDashboard.jsx:5269:  { reg: "T 442 DKL", type: "Box truck (3.5t)", driver: "Elias Rugambwa", status: "On Route", capacity: "3,500 kg" },
+client/src/BusinessSphereDashboard.jsx:5550:export function serializeDashboardSectionsToCsv(sections = []) {
+client/src/BusinessSphereDashboard.jsx:5565:export function buildDashboardChartSections({
+client/src/BusinessSphereDashboard.jsx:5579:export function filterDashboardChartSections(sections = [], enabledModules = {}) {
+client/src/BusinessSphereDashboard.jsx:5580:  return sections.filter((section) => section.module === "executive" || enabledModules[section.module] !== false);
+client/src/BusinessSphereDashboard.jsx:5583:export function buildDashboardExportFilterSummary({ startDate = "", endDate = "", enabledModules = {} } = {}) {
+client/src/BusinessSphereDashboard.jsx:5585:  const activeModules = Object.entries(moduleLabels).filter(([key]) => enabledModules[key] !== false).map(([, label]) => label);
+client/src/BusinessSphereDashboard.jsx:5587:  return `${activeModules.length === 5 ? "All modules" : activeModules.join(", ") || "Executive KPIs only"} · ${dates}`;
+client/src/BusinessSphereDashboard.jsx:5590:export async function createDashboardPdfDocument({ companyName = "BusinessSphere ERP", periodLabel = "Current period", filterSummary = "All modules · All available dates", sections = [] } = {}) {
+client/src/BusinessSphereDashboard.jsx:5617:  doc.text("Dashboard chart data export", margin, 52);
+client/src/BusinessSphereDashboard.jsx:5670:function downloadDashboardCsv(sections, filename) {
+client/src/BusinessSphereDashboard.jsx:5673:  const blob = new Blob([serializeDashboardSectionsToCsv(sections)], { type: "text/csv;charset=utf-8" });
+client/src/BusinessSphereDashboard.jsx:5961:function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, currentUser, roleChangeApprovalsQuery, onQuickAction, onNavigate }) {
+client/src/BusinessSphereDashboard.jsx:5962:  const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
+client/src/BusinessSphereDashboard.jsx:5974:  const vatAnomalySettingsQuery = trpc.traFiscal.getVatAnomalySettings.useQuery(
+client/src/BusinessSphereDashboard.jsx:6010:  const [exportModules, setExportModules] = useState({ finance: true, sales: true, crm: true, inventory: true, operations: true });
+client/src/BusinessSphereDashboard.jsx:6012:  const [digestSettingsOpen, setDigestSettingsOpen] = useState(false);
+client/src/BusinessSphereDashboard.jsx:6142:    const sections = buildDashboardChartSections({
+client/src/BusinessSphereDashboard.jsx:6156:    return filterDashboardChartSections(sections, exportModules);
+client/src/BusinessSphereDashboard.jsx:6157:  }, [filteredExportRows, exportModules, exportStartDate, exportEndDate, revenueExpenseTrend]);
+client/src/BusinessSphereDashboard.jsx:6159:  const exportFilterSummary = useMemo(() => buildDashboardExportFilterSummary({ startDate: exportStartDate, endDate: exportEndDate, enabledModules: exportModules }), [exportStartDate, exportEndDate, exportModules]);
+client/src/BusinessSphereDashboard.jsx:6161:  async function exportDashboard(format) {
+client/src/BusinessSphereDashboard.jsx:6168:        downloadDashboardCsv(filteredExportSections, `${base}.csv`);
+client/src/BusinessSphereDashboard.jsx:6171:        (await createDashboardPdfDocument({ companyName: company.name, periodLabel: PERIOD_LABELS[period], filterSummary: exportFilterSummary, sections: filteredExportSections })).save(`${base}.pdf`);
+client/src/BusinessSphereDashboard.jsx:6175:      notify("Dashboard export failed — please try again.", "error");
+client/src/BusinessSphereDashboard.jsx:6236:      eyebrow: "Workspace status",
+client/src/BusinessSphereDashboard.jsx:6377:        <FinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />
+client/src/BusinessSphereDashboard.jsx:6387:        <HRDashboard employees={employees} leaveRequests={leaveRequests} onNavigate={onNavigate} />
+client/src/BusinessSphereDashboard.jsx:6397:        <SalesDashboard invoices={invoices} crm={crm} onNavigate={onNavigate} />
+client/src/BusinessSphereDashboard.jsx:6407:        <OperationsDashboard inventory={inventory} workOrders={workOrders} onNavigate={onNavigate} />
+client/src/BusinessSphereDashboard.jsx:6422:    const preferredTargetAllowed = currentRole.allowedModules.includes(preferredTarget);
+client/src/BusinessSphereDashboard.jsx:6423:    const target = currentRole.allowedModules.includes(rolePreferredTarget)
+client/src/BusinessSphereDashboard.jsx:6425:      : preferredTargetAllowed && currentRole.allowedModules.includes(preferredTarget)
+client/src/BusinessSphereDashboard.jsx:6427:        : (currentRole.primaryModules[0] || currentRole.allowedModules[0]);
+client/src/BusinessSphereDashboard.jsx:6449:    const primaryModuleId = currentRole.primaryModules[0] || currentRole.allowedModules[0];
+client/src/BusinessSphereDashboard.jsx:6450:    const primaryModuleLabel = MODULES.find((module) => module.id === primaryModuleId)?.label || "your permitted workspace";
+client/src/BusinessSphereDashboard.jsx:6460:            Your access is scoped to {currentRole.allowedModules.map((m) => MODULES.find((mm) => mm.id === m)?.label).filter(Boolean).join(" and ")}. This home view intentionally does not show company-wide metrics or create records.
+client/src/BusinessSphereDashboard.jsx:6462:          {primaryModuleId && currentRole.allowedModules.includes(primaryModuleId) && (
+client/src/BusinessSphereDashboard.jsx:6463:            <button onClick={() => onNavigate(primaryModuleId)} aria-label={`Open permitted ${primaryModuleLabel} workspace`} className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40">
+client/src/BusinessSphereDashboard.jsx:6464:              Open {primaryModuleLabel} <ChevronRight size={14} />
+client/src/BusinessSphereDashboard.jsx:6474:      {scheduleDialogOpen && <ScheduleReportDialog company={company} currentUser={currentUser} modules={exportModules} dateRange={{ start: exportStartDate, end: exportEndDate }} onClose={() => setScheduleDialogOpen(false)} onSaved={() => { setScheduleDialogOpen(false); notify("Recurring dashboard report scheduled."); }} />}
+client/src/BusinessSphereDashboard.jsx:6476:        <LazyDashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
+client/src/BusinessSphereDashboard.jsx:6479:      <section className="order-8 grid grid-cols-1 gap-5" aria-label="Workspace setup and analytics readiness">
+client/src/BusinessSphereDashboard.jsx:6484:      <section className="order-5 space-y-5" aria-label="Workspace intelligence and compliance">
+client/src/BusinessSphereDashboard.jsx:6516:                onClick={() => setDigestSettingsOpen(true)}
+client/src/BusinessSphereDashboard.jsx:6529:            {digestSettingsOpen && (
+client/src/BusinessSphereDashboard.jsx:6530:              <ComplianceDigestSettingsModal
+client/src/BusinessSphereDashboard.jsx:6533:                onClose={() => setDigestSettingsOpen(false)}
+client/src/BusinessSphereDashboard.jsx:6535:                  setDigestSettingsOpen(false);
+client/src/BusinessSphereDashboard.jsx:6557:                <span className="text-[10px] font-black text-[#16A34A] uppercase tracking-[0.16em]">Workspace overview</span>
+client/src/BusinessSphereDashboard.jsx:6585:                      <div role="group" aria-label="Dashboard export filters" className="mx-1 mb-1 rounded-lg bg-slate-50 p-2.5">
+client/src/BusinessSphereDashboard.jsx:6594:                              <input type="checkbox" checked={exportModules[module]} onChange={(event) => setExportModules((current) => ({ ...current, [module]: event.target.checked }))} />
+client/src/BusinessSphereDashboard.jsx:6599:                        <button onClick={() => { setExportStartDate(""); setExportEndDate(""); setExportModules({ finance: true, sales: true, crm: true, inventory: true, operations: true }); }} className="mt-2 text-[10px] font-semibold text-[#7C3AED] hover:underline">Clear filters</button>
+client/src/BusinessSphereDashboard.jsx:6602:                    <button role="menuitem" onClick={() => exportDashboard("csv")} disabled={Boolean(exportBusy)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+client/src/BusinessSphereDashboard.jsx:6606:                    <button role="menuitem" onClick={() => exportDashboard("pdf")} disabled={Boolean(exportBusy)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+client/src/BusinessSphereDashboard.jsx:6644:	            <div role="group" aria-label="Dashboard reporting period" className="inline-flex rounded-xl border border-white/10 bg-black/15 p-1">
+client/src/BusinessSphereDashboard.jsx:6702:              <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-8" aria-label="Workspace overview metrics">
+client/src/BusinessSphereDashboard.jsx:6743:                const requester = data.requestedBy?.name || "Workspace member";
+client/src/BusinessSphereDashboard.jsx:7162:                      const thresholdPercent = vatAnomalySettingsQuery.data?.thresholdPercent ?? 50;
+client/src/BusinessSphereDashboard.jsx:7163:                      const alertsEnabled = vatAnomalySettingsQuery.data?.enabled !== false;
+client/src/BusinessSphereDashboard.jsx:7412:            <h3 className="text-[14px] font-bold text-[#111827]">Module Health</h3>
+client/src/BusinessSphereDashboard.jsx:7425:              { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, status: "available", metric: "Workspace overview available", detail: "Uses confirmed dashboard data" },
+client/src/BusinessSphereDashboard.jsx:7452:            return moduleCards.filter((module) => currentRole.allowedModules.includes(module.id)).map((module) => {
+client/src/BusinessSphereDashboard.jsx:8246:      <ScrollableModuleTabs tabs={CRM_TABS} activeTab={tab} onChangeTab={setTab} />
+client/src/BusinessSphereDashboard.jsx:9684:                              title="Open Congratulations Studio in Settings">
+client/src/BusinessSphereDashboard.jsx:10307:  // A Dashboard Quick Action ("Create Invoice") can deep-link here already
+client/src/BusinessSphereDashboard.jsx:10911:            <LazySalesDetailWorkspace subscriptions={subscriptions} />
+client/src/BusinessSphereDashboard.jsx:12118:  { id: "dashboard", label: "Dashboard",    icon: LayoutDashboard },
+client/src/BusinessSphereDashboard.jsx:12128:function InventoryDashboard({ inventory, suppliersHook }) {
+client/src/BusinessSphereDashboard.jsx:12502:            Active Workspace Guidance
+client/src/BusinessSphereDashboard.jsx:12515:            {tab === "dashboard" && <InventoryDashboard inventory={inventory} suppliersHook={suppliersHook}/>}
+client/src/BusinessSphereDashboard.jsx:14508:            You are viewing as {currentUser.role}. Approving or rejecting purchase orders requires a full-write role — switch roles in Settings to test this.
+client/src/BusinessSphereDashboard.jsx:14858:  { id: "overview", label: "Overview", icon: LayoutDashboard },
+client/src/BusinessSphereDashboard.jsx:16075:  const { preferences, updatePreference } = useDashboardPreferences();
+client/src/BusinessSphereDashboard.jsx:22284:  // vehicle On Route; delivering it frees the vehicle again.
+client/src/BusinessSphereDashboard.jsx:22485:        const vehicleStatus = next === "Dispatched" ? "On Route" : next === "Delivered" ? "Available" : null;
+client/src/BusinessSphereDashboard.jsx:22594:                      hint="Create a delivery for a fulfilled order. Dispatching it will put the assigned vehicle On Route automatically."
+client/src/BusinessSphereDashboard.jsx:22737:            Only vehicles currently marked <span className="font-medium text-slate-500">Available</span> can be assigned. Dispatching moves the vehicle On Route.
+client/src/BusinessSphereDashboard.jsx:24386:// the Business Health Score (section — Dashboard) applied to a lender's
+client/src/BusinessSphereDashboard.jsx:24565:        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{currentUser?.role || "Workspace user"}</span>
+client/src/BusinessSphereDashboard.jsx:24984:  { name: "Google Workspace", tab: "connections", functional: false },
+client/src/BusinessSphereDashboard.jsx:28734:  { type: "nav",    id: "dashboard",    label: "Go to Dashboard",          icon: "LayoutDashboard", mod: "dashboard" },
+client/src/BusinessSphereDashboard.jsx:28746:  { type: "nav",    id: "settings",     label: "Go to Settings",           icon: "Settings",        mod: "settings" },
+client/src/BusinessSphereDashboard.jsx:28821:function MicrofinanceModule({ currentUser }) {
+client/src/BusinessSphereDashboard.jsx:28844:    { id:"overview",  label:"Overview",   icon: LayoutDashboard },
+client/src/BusinessSphereDashboard.jsx:29222:    { module:"dashboard",   tab:null,        label:"Dashboard",            desc:"Business overview & KPIs",                                 icon:"📊", cat:"Navigate" },
+client/src/BusinessSphereDashboard.jsx:29252:    { module:"settings",    tab:null,        label:"Settings",             desc:"Company setup & preferences",                              icon:"⚙️", cat:"Navigate" },
+client/src/BusinessSphereDashboard.jsx:29419:    { done: Boolean(company.tin || company.address), label: "Complete company profile", hint: "Settings → Company profile — add your TIN, address, and logo", nav: "settings" },
+client/src/BusinessSphereDashboard.jsx:29470:// real posture (the same localStorage facts the Security Dashboard
+client/src/BusinessSphereDashboard.jsx:29497:    out.push({ cat: "Cybersecurity", pct: cyPct, basis: `This device: App Lock ${lock ? "on" : "OFF"}, biometric unlock ${bio ? "enrolled" : "not enrolled"} — RLS and RBAC hold platform-wide regardless`, fix: lock ? "Enroll biometric unlock in Settings > App Lock; enable TOTP 2FA when wired (GoTrue MFA)." : "Turn on App Lock in Settings — one PIN, this device, right now." });
+client/src/BusinessSphereDashboard.jsx:29593:      {tab === "executive" && <ExecutiveDashboard company={company} invoices={invoices} expenses={expenses} crm={crm} inventory={inventory} employees={employees} onNavigate={onNavigate} />}
+client/src/BusinessSphereDashboard.jsx:29594:      {tab === "financial" && <FinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />}
+client/src/BusinessSphereDashboard.jsx:29595:      {tab === "hr" && <HRDashboard employees={employees} leaveRequests={leaveRequests} onNavigate={onNavigate} />}
+client/src/BusinessSphereDashboard.jsx:29596:      {tab === "sales" && <SalesDashboard invoices={invoices} crm={crm} onNavigate={onNavigate} />}
+client/src/BusinessSphereDashboard.jsx:29597:      {tab === "operations" && <OperationsDashboard inventory={inventory} workOrders={workOrders} onNavigate={onNavigate} />}
+client/src/BusinessSphereDashboard.jsx:29609:          <LazyPredictiveAnalyticsWorkspace
+client/src/BusinessSphereDashboard.jsx:29673:function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, employees, onNavigate }) {
+client/src/BusinessSphereDashboard.jsx:29851:function FinancialDashboard({ invoices, expenses, posTransactions, onNavigate }) {
+client/src/BusinessSphereDashboard.jsx:29967:function HRDashboard({ employees, leaveRequests, onNavigate }) {
+client/src/BusinessSphereDashboard.jsx:30105:function SalesDashboard({ invoices, crm, onNavigate }) {
+client/src/BusinessSphereDashboard.jsx:30200:function OperationsDashboard({ inventory, workOrders, onNavigate }) {
+client/src/BusinessSphereDashboard.jsx:31853:  { id: "workspaces", label: "Team Workspaces",     icon: Users },
+client/src/BusinessSphereDashboard.jsx:32025:function DashboardWhatsAppFeed({ onOpen }) {
+client/src/BusinessSphereDashboard.jsx:32257:          <p className="text-[12px] text-slate-600 dark:text-slate-300 font-medium">Open WhatsApp on your phone → Menu / Settings → Linked Devices → Link a Device</p>
+client/src/BusinessSphereDashboard.jsx:32478:  const [birdWorkspaceId, setBirdWorkspaceId] = useState("");
+client/src/BusinessSphereDashboard.jsx:32525:    workspaceId: birdWorkspaceId.trim(),
+client/src/BusinessSphereDashboard.jsx:32686:                <Settings size={16}/>
+client/src/BusinessSphereDashboard.jsx:32898:                  <label htmlFor="bird-workspace-id" className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Workspace ID</label>
+client/src/BusinessSphereDashboard.jsx:32902:                    value={birdWorkspaceId}
+client/src/BusinessSphereDashboard.jsx:32903:                    onChange={(e) => { setBirdWorkspaceId(e.target.value); clearCredentialError("workspaceId"); }}
+client/src/BusinessSphereDashboard.jsx:33130:    const signatureMarkup = signatureLogo ? `<img src="${escapeEmailHtml(signatureLogo)}" alt="${escapeEmailHtml(co.name || "Workspace logo")}" style="width:56px;height:56px;object-fit:contain;border-radius:12px;" />` : `<span style="display:inline-grid;place-items:center;width:56px;height:56px;border-radius:12px;background:#16A34A;color:#fff;font-weight:700;font-size:18px;">${escapeEmailHtml((co.name || "BS").charAt(0).toUpperCase())}</span>`;
+client/src/BusinessSphereDashboard.jsx:33361:                        {(co.signatureLogo || co.logo) ? <img src={co.signatureLogo || co.logo} alt={`${co.name || "Workspace"} signature mark`} className="h-full w-full object-contain bg-white p-1" /> : (co.name || "BS").charAt(0).toUpperCase()}
+client/src/BusinessSphereDashboard.jsx:33366:                        <p className="text-[10px] font-medium text-emerald-700 mt-0.5">Verified East African Commercial Workspace · Regulated VFD Tax Compliant</p>
+client/src/BusinessSphereDashboard.jsx:33537:          {tab === "workspaces" && <TeamWorkspaces employees={employees} currentUser={currentUser} />}
+client/src/BusinessSphereDashboard.jsx:34315:function TeamWorkspaces({ employees, currentUser }) {
+client/src/BusinessSphereDashboard.jsx:34316:  const workspaces = useCompanyTable("workspaces", workspacesSeed, { mapRow: mapWorkspaceRow });
+client/src/BusinessSphereDashboard.jsx:34321:  const [savingWorkspace, setSavingWorkspace] = useState(false);
+client/src/BusinessSphereDashboard.jsx:34322:  const [deletingWorkspaceId, setDeletingWorkspaceId] = useState(null);
+client/src/BusinessSphereDashboard.jsx:34332:  async function addWorkspace(form) {
+client/src/BusinessSphereDashboard.jsx:34333:    if (savingWorkspace) return;
+client/src/BusinessSphereDashboard.jsx:34339:    setSavingWorkspace(true);
+client/src/BusinessSphereDashboard.jsx:34344:        notify(`Workspace created: ${draft.name}`);
+client/src/BusinessSphereDashboard.jsx:34349:      const confirmed = mapWorkspaceRow(data);
+client/src/BusinessSphereDashboard.jsx:34352:      notify(`Workspace created: ${confirmed.name}`);
+client/src/BusinessSphereDashboard.jsx:34354:      notify(`Workspace was not created. ${error?.message || "Try again."}`, "error");
+client/src/BusinessSphereDashboard.jsx:34356:      setSavingWorkspace(false);
+client/src/BusinessSphereDashboard.jsx:34360:  async function deleteWorkspace(id) {
+client/src/BusinessSphereDashboard.jsx:34361:    if (deletingWorkspaceId) return;
+client/src/BusinessSphereDashboard.jsx:34366:      notify(`Workspace deleted: ${w.name}`);
+client/src/BusinessSphereDashboard.jsx:34369:    setDeletingWorkspaceId(id);
+client/src/BusinessSphereDashboard.jsx:34374:      notify(`Workspace deleted: ${w.name}`);
+client/src/BusinessSphereDashboard.jsx:34376:      notify(`Workspace was not deleted. ${error?.message || "Try again."}`, "error");
+client/src/BusinessSphereDashboard.jsx:34378:      setDeletingWorkspaceId(null);
+client/src/BusinessSphereDashboard.jsx:34396:              ["Workspace ID", "Workspace Name", "Department", "Members", "Description"].join(","),
+client/src/BusinessSphereDashboard.jsx:34406:            notify("Workspace membership audit log exported as CSV.");
+=== DESIGN TOKENS ===
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --primary: var(--color-blue-700);
+  --primary-foreground: var(--color-blue-50);
+  --sidebar-primary: var(--color-blue-600);
+  --sidebar-primary-foreground: var(--color-blue-50);
+  --chart-1: var(--color-blue-300);
+  --chart-2: var(--color-blue-500);
+  --chart-3: var(--color-blue-600);
+  --chart-4: var(--color-blue-700);
+  --chart-5: var(--color-blue-800);
+  --radius: 0.75rem;
+  --background: oklch(0.141 0.005 285.823);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.17 0.005 285.823);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.17 0.005 285.823);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: #C9A96E;
+  --primary-foreground: oklch(0.141 0.005 285.823);
+  --secondary: oklch(0.24 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.24 0.006 286.033);
+  --muted-foreground: oklch(0.705 0.015 286.067);
+  --accent: oklch(0.24 0.006 286.033);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: #C9A96E;
+  --sidebar: oklch(0.17 0.005 285.823);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: #C9A96E;
+  --sidebar-primary-foreground: oklch(0.141 0.005 285.823);
+  --sidebar-accent: oklch(0.24 0.006 286.033);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: #C9A96E;
+
+  /* Noble Design System Custom Variables */
+  --noble-gold: #C9A96E;
+  --noble-gold-muted: rgba(201, 169, 110, 0.2);
+  --noble-emerald: #16A34A;
+  --noble-slate: #0B1120;
+  --noble-navy: #131C31;
+}
+
+.dark {
+  /* Dark mode is the default for this redesign */
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/30;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: 'Poppins', system-ui, sans-serif;
+    @apply font-semibold tracking-tight;
+  }
+
+  .glass-panel {
+    @apply bg-card/80 backdrop-blur-xl border border-white/10 shadow-2xl;
+  }
+
+  .gold-glow {
+    box-shadow: 0 0 20px rgba(201, 169, 110, 0.15);
+  }
+
+  .noble-button {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all duration-200 font-semibold;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  /**
+   * Custom container utility that centers content and adds responsive padding.
+   *
+   * This overrides Tailwind's default container behavior to:
+   * - Auto-center content (mx-auto)
+   * - Add responsive horizontal padding
+   * - Set max-width for large screens
+   *
+   * Usage: <div className="container">...</div>
+   *
+   * For custom widths, use max-w-* utilities directly:
+   * <div className="max-w-6xl mx-auto px-4">...</div>
+   */
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem; /* 16px - mobile padding */
+    padding-right: 1rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  /* Shared segmented-module navigation contract. These class combinations are
+     used throughout the ERP for local module tabs; each tab keeps its
+     readable intrinsic width and the strip—not the page—scrolls. */
+  .flex.items-center.gap-1.bg-slate-100.rounded-lg.p-1.overflow-x-auto {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .flex.items-center.gap-1.bg-slate-100.rounded-lg.p-1.overflow-x-auto::-webkit-scrollbar {
+    display: none;
+  }
+
+  .flex.items-center.gap-1.bg-slate-100.rounded-lg.p-1.overflow-x-auto > button {
+    flex: 0 0 auto;
+    min-width: max-content;
+    white-space: nowrap;
+  }
+
+  .sm-mobile-action-group {
+    min-width: 0;
+  }
+
+  .sm-table-scroll {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem; /* 32px - desktop padding */
+      padding-right: 2rem;
+      max-width: 1280px; /* Standard content width */
+    }
+  }
+}
+
+/* Narrow screens use composition changes—not compressed text—to keep content
+   readable. This shell guard supplements intentional tab and table scrolling
+   inside their dedicated containers. */
+@media (max-width: 639px) {
+  #root {
+    overflow-x: clip;
+  }
+
+  .flex.items-center.gap-1.bg-slate-100.rounded-lg.p-1.overflow-x-auto {
+    width: 100%;
+  }
+
+  .sm-mobile-action-group {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: .5rem;
+  }
+
+  .sm-mobile-action-group > button {
+    min-width: 0;
+    flex: 1 1 min(100%, 9.5rem);
+  }
+
+  /* Existing module headers share this Tailwind composition. Their action
+     clusters become a full-width wrapping row on phones instead of competing
+     with the title, search, or KPI summary. */
+  #root .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 > .flex:not(.flex-1) {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  #root .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 > .flex:not(.flex-1) > button {
+    min-width: 0;
+    max-width: 100%;
+    flex: 1 1 min(100%, 9.5rem);
+  }
+
+  /* Compact state/toggle bars retain readable labels and scroll inside their
+     own surface when a phone cannot display every state at once. */
+  #root .flex.bg-slate-100.rounded-lg.p-0\.5 {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;

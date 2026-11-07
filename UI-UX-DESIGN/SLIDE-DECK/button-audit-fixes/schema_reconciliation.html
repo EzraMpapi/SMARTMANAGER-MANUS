@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            display: flex;
+            flex-direction: column;
+            padding-top: 60px;
+            padding-left: 80px;
+            padding-right: 80px;
+            background-color: #ffffff;
+            position: relative;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #334155;
+        }
+        .header {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 70px;
+        }
+        .slide-title {
+            font-size: 42px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-top: -10px;
+        }
+        .slide-subtitle {
+            font-size: 20px;
+            color: #10b981;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: -5px;
+        }
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        /* Shrunk banner padding/height to save vertical space */
+        .summary-banner {
+            background-color: #0f172a;
+            color: #f8fafc;
+            padding-top: 16px;
+            padding-left: 32px;
+            padding-right: 32px;
+            height: 88px;
+            margin-bottom: 24px;
+        }
+        .summary-banner h2 {
+            font-size: 24px;
+            color: #10b981;
+            margin-bottom: 8px;
+        }
+        .summary-banner p {
+            font-size: 18px;
+            line-height: 1.5;
+            color: #cbd5e1;
+        }
+        .tables-section {
+            margin-top: 0px;
+        }
+        .tables-section h3 {
+            font-size: 20px;
+            color: #0f172a;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        /* Move to 4 columns so fewer rows are needed */
+        .tables-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            row-gap: 12px;
+            column-gap: 16px;
+            list-style: none;
+        }
+        .table-item {
+            display: flex;
+            align-items: center;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            font-weight: 600;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding-top: 8px;
+            padding-left: 16px;
+            padding-right: 16px;
+            height: 44px;
+        }
+        .check-icon {
+            color: #10b981;
+            margin-right: 12px;
+            font-size: 18px;
+        }
+        /* Reduced conclusion box height/padding */
+        .conclusion-box {
+            margin-top: 24px;
+            background-color: #ecfdf5;
+            border: 2px solid #10b981;
+            padding-top: 12px;
+            padding-left: 24px;
+            padding-right: 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+        }
+        .conclusion-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: #065f46;
+        }
+        .footer-note {
+            position: absolute;
+            top: 680px; /* moved down to sit below content without overlapping */
+            left: 80px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header">
+            <h1 class="slide-title">Live Schema Reconciliation</h1>
+            <div class="slide-subtitle">Zero-DDL Verification</div>
+        </div>
+
+        <div class="content-area">
+            <div class="summary-banner">
+                <h2>No Speculative Migrations Required</h2>
+                <p>A fresh read-only connector check against the live Supabase project confirmed all target tables exist and are RLS-enabled. The decision was made to avoid speculative DDL or bulk migrations.</p>
+            </div>
+
+            <div class="tables-section">
+                <h3>Verified Target Tables (Public Schema)</h3>
+                <ul class="tables-grid">
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> hr_performance_reviews</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> sch_exams</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> sch_classes</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> procurement_purchase_orders</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> purchase_order_items</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> phm_drugs</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> phm_stock</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> phm_dispense</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> phm_purchase_orders</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> phm_stock_receipts</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> phm_batches</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> phm_stock_movements</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> phm_sales</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> phm_sale_items</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> phm_payments</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> phm_returns</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> phm_insurance_claims</li>
+                    <li class="table-item"><i class="fas fa-check-circle check-icon"></i> phm_audit_logs</li>
+                </ul>
+            </div>
+
+            <div class="conclusion-box">
+                <p class="conclusion-text"><i class="fas fa-shield-alt" style="margin-right: 12px;"></i> Result: Existing RLS, tenant-boundary, and server persistence rules remain authoritative.</p>
+            </div>
+        </div>
+
+        <div class="footer-note">Source: BUTTON_ACTION_FOLLOWUP_20260824.md</div>
+    </div>
+</body>
+</html>

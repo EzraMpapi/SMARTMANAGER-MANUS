@@ -1,0 +1,29 @@
+<slide id="capture_gates">
+  <background color="bg-content"/>
+  <shape id="gold-rule" type="line" x="60" y="64" width="150" height="0" stroke="accent" stroke-width="3"/>
+  <text id="slide-title" x="60" y="92" width="820" height="44" font="heading" size="34" color="brand" wrap="false">Gates za UI huzuia overclaim</text>
+  <text id="slide-subtitle" x="60" y="145" width="1060" height="46" font="body" size="20" color="muted">Kila module ina hali yake ya visual evidence; hali hiyo haiwezi kupanuliwa kwa kudhani.</text>
+  <shape id="sales-card" type="rect" x="60" y="220" width="330" height="320" fill="#EDF3EF" stroke="#B5CFC1" stroke-width="1"/>
+  <icon id="sales-icon" name="monitor" x="88" y="246" width="40" height="40" color="brand"/>
+  <text id="sales-heading" x="146" y="254" width="190" height="26" font="body" size="22" color="brand" wrap="false">Sales</text>
+  <shape id="sales-status" type="rect" x="88" y="308" width="225" height="30" fill="brand"/>
+  <text id="sales-status-text" x="98" y="315" width="205" height="16" font="caption" size="12" color="ink-light" align="center" wrap="false">ORIENTATION FRAME IMEIDHINISHWA</text>
+  <text id="sales-body" x="88" y="370" width="245" height="110" font="body" size="18" color="ink-dark" line-height="1.32"><p>Inaruhusiwa: module shell.</p><p>Hairuhusiwi: transaction, role, record, stock, payment au receipt proof.</p></text>
+  <shape id="pos-card" type="rect" x="445" y="220" width="330" height="320" fill="#FFF8E8" stroke="accent" stroke-width="1"/>
+  <icon id="pos-icon" name="lock" x="473" y="246" width="40" height="40" color="accent"/>
+  <text id="pos-heading" x="531" y="254" width="190" height="26" font="body" size="22" color="brand" wrap="false">POS</text>
+  <shape id="pos-status" type="rect" x="473" y="308" width="225" height="30" fill="accent"/>
+  <text id="pos-status-text" x="483" y="315" width="205" height="16" font="caption" size="12" color="ink-dark" align="center" wrap="false">UI BADO HAIJAPITISHWA</text>
+  <text id="pos-body" x="473" y="370" width="245" height="110" font="body" size="18" color="ink-dark" line-height="1.32"><p>Hairuhusiwi: checkout, payment, receipt, cash, item na tax data.</p><p>Inahitaji safe capture.</p></text>
+  <shape id="crm-card" type="rect" x="830" y="220" width="330" height="320" fill="#FFF8E8" stroke="accent" stroke-width="1"/>
+  <icon id="crm-icon" name="lock" x="858" y="246" width="40" height="40" color="accent"/>
+  <text id="crm-heading" x="916" y="254" width="190" height="26" font="body" size="22" color="brand" wrap="false">CRM</text>
+  <shape id="crm-status" type="rect" x="858" y="308" width="225" height="30" fill="accent"/>
+  <text id="crm-status-text" x="868" y="315" width="205" height="16" font="caption" size="12" color="ink-dark" align="center" wrap="false">UI BADO HAIJAPITISHWA</text>
+  <text id="crm-body" x="858" y="370" width="245" height="110" font="body" size="18" color="ink-dark" line-height="1.32"><p>Hairuhusiwi: contact, owner, note, attachment na pipeline data.</p><p>Inahitaji safe capture.</p></text>
+  <shape id="capture-band" type="rect" x="60" y="575" width="1100" height="43" fill="brand"/>
+  <text id="capture-band-text" x="80" y="586" width="1060" height="18" font="caption" size="14" color="ink-light" align="center" wrap="false">Future UI: fully loaded, no private data, no errors, no credentials, no irreversible action, claim-to-screen match.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="border" stroke-width="1"/>
+  <text id="footer-title" x="60" y="675" width="520" height="18" font="caption" color="muted" wrap="false">SMART MANAGER ERP • Sura 07–09 Commercial Foundation</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="18" font="caption" color="muted" align="right" wrap="false">07</text>
+</slide>

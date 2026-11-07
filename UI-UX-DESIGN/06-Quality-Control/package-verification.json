@@ -1,0 +1,150 @@
+{
+  "image_count": 23,
+  "module_spec_count": 39,
+  "zip_path": "/home/ubuntu/SMARTMANAGER-MANUS/UI-UX-DESIGN/SMART-MANAGER-UI-UX-DESIGN-PACKAGE.zip",
+  "zip_size_bytes": 95203009,
+  "zip_sha256": "85ad44eb0a6083f1182c53ca50b2394bbc135f5bec9413cdd94c4b70b574a168",
+  "zip_file_count": 98,
+  "extracted_ok": true,
+  "missing_required": [],
+  "image_checks": [
+    {
+      "path": "04-Workflows/canonical-transaction-sequence.png",
+      "format": "PNG",
+      "width": 3120,
+      "height": 1908
+    },
+    {
+      "path": "04-Workflows/navigation-architecture.png",
+      "format": "PNG",
+      "width": 3120,
+      "height": 2352
+    },
+    {
+      "path": "04-Workflows/role-access-map.png",
+      "format": "PNG",
+      "width": 3120,
+      "height": 1264
+    },
+    {
+      "path": "05-Visual-Assets/00-style-reference-executive-dashboard.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/01-authentication-onboarding.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/02-crm-customer-pipeline.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/03-sales-billing.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/04-inventory-warehouse.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/05-community-groups.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/06-finance-accounting.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/07-pos-checkout.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/08-reports-scheduled.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/09-healthcare-clinic.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/10-settings-security.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/11-procurement-vendor.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/12-hr-payroll.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/13-manufacturing-supply-chain.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/14-property-management.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/15-banking-mfi.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/16-vicoba-microfinance.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/17-tra-fiscalization.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/18-collaboration-integrations.png",
+      "format": "PNG",
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "path": "05-Visual-Assets/19-mobile-operations.png",
+      "format": "PNG",
+      "width": 1440,
+      "height": 2560
+    }
+  ]
+}

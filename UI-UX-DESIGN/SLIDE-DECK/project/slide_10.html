@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Build the shared foundation before scaling the module surface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background-color: #F1F5F9;
+            font-family: 'Inter', sans-serif;
+            padding-top: 64px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .header-container {
+            width: 1152px;
+            margin-bottom: 32px;
+        }
+        
+        h1 {
+            color: #0B1120;
+            font-weight: 900;
+            font-size: 44px;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+        }
+        
+        .subtitle {
+            color: #334155;
+            font-weight: 500;
+            font-size: 22px;
+            line-height: 1.4;
+            max-width: 1000px;
+        }
+        
+        .content-card {
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            width: 1152px;
+            height: 440px;
+            display: flex;
+            flex-direction: column;
+            padding: 32px 48px;
+            box-shadow: 0 10px 30px rgba(11, 17, 32, 0.05);
+        }
+        
+        .steps-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        
+        .step-item {
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding-left: 24px;
+        }
+        
+        .step-rule {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #008A45;
+            border-radius: 4px;
+        }
+        
+        .step-number {
+            color: #008A45;
+            font-weight: 900;
+            font-size: 24px;
+            margin-right: 16px;
+            min-width: 24px;
+        }
+        
+        .step-text {
+            color: #334155;
+            font-weight: 500;
+            font-size: 18px;
+            line-height: 1.4;
+        }
+        
+        .boundary-box {
+            background-color: #F8FAFC;
+            border-left: 4px solid #0B1120;
+            padding: 16px 24px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .boundary-text {
+            color: #334155;
+            font-weight: 500;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        .boundary-text strong {
+            color: #0B1120;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header-container">
+            <h1>Build the shared foundation before scaling the module surface</h1>
+            <p class="subtitle">A pragmatic implementation sequence reduces visual drift and protects trust-sensitive workflows.</p>
+        </div>
+        
+        <div class="content-card">
+            <div class="steps-container">
+                <div class="step-item">
+                    <div class="step-rule"></div>
+                    <div class="step-number">1</div>
+                    <div class="step-text">Establish the Figma/source token library and shared shell.</div>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-rule"></div>
+                    <div class="step-number">2</div>
+                    <div class="step-text">Extract reusable auth, form, table, status, permission, audit, and recovery components.</div>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-rule"></div>
+                    <div class="step-number">3</div>
+                    <div class="step-text">Implement canonical transaction patterns and role-aware action states.</div>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-rule"></div>
+                    <div class="step-number">4</div>
+                    <div class="step-text">Deliver core commercial and finance loops, then specialist verticals.</div>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-rule"></div>
+                    <div class="step-number">5</div>
+                    <div class="step-text">Add native screen-level QA, responsive checks, accessibility review, and visual regression tests.</div>
+                </div>
+            </div>
+            
+            <div class="boundary-box">
+                <div class="boundary-text">
+                    <strong>Design boundary:</strong> the blueprint is an implementation guide, not a claim that every visualized screen already exists as an independent production route.
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

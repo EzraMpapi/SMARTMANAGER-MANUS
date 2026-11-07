@@ -1,0 +1,29 @@
+<slide id="experience">
+  <background color="paper"/>
+  <text id="experience-breadcrumb" x="64" y="44" width="420" height="20" font="caption" size="12" color="muted" wrap="false">03  /  RESPONSIVE WORKSPACE</text>
+  <text id="experience-title" x="64" y="76" width="1000" height="52" font="heading" size="34" color="ink" wrap="false">One operating model across desktop, tablet, and mobile</text>
+  <text id="experience-intro" x="64" y="132" width="1040" height="32" font="body" size="18" color="muted">The shell makes a wide module system navigable without changing the underlying role-aware navigation or mobile data behavior.</text>
+  <shape id="rail-card" type="rect" x="64" y="230" width="262" height="270" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="rail-rule" type="rect" x="64" y="230" width="262" height="4" fill="accent"/>
+  <icon id="rail-icon" name="panel-left" x="92" y="262" width="30" height="30" color="brand"/>
+  <text id="rail-title" x="92" y="314" width="196" height="28" font="body" size="20" color="ink" wrap="false">Desktop rail</text>
+  <text id="rail-body" x="92" y="360" width="196" height="90" font="body" size="17" color="muted" line-height="1.35">Persistent 264px sidebar at the established desktop breakpoint improves module discoverability.</text>
+  <shape id="utility-card" type="rect" x="350" y="230" width="262" height="270" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="utility-rule" type="rect" x="350" y="230" width="262" height="4" fill="accent"/>
+  <icon id="utility-icon" name="search" x="378" y="262" width="30" height="30" color="brand"/>
+  <text id="utility-title" x="378" y="314" width="196" height="28" font="body" size="20" color="ink" wrap="false">Utility bar</text>
+  <text id="utility-body" x="378" y="360" width="196" height="90" font="body" size="17" color="muted" line-height="1.35">Search, connection state, alerts, notifications, theme, and profile retain their existing controls.</text>
+  <shape id="briefing-card" type="rect" x="636" y="230" width="262" height="270" fill="brand" stroke="brand" stroke-width="1"/>
+  <shape id="briefing-rule" type="rect" x="636" y="230" width="262" height="4" fill="accent"/>
+  <icon id="briefing-icon" name="chart-column" x="664" y="262" width="30" height="30" color="accent"/>
+  <text id="briefing-title" x="664" y="314" width="196" height="28" font="body" size="20" color="#FFFFFF" wrap="false">Executive briefing</text>
+  <text id="briefing-body" x="664" y="360" width="196" height="90" font="body" size="17" color="#D9E6DF" line-height="1.35">A concise command center prioritizes confirmed signals and the next relevant action.</text>
+  <shape id="mobile-card" type="rect" x="922" y="230" width="294" height="270" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="mobile-rule" type="rect" x="922" y="230" width="294" height="4" fill="accent"/>
+  <icon id="mobile-icon" name="smartphone" x="950" y="262" width="30" height="30" color="brand"/>
+  <text id="mobile-title" x="950" y="314" width="210" height="28" font="body" size="20" color="ink" wrap="false">Mobile continuity</text>
+  <text id="mobile-body" x="950" y="360" width="214" height="90" font="body" size="17" color="muted" line-height="1.35">Overlay drawer and existing bottom navigation preserve field access and content width.</text>
+  <shape id="experience-note" type="rect" x="64" y="550" width="1152" height="56" fill="#FFFFFF" stroke="hairline" stroke-width="1"/>
+  <text id="experience-note-text" x="88" y="565" width="1104" height="26" font="body" size="18" color="ink" align="center" wrap="false">Responsive behavior: one column on small screens, two KPI columns at sm, desktop rail at lg — no separate mobile data model.</text>
+  <text id="experience-page" x="1158" y="657" width="58" height="28" font="caption" size="14" color="muted" align="right" wrap="false">04</text>
+</slide>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background-color: #F0F4F8; background-image: radial-gradient(#C9D6E2 1px, transparent 1px); background-size: 20px 20px; color: #34495E; font-family: Arial, Helvetica, sans-serif; }
+    .frame { min-height: 720px; padding-top: 54px; padding-left: 72px; padding-right: 72px; display: flex; flex-direction: column; }
+    .eyebrow { color: #2ECC71; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+    h1 { margin: 14px 0 0; color: #0F4C81; font-size: 42px; line-height: 1.08; letter-spacing: -0.8px; }
+    .thesis { margin: 14px 0 0; max-width: 860px; font-size: 20px; line-height: 1.35; font-weight: 300; }
+
+    /* Removed flex:1 so the grid sizes to its content, and reduced inner paddings/gap to avoid overflow */
+    .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding-top: 12px; }
+
+    .test-column { background: rgba(255,255,255,0.6); border-top: 3px solid #2ECC71; padding-top: 10px; padding-left: 18px; padding-right: 18px; min-height: 0; }
+    .test-column h2 { color: #0F4C81; font-size: 24px; margin: 0 0 12px 0; display: flex; align-items: center; gap: 12px; }
+
+    .test-section { margin-top: 14px; }
+    .test-section h3 { color: #0F4C81; font-size: 18px; margin: 0 0 8px 0; }
+    .test-section p { font-size: 15px; line-height: 1.5; margin: 0 0 8px 0; }
+    .test-section ul { padding-left: 20px; font-size: 15px; line-height: 1.5; margin: 0; }
+    .test-section li { margin-top: 6px; }
+
+    .footer { display: flex; justify-content: space-between; border-top: 1px dashed #8EA8BC; padding-top: 14px; margin-top: 8px; min-height: 40px; font-size: 12px; color: #60798C; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="frame">
+      <div class="eyebrow">06 / VERIFICATION WORKFLOW</div>
+      <h1>Test strategy and evidence</h1>
+      <p class="thesis">A multi-layered testing approach combining source contracts, state machine unit tests, and guarded end-to-end scenarios.</p>
+
+      <div class="content-grid">
+        <div class="test-column">
+          <h2>Vitest: Unit & Contract Tests</h2>
+          <div class="test-section">
+            <h3>Source Contracts</h3>
+            <ul>
+              <li>Verifies <code>SECURITY DEFINER</code> settings, grants, fail-closed reasons, and deny precedence.</li>
+              <li>Ensures single-RPC hydration and removal of browser-side permission joins.</li>
+            </ul>
+          </div>
+          <div class="test-section">
+            <h3>Reducer Tests</h3>
+            <ul>
+              <li>Covers state transitions, session retention, and stale-identity clearing.</li>
+              <li>Validates error behavior and explicit sign-out logic.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="test-column">
+          <h2>Playwright: End-to-End Scenarios</h2>
+          <div class="test-section">
+            <h3>Guarded Real-Auth Scenarios</h3>
+            <ul>
+              <li>Covers user A sign-in, reload, and sign-out.</li>
+              <li>Tests invalid credentials and incomplete identity handling.</li>
+              <li>Verifies tenant-B isolation from tenant-A markers.</li>
+            </ul>
+          </div>
+          <div class="test-section">
+            <h3>Environment Safety</h3>
+            <ul>
+              <li>Requires disposable Supabase users and an exact approved HTTPS Vercel preview host.</li>
+              <li>Fails safely if placeholders are present in <code>.env.test</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer"><span>Multi-layered verification · Safe execution</span><span>07</span></div>
+    </div>
+  </div>
+</body>
+</html>

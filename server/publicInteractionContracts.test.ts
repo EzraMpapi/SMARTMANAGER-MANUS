@@ -7,9 +7,10 @@ const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashbo
 describe("public and dashboard interaction contracts", () => {
   it("gives public theme and language controls explicit button semantics and state handlers", () => {
     expect(homeSource).toContain('type="button"\n              onClick={toggleTheme}');
-    expect(homeSource).toContain('type="button"\n              onClick={() => setLang(lang === "en" ? "sw" : "en")}');
+    expect(homeSource).toContain('languageOptions.map');
+    expect(homeSource).toContain('onChange={(event) => setLang(event.target.value as typeof lang)}');
+    expect(homeSource).toContain('title={t("switchLanguage")}');
     expect(homeSource).toContain('title="Toggle theme"');
-    expect(homeSource).toContain('title="Switch language"');
   });
 
   it("keeps public navigation and passkey controls bound to supported destinations or clear availability feedback", () => {

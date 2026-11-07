@@ -1,37 +1,36 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { lazy, Suspense, type ComponentType } from "react";
+import { lazy, Suspense, useState, type ComponentType, type ReactNode } from "react";
 import NotFound from "@/pages/NotFound";
-
-type LazyModule = { default: ComponentType<any> };
-
-function lazyWithRecovery(load: () => Promise<LazyModule>, key: string) {
-  return lazy(async () => {
-    const retryKey = `smart-manager-lazy-retry:${key}`;
-    try {
-      const module = await load();
-      try { window.sessionStorage.removeItem(retryKey); } catch {}
-      return module;
-    } catch (error) {
-      let alreadyRetried = false;
-      try { alreadyRetried = window.sessionStorage.getItem(retryKey) === "1"; } catch {}
-      if (!alreadyRetried && typeof window !== "undefined") {
-        try { window.sessionStorage.setItem(retryKey, "1"); } catch {}
-        window.location.reload();
-        return new Promise(() => {});
-      }
-      try { window.sessionStorage.removeItem(retryKey); } catch {}
-      throw error;
-    }
-  });
-}
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { BrandLogo } from "./components/BrandLogo";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { DashboardPreferencesProvider } from "./contexts/DashboardPreferencesContext";
+import { AuthProvider, useAuthContext } from "./contexts/AuthContext";
+import { AUTH_STATES } from "./lib/authStateMachine";
+import { reloadIfGithubUpdated } from "./lib/githubUpdateReload";
 import Home from "./pages/Home";
+
+type LazyModule = { default: ComponentType<any> };
+
+function lazyWithRecovery(load: () => Promise<LazyModule>, _key: string) {
+  return lazy(async () => {
+    try {
+      const module = await load();
+      return module;
+    } catch (error) {
+      // A failed dynamic import can be caused by a transient network issue.
+      // Only recover with a full reload when the server confirms a new GitHub
+      // revision is deployed; otherwise surface the existing error boundary.
+      if (typeof window !== "undefined" && await reloadIfGithubUpdated()) {
+        return new Promise(() => {});
+      }
+      throw error;
+    }
+  });
+}
 
 const PublicAuthGateway = lazyWithRecovery(
   // @ts-expect-error The lightweight public auth gateway intentionally remains JavaScript.
@@ -43,6 +42,14 @@ const BusinessSphereDashboard = lazyWithRecovery(
   () => import("./BusinessSphereDashboard"),
   "business-sphere-dashboard",
 );
+const SignupPage = lazyWithRecovery(
+  async () => {
+    // @ts-expect-error The preserved signup wizard is a named JavaScript export.
+    const module = await import("./BusinessSphereDashboard");
+    return { default: module.SignupPage };
+  },
+  "signup-page",
+);
 const PatientSmsConsentSettings = lazyWithRecovery(
   // @ts-expect-error The patient preference experience is intentionally authored in JavaScript.
   () => import("./components/PatientSmsConsentSettings"),
@@ -50,54 +57,101 @@ const PatientSmsConsentSettings = lazyWithRecovery(
 );
 
 function DashboardRouteFallback() {
-  return <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-6" role="status" aria-live="polite">
-    <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900/80 p-6 text-center shadow-2xl">
-      <BrandLogo variant="compact" priority className="mx-auto h-11 w-11 animate-pulse ring-1 ring-emerald-300/30" />
-      <h1 className="mt-4 text-base font-semibold">Preparing Smart Manager</h1>
-      <p className="mt-1 text-sm text-slate-400">Loading your secure business workspace.</p>
+  return <main className="sm-loading-screen grid min-h-screen place-items-center p-6 text-slate-100" role="status" aria-live="polite">
+    <div className="sm-loading-card w-full max-w-sm rounded-[28px] border border-white/10 p-8 text-center shadow-2xl">
+      <div className="sm-loading-brand mx-auto" aria-hidden="true">
+        <span className="sm-loading-brand__halo" />
+        <span className="sm-loading-brand__orbit sm-loading-brand__orbit--one"><span /></span>
+        <span className="sm-loading-brand__orbit sm-loading-brand__orbit--two"><span /></span>
+        <BrandLogo variant="compact" priority className="sm-loading-brand__logo" />
+      </div>
+      <h1 className="mt-6 text-base font-semibold tracking-[-.01em]">Preparing Smart Manager</h1>
+      <p className="mt-2 text-sm text-slate-400">Loading your secure business workspace.</p>
+      <div className="sm-loading-progress mx-auto mt-6" aria-hidden="true"><span /></div>
     </div>
   </main>;
 }
 
-function isPublicAuthRequest() {
-  if (typeof window === "undefined") return false;
-  const params = new URLSearchParams(window.location.search);
-  let hasStoredSession = false;
-  try {
-    hasStoredSession = Boolean(
-      window.localStorage.getItem("bs_access_token") ||
-      window.sessionStorage.getItem("bs_session_access_token"),
-    );
-  } catch {}
-  return params.get("auth") !== "signup" && !hasStoredSession;
+function AuthenticationUnavailable({ onRetry }: { onRetry?: () => Promise<void> }) {
+  const [retrying, setRetrying] = useState(false);
+  const retry = async () => {
+    if (!onRetry || retrying) return;
+    setRetrying(true);
+    try { await onRetry(); } finally { setRetrying(false); }
+  };
+  return <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-6">
+    <section className="w-full max-w-md rounded-2xl border border-red-400/20 bg-slate-900 p-7 text-center shadow-2xl" role="alert">
+      <h1 className="text-lg font-semibold">Secure authentication is unavailable</h1>
+      <p className="mt-3 text-sm leading-6 text-slate-400">This workspace cannot verify the account identity required for tenant-scoped access. Retry secure recovery before signing out; no unverified workspace data is displayed.</p>
+      {onRetry && <button type="button" onClick={() => void retry()} disabled={retrying} className="mt-6 w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:cursor-wait disabled:opacity-60">{retrying ? "Recovering secure workspace…" : "Retry secure workspace recovery"}</button>}
+    </section>
+  </main>;
+}
+
+function IdentitySetupRequired({ reason, onRetry, onContinueOnboarding }: { reason?: string | null; onRetry?: () => Promise<void>; onContinueOnboarding?: () => void }) {
+  const [retrying, setRetrying] = useState(false);
+  const retry = async () => {
+    if (!onRetry || retrying) return;
+    setRetrying(true);
+    try { await onRetry(); } finally { setRetrying(false); }
+  };
+  return <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-6">
+    <section className="w-full max-w-md rounded-2xl border border-amber-300/20 bg-slate-900 p-7 text-center shadow-2xl" role="alert">
+      <h1 className="text-lg font-semibold">Secure workspace setup required</h1>
+      <p className="mt-3 text-sm leading-6 text-slate-400">Your Supabase session is valid, but the application could not verify the profile and workspace identity required for tenant-scoped access.</p>
+      {reason && <p className="mt-3 text-xs text-slate-500">Reference: {reason}</p>}
+      {onContinueOnboarding && <button type="button" onClick={onContinueOnboarding} className="mt-6 w-full rounded-xl border border-emerald-500/40 px-4 py-3 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/10">Continue workspace setup</button>}
+      {onRetry && <button type="button" onClick={() => void retry()} disabled={retrying} className="mt-6 w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:cursor-wait disabled:opacity-60">{retrying ? "Checking secure workspace…" : "Retry secure workspace access"}</button>}
+    </section>
+  </main>;
+}
+
+function requestedAuthScreen() {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.search).get("auth") || "";
+}
+
+function isPublicAuthScreen() {
+  return ["login", "forgot", "reset", "verify"].includes(requestedAuthScreen());
+}
+
+function ProtectedSurface({ children }: { children: ReactNode }) {
+  const auth = useAuthContext();
+  const authScreen = requestedAuthScreen();
+  const requestedSignup = authScreen === "signup";
+
+  if (auth.loading) return <DashboardRouteFallback />;
+  if (requestedSignup) {
+    return <Suspense fallback={<DashboardRouteFallback />}><SignupPage onAuthenticated={() => { window.location.assign("/app"); }} onSwitchToLogin={() => { window.location.assign("/app?auth=login"); }} /></Suspense>;
+  }
+  if (auth.status === "AUTH_ERROR") return <AuthenticationUnavailable onRetry={auth.session ? auth.refresh : undefined} />;
+  if (auth.reason === "EMAIL_UNCONFIRMED") return <Suspense fallback={<DashboardRouteFallback />}><PublicAuthGateway /></Suspense>;
+  if (auth.status === "UNAUTHORIZED") {
+    const canResumeOnboarding = Boolean(auth.session && ["PROFILE_MISSING", "PROFILE_TENANT_INCOMPLETE", "MEMBERSHIP_MISSING", "WORKSPACE_MISSING"].includes(String(auth.reason || "")));
+    return <IdentitySetupRequired reason={typeof auth.reason === "string" ? auth.reason : null} onRetry={auth.session ? auth.refresh : undefined} onContinueOnboarding={canResumeOnboarding ? () => { window.location.assign("/app?auth=signup"); } : undefined} />;
+  }
+  if (authScreen === "forgot" || authScreen === "reset" || (isPublicAuthScreen() && !auth.isAuthenticated)) return <Suspense fallback={<DashboardRouteFallback />}><PublicAuthGateway /></Suspense>;
+  if (!auth.configured && !auth.isAuthenticated) {
+    return <AuthenticationUnavailable />;
+  }
+  if (!auth.isAuthenticated) return <Suspense fallback={<DashboardRouteFallback />}><PublicAuthGateway /></Suspense>;
+  return <>{children}</>;
 }
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
-  return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/app"}>{() => <Suspense fallback={<DashboardRouteFallback />}>{isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />}</Suspense>}</Route>
-      <Route path={"/patient/sms-preferences"}>{() => <Suspense fallback={<DashboardRouteFallback />}><PatientSmsConsentSettings /></Suspense>}</Route>
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
-  );
+  return <Switch>
+    <Route path="/" component={Home} />
+    <Route path="/app">{() => <ProtectedSurface><Suspense fallback={<DashboardRouteFallback />}><BusinessSphereDashboard /></Suspense></ProtectedSurface>}</Route>
+    <Route path="/patient/sms-preferences">{() => <ProtectedSurface><Suspense fallback={<DashboardRouteFallback />}><PatientSmsConsentSettings /></Suspense></ProtectedSurface>}</Route>
+    <Route path="/404" component={NotFound} />
+    <Route component={NotFound} />
+  </Switch>;
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
 function App() {
-  return (
-    <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="dark"
-        switchable={true}
-      >
+  return <ErrorBoundary>
+    <AuthProvider>
+      <ThemeProvider defaultTheme="dark" switchable={true}>
         <LanguageProvider>
           <DashboardPreferencesProvider>
             <TooltipProvider>
@@ -107,8 +161,8 @@ function App() {
           </DashboardPreferencesProvider>
         </LanguageProvider>
       </ThemeProvider>
-    </ErrorBoundary>
-  );
+    </AuthProvider>
+  </ErrorBoundary>;
 }
 
 export default App;

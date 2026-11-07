@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1280, initial-scale=1.0" />
+<title>Database controls remain enabled</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0}
+.slide-container{width:1280px;min-height:720px;background:#0B1F33;color:#F5F8FB;font-family:Arial,Helvetica,sans-serif}
+.content{padding:56px 76px 0}
+.kicker{color:#22C7A5;font-size:15px;letter-spacing:2.4px;font-weight:700;text-transform:uppercase}
+h2{margin:12px 0 0;font-size:42px;line-height:1.1}
+.lede{margin-top:12px;color:#BFD0DC;font-size:19px;line-height:1.4;width:900px}
+.main-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.stat-box{border-top:2px solid #2B5D72;padding-top:16px}
+.stat-num{color:#22C7A5;font-size:36px;font-weight:700;margin-bottom:4px}
+.stat-label{color:#F5F8FB;font-size:16px;text-transform:uppercase;letter-spacing:1px}
+.highlight-box{background:rgba(34,199,165,0.1);border-left:4px solid #22C7A5;padding:24px;margin-bottom:24px}
+.highlight-num{color:#22C7A5;font-size:48px;font-weight:700;line-height:1}
+.highlight-text{color:#F5F8FB;font-size:20px;margin-top:8px}
+.storage-section{margin-top:40px;border-top:1px solid #2B5D72;padding-top:24px}
+.storage-title{font-size:20px;color:#22C7A5;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px}
+.storage-list{display:flex;gap:40px}
+.storage-item{display:flex;flex-direction:column;gap:4px}
+.storage-name{font-size:18px;font-weight:700}
+.storage-type{color:#BFD0DC;font-size:14px;text-transform:uppercase}
+.source{margin-top:40px;color:#7895A8;font-size:13px}
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <div class="content">
+    <div class="kicker">03 / DATABASE CONTROLS</div>
+    <h2>Database controls remain enabled</h2>
+    <div class="lede">No destructive reset, manual ledger edit, or blanket RLS change was performed. Existing security and integrity measures were preserved during synchronization.</div>
+
+    <div class="main-grid">
+      <div>
+        <div class="highlight-box">
+          <div class="highlight-num">0</div>
+          <div class="highlight-text">Public tables with RLS disabled</div>
+        </div>
+        <p style="color:#BFD0DC;font-size:18px;line-height:1.5">All 518 inventoried public tables maintain active Row Level Security, ensuring tenant isolation remains intact.</p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-num">719</div>
+          <div class="stat-label">Public Policies</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">2,546</div>
+          <div class="stat-label">Constraints</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">1,189</div>
+          <div class="stat-label">Indexes</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">441</div>
+          <div class="stat-label">Triggers</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="storage-section">
+      <div class="storage-title">Storage Buckets Present</div>
+      <div class="storage-list">
+        <div class="storage-item">
+          <span class="storage-name">avatars</span>
+          <span class="storage-type">Public • 2 MiB Limit</span>
+        </div>
+        <div class="storage-item">
+          <span class="storage-name">company-logos</span>
+          <span class="storage-type">Public • 2 MiB Limit</span>
+        </div>
+        <div class="storage-item">
+          <span class="storage-name">documents</span>
+          <span class="storage-type">Private • 25 MiB Limit</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="source">Source: Supabase connector catalog inventory, 23 Aug 2026.</div>
+  </div>
+</div>
+</body>
+</html>

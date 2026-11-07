@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Classification & Dead-Letter Handling</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.slide-container{width:1280px;min-height:720px;background:#0b1220;color:#edf4f2;font-family:Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
+.content{min-height:720px;margin:0 74px;padding-top:56px;display:flex;flex-direction:column}
+.kicker{font-size:14px;letter-spacing:3px;text-transform:uppercase;color:#55d6be;font-weight:700}
+h2{font-size:42px;line-height:1.08;letter-spacing:-1px;margin-top:16px;font-weight:750}
+.intro{color:#9fb3b0;font-size:19px;line-height:1.45;max-width:850px;margin-top:17px}
+.rule{height:1px;background:#29403c;margin-top:34px}
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:12px;flex:1}
+.col-header{font-size:14px;letter-spacing:2px;text-transform:uppercase;padding-top:15px;margin-bottom:18px}
+.col-safe .col-header{color:#55d6be;border-top:3px solid #55d6be}
+.col-quarantine .col-header{color:#f2b84b;border-top:3px solid #f2b84b}
+.class-item{margin-bottom:8px}
+.class-name{font-size:18px;font-weight:700;letter-spacing:1px;margin-bottom:6px}
+.col-safe .class-name{color:#edf4f2}
+.col-quarantine .class-name{color:#edf4f2}
+.class-desc{font-size:15px;line-height:1.45;color:#8fa4a0}
+.duplicate-note{border-top:1px solid #29403c;padding-top:8px;margin-bottom:8px;display:flex;align-items:center;gap:16px}
+.duplicate-label{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#718987;white-space:nowrap}
+.duplicate-text{font-size:16px;color:#aebfbe;line-height:1.4}
+.duplicate-text strong{color:#edf4f2}
+.footer{display:flex;justify-content:space-between;color:#617873;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding-top:8px;margin-bottom:0;border-top:1px solid #29403c}
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <div class="content">
+    <div class="kicker">04 / Event Classification</div>
+    <h2>Classification &amp; Dead-Letter Handling</h2>
+    <p class="intro">Every leased event is strictly classified against the trusted outbound transaction. Only safe states are requeued for settlement; all others remain quarantined.</p>
+    <div class="rule"></div>
+    <div class="columns">
+      <div class="col-safe">
+        <div class="col-header">Safe for Settlement</div>
+        <div class="class-item">
+          <div class="class-name">SAFE_RETRY</div>
+          <div class="class-desc">Transient or non-terminal provider state. Safe to requeue and re-evaluate through the idempotent service path.</div>
+        </div>
+        <div class="class-item">
+          <div class="class-name">SAFE_RECONCILE</div>
+          <div class="class-desc">Terminal provider status matches the trusted outbound identity, amount, and currency. Safe to finalize settlement.</div>
+        </div>
+      </div>
+      <div class="col-quarantine">
+        <div class="col-header">Quarantined / Dead-Letter</div>
+        <div class="class-item">
+          <div class="class-name">CONFLICT</div>
+          <div class="class-desc">Durable provider identity conflict. A reused provider reference with a different semantic fingerprint.</div>
+        </div>
+        <div class="class-item">
+          <div class="class-name">FIELD_MISMATCH</div>
+          <div class="class-desc">Amount, currency, or provider reference does not match the trusted outbound transaction record.</div>
+        </div>
+        <div class="class-item">
+          <div class="class-name">UNCORRELATED</div>
+          <div class="class-desc">Missing client reference or the trusted outbound transaction could not be found in the tenant scope.</div>
+        </div>
+        <div class="class-item">
+          <div class="class-name">ALREADY_SETTLED</div>
+          <div class="class-desc">The trusted transaction or bank posting is already terminal. No further action is permitted.</div>
+        </div>
+      </div>
+    </div>
+    <div class="duplicate-note">
+      <div class="duplicate-label">Exact Replays</div>
+      <div class="duplicate-text">Exact semantic duplicates are marked <strong>DUPLICATE</strong> and never reposted. They do not consume settlement caps.</div>
+    </div>
+    <div class="footer"><span>Strict isolation of financial risk</span><span>05 / 08</span></div>
+  </div>
+</div>
+</body>
+</html>

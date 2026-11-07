@@ -1,0 +1,29 @@
+<slide id="capture_gates">
+  <background color="paper"/>
+  <shape id="gold-rule" type="line" x="60" y="64" width="150" height="0" stroke="accent" stroke-width="3"/>
+  <text id="title" x="60" y="92" width="850" height="42" font="heading" size="34" color="brand" wrap="false">Gates za ushahidi hulinda operations</text>
+  <text id="subtitle" x="60" y="145" width="1050" height="46" font="body" size="20" color="muted">Hali ya visual evidence ya kila module lazima ibaki sawa na kile kilichopitiwa.</text>
+  <shape id="inventory-card" type="rect" x="60" y="220" width="330" height="320" fill="#EDF3EF" stroke="#B5CFC1" stroke-width="1"/>
+  <icon id="inventory-icon" name="monitor" x="88" y="246" width="40" height="40" color="brand"/>
+  <text id="inventory-heading" x="146" y="254" width="185" height="26" font="body" size="22" color="brand" wrap="false">Inventory</text>
+  <shape id="inventory-status" type="rect" x="88" y="308" width="225" height="30" fill="brand"/>
+  <text id="inventory-status-text" x="98" y="315" width="205" height="16" font="caption" size="12" color="white" align="center" wrap="false">ORIENTATION FRAME IMEIDHINISHWA</text>
+  <text id="inventory-body" x="88" y="370" width="245" height="105" font="body" size="18" color="ink" line-height="1.31"><p>Inaruhusiwa: navigation shell.</p><p>Hairuhusiwi: item, idadi, eneo, value au action proof.</p></text>
+  <shape id="stock-card" type="rect" x="445" y="220" width="330" height="320" fill="#FFF8E8" stroke="accent" stroke-width="1"/>
+  <icon id="stock-icon" name="lock" x="473" y="246" width="40" height="40" color="accent"/>
+  <text id="stock-heading" x="531" y="254" width="190" height="26" font="body" size="22" color="brand" wrap="false">Stock Control</text>
+  <shape id="stock-status" type="rect" x="473" y="308" width="225" height="30" fill="accent"/>
+  <text id="stock-status-text" x="483" y="315" width="205" height="16" font="caption" size="12" color="ink" align="center" wrap="false">DETAIL UI BADO HAIJAPITISHWA</text>
+  <text id="stock-body" x="473" y="370" width="245" height="105" font="body" size="18" color="ink" line-height="1.31"><p>Hakuna count, tofauti, adjustment, approval, location au value.</p><p>Inahitaji safe capture.</p></text>
+  <shape id="reports-card" type="rect" x="830" y="220" width="330" height="320" fill="#FFF8E8" stroke="accent" stroke-width="1"/>
+  <icon id="reports-icon" name="lock" x="858" y="246" width="40" height="40" color="accent"/>
+  <text id="reports-heading" x="916" y="254" width="185" height="26" font="body" size="22" color="brand" wrap="false">Reports</text>
+  <shape id="reports-status" type="rect" x="858" y="308" width="225" height="30" fill="accent"/>
+  <text id="reports-status-text" x="868" y="315" width="205" height="16" font="caption" size="12" color="ink" align="center" wrap="false">UI BADO HAIJAPITISHWA</text>
+  <text id="reports-body" x="858" y="370" width="245" height="105" font="body" size="18" color="ink" line-height="1.31"><p>Hakuna filter, metric, export, schedule, delivery au download proof.</p><p>Inahitaji safe capture.</p></text>
+  <shape id="gate-band" type="rect" x="60" y="575" width="1100" height="43" fill="brand"/>
+  <text id="gate-band-text" x="80" y="586" width="1060" height="18" font="caption" size="14" color="white" align="center" wrap="false">Future UI: fully loaded, no private data, no error/debug, no credentials, no irreversible action, claim-to-screen match.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="#E0D9CE" stroke-width="1"/>
+  <text id="footer-title" x="60" y="675" width="560" height="18" font="caption" color="muted" wrap="false">SMART MANAGER ERP • Sura 10–12 Operations Foundation</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="18" font="caption" color="muted" align="right" wrap="false">07</text>
+</slide>

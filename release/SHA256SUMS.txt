@@ -1,0 +1,2 @@
+2290215bcfb16740ca8f34e3b0540c5891b04a945e55a4866de7af058aa44194  Smart-Manager-Windows-x64-unsigned.zip
+11679197de69a4e2e9d78c1e19ed128eef4dbb335d714a1f93b96054dc6241d8  app-debug.apk

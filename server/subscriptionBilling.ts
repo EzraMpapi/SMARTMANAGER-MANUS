@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { ENV } from "./_core/env";
 import { resolveVerifiedProfile } from "./aiApprovals";
+import { httpStatusFromError } from "./_core/httpError";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -26,6 +27,8 @@ const BILLING_MANAGER_ROLES = new Set([
   "admin",
 ]);
 
+const PLATFORM_ADMIN_ROLES = new Set(["super administrator", "platform administrator"]);
+
 function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -46,6 +49,14 @@ function ensureBillingManager(role: string) {
   }
 }
 
+function ensurePlatformAdmin(role: string) {
+  if (!PLATFORM_ADMIN_ROLES.has(role.toLowerCase())) {
+    const error = new Error("Only a Global Admin can manage trial-expiry notice support controls.");
+    (error as Error & { status?: number }).status = 403;
+    throw error;
+  }
+}
+
 function harakaConfiguration() {
   const apiKey = ENV.harakaPayApiKey;
   const baseUrl = ENV.harakaPayBaseUrl;
@@ -58,16 +69,13 @@ function harakaConfiguration() {
   return { apiKey, baseUrl, collectUrl };
 }
 
-async function parseProviderResponse(response: globalThis.Response): Promise<JsonRecord> {
+async function parseProviderResponse<T = unknown>(response: globalThis.Response): Promise<T> {
   const body = await response.text();
-  let parsed: unknown = null;
   try {
-    parsed = body ? JSON.parse(body) : null;
+    return (body ? JSON.parse(body) : null) as T;
   } catch {
-    parsed = null;
+    return { message: body.slice(0, 500) } as T;
   }
-  if (!isRecord(parsed)) return { message: body.slice(0, 500) };
-  return parsed;
 }
 
 async function userRpc<T>(functionName: string, accessToken: string, body: JsonRecord): Promise<T> {
@@ -81,9 +89,9 @@ async function userRpc<T>(functionName: string, accessToken: string, body: JsonR
     },
     body: JSON.stringify(body),
   });
-  const payload = await parseProviderResponse(response);
+  const payload = await parseProviderResponse<unknown>(response);
   if (!response.ok) {
-    const error = new Error(asString(payload.message) || "The billing request could not be completed.");
+    const error = new Error((isRecord(payload) && asString(payload.message)) || "The billing request could not be completed.");
     (error as Error & { status?: number }).status = response.status === 401 || response.status === 403 ? response.status : 400;
     throw error;
   }
@@ -97,8 +105,8 @@ async function publicRpc<T>(functionName: string, body: JsonRecord = {}): Promis
     headers: { apikey: ENV.supabaseAnonKey, "content-type": "application/json" },
     body: JSON.stringify(body),
   });
-  const payload = await parseProviderResponse(response);
-  if (!response.ok) throw new Error(asString(payload.message) || "The subscription catalog could not be loaded.");
+  const payload = await parseProviderResponse<unknown>(response);
+  if (!response.ok) throw new Error((isRecord(payload) && asString(payload.message)) || "The subscription catalog could not be loaded.");
   return payload as T;
 }
 
@@ -113,8 +121,8 @@ async function serviceRpc<T>(functionName: string, body: JsonRecord): Promise<T>
     },
     body: JSON.stringify(body),
   });
-  const payload = await parseProviderResponse(response);
-  if (!response.ok) throw new Error(asString(payload.message) || "The billing payment state could not be recorded.");
+  const payload = await parseProviderResponse<unknown>(response);
+  if (!response.ok) throw new Error((isRecord(payload) && asString(payload.message)) || "The billing payment state could not be recorded.");
   return payload as T;
 }
 
@@ -144,7 +152,7 @@ async function fetchHarakaStatus(orderId: string): Promise<JsonRecord> {
   const { apiKey, baseUrl } = harakaConfiguration();
   const statusUrl = new URL(`/api/v1/status/${encodeURIComponent(orderId)}`, baseUrl).toString();
   const response = await fetch(statusUrl, { headers: { "X-API-Key": apiKey, accept: "application/json" } });
-  const payload = await parseProviderResponse(response);
+  const payload = await parseProviderResponse<JsonRecord>(response);
   if (!response.ok) {
     const error = new Error("HarakaPay payment status could not be verified.");
     (error as Error & { status?: number }).status = 502;
@@ -187,41 +195,99 @@ export async function subscriptionBillingCatalogHandler(_req: Request, res: Resp
   }
 }
 
+export async function subscriptionBillingAccessHandler(req: Request, res: Response) {
+  try {
+    const { token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
+    return res.status(200).json({ access: await userRpc("billing_access_snapshot", token, {}) });
+  } catch (error) {
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "Subscription access could not be loaded.");
+  }
+}
+
 export async function subscriptionBillingSnapshotHandler(req: Request, res: Response) {
   try {
     const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
     ensureBillingManager(profile.role);
     if (typeof profile.company_id === "string" && profile.company_id) {
-      await serviceRpc("billing_reconcile_trial_expiry", { p_company_id: profile.company_id });
+      await serviceRpc("billing_reconcile_free_plan_expiry", { p_company_id: profile.company_id });
     }
     return res.status(200).json(await userRpc("billing_snapshot", token, {}));
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "Billing could not be loaded.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "Billing could not be loaded.");
+  }
+}
+
+export async function trialExpiryNoticeClaimHandler(req: Request, res: Response) {
+  try {
+    const { token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
+    return res.status(200).json(await userRpc("billing_trial_expiry_notice_claim", token, {}));
+  } catch (error) {
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "Trial status could not be checked.");
+  }
+}
+
+export async function trialExpiryNoticeAcknowledgeHandler(req: Request, res: Response) {
+  try {
+    const { token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
+    const payload = isRecord(req.body) ? req.body : {};
+    const claimToken = asString(payload.claimToken, 200);
+    if (!claimToken) return sendError(res, 400, "A trial notice claim token is required.");
+    return res.status(200).json(await userRpc("billing_trial_expiry_notice_acknowledge", token, { p_claim_token: claimToken }));
+  } catch (error) {
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The trial-expiry notice could not be acknowledged.");
+  }
+}
+
+export async function trialExpiryNoticeAdminSnapshotHandler(req: Request, res: Response) {
+  try {
+    const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
+    ensurePlatformAdmin(profile.role);
+    const companyId = asString(req.query.companyId, 200);
+    const userId = asString(req.query.userId, 200);
+    const subscriptionId = asString(req.query.subscriptionId, 200);
+    return res.status(200).json(await userRpc("billing_admin_trial_expiry_notice_snapshot", token, {
+      p_company_id: companyId || null,
+      p_user_id: userId || null,
+      p_subscription_id: subscriptionId || null,
+    }));
+  } catch (error) {
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "Trial-expiry notice support data could not be loaded.");
+  }
+}
+
+export async function trialExpiryNoticeAdminResetHandler(req: Request, res: Response) {
+  try {
+    const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
+    ensurePlatformAdmin(profile.role);
+    const payload = isRecord(req.body) ? req.body : {};
+    const companyId = asString(payload.companyId, 200);
+    const userId = asString(payload.userId, 200);
+    const subscriptionId = asString(payload.subscriptionId, 200);
+    const reason = asString(payload.reason, 1000);
+    if (!companyId || !userId || !subscriptionId || reason.length < 5) return sendError(res, 400, "Company, user, subscription, and a reset reason of at least five characters are required.");
+    return res.status(200).json(await userRpc("billing_admin_trial_expiry_notice_reset", token, {
+      p_company_id: companyId,
+      p_user_id: userId,
+      p_subscription_id: subscriptionId,
+      p_reason: reason,
+    }));
+  } catch (error) {
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The trial-expiry notice could not be reset.");
   }
 }
 
 export async function subscriptionBillingStartTrialHandler(req: Request, res: Response) {
-  try {
-    const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
-    ensureBillingManager(profile.role);
-    const payload = isRecord(req.body) ? req.body : {};
-    const planCode = asString(payload.planCode, 40) || "TWIGA";
-    return res.status(201).json(await userRpc("billing_start_trial", token, { p_plan_code: planCode }));
-  } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "The free trial could not be started.");
-  }
+  return subscriptionBillingStartFreePlanHandler(req, res);
 }
 
-export async function subscriptionBillingSelectTrialPlanHandler(req: Request, res: Response) {
+export async function subscriptionBillingStartFreePlanHandler(req: Request, res: Response) {
+
   try {
     const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
     ensureBillingManager(profile.role);
-    const payload = isRecord(req.body) ? req.body : {};
-    const planCode = asString(payload.planCode, 40);
-    if (!planCode) return sendError(res, 400, "A subscription package is required.");
-    return res.status(200).json(await userRpc("billing_select_trial_plan", token, { p_plan_code: planCode }));
+    return res.status(201).json(await userRpc("billing_start_free_plan", token, { p_plan_code: "FREE_15" }));
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "The selected trial package could not be saved.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The Free plan could not be started.");
   }
 }
 
@@ -232,7 +298,7 @@ export async function subscriptionBillingProfileHandler(req: Request, res: Respo
     const payload = isRecord(req.body) ? req.body : {};
     return res.status(200).json(await userRpc("billing_upsert_profile", token, { p_payload: payload }));
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "Billing information could not be saved.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "Billing information could not be saved.");
   }
 }
 
@@ -243,7 +309,7 @@ export async function subscriptionBillingPlanHandler(req: Request, res: Response
     const payload = isRecord(req.body) ? req.body : {};
     return res.status(200).json(await userRpc("billing_upsert_plan", token, { p_payload: payload }));
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "The billing plan could not be saved.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The billing plan could not be saved.");
   }
 }
 
@@ -254,11 +320,11 @@ export async function harakaPayCollectHandler(req: Request, res: Response) {
     ensureBillingManager(profile.role);
     const payload = isRecord(req.body) ? req.body : {};
     const planId = asString(payload.planId, 200);
-    const billingCycle = asString(payload.billingCycle, 20);
+    const billingCycle = "Monthly";
     const phone = asString(payload.phone, 30);
     const description = asString(payload.description, 250);
     const idempotencyKey = asString(payload.idempotencyKey, 200);
-    if (!planId || !billingCycle || !phone) return sendError(res, 400, "Plan, billing cycle, and Tanzanian mobile number are required.");
+    if (!planId || !phone) return sendError(res, 400, "Package and Tanzanian mobile number are required.");
     payment = await userRpc<PaymentIntent>("billing_create_payment_intent", token, {
       p_plan_id: planId,
       p_billing_cycle: billingCycle,
@@ -283,7 +349,7 @@ export async function harakaPayCollectHandler(req: Request, res: Response) {
         reference: payment.reference,
       }),
     });
-    const providerPayload = await parseProviderResponse(providerResponse);
+    const providerPayload = await parseProviderResponse<JsonRecord>(providerResponse);
     const orderId = providerOrderId(providerPayload);
     if (!providerResponse.ok || providerPayload.success === false || !orderId) {
       await serviceRpc("billing_mark_payment_dispatch_failure", {
@@ -321,7 +387,7 @@ export async function harakaPayCollectHandler(req: Request, res: Response) {
         // The primary response remains generic; details are retained only in server logs.
       }
     }
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "The payment request could not be started.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The payment request could not be started.");
   }
 }
 
@@ -342,7 +408,7 @@ export async function harakaPayStatusHandler(req: Request, res: Response) {
     });
     return res.status(200).json(publicPaymentState(result));
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "The payment status could not be verified.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The payment status could not be verified.");
   }
 }
 
@@ -362,7 +428,7 @@ export async function harakaPayWebhookHandler(req: Request, res: Response) {
     });
     return res.status(200).json({ received: true, payment: publicPaymentState(result) });
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, "The payment webhook could not be processed safely.");
+    return sendError(res, httpStatusFromError(error), "The payment webhook could not be processed safely.");
   }
 }
 
@@ -372,10 +438,10 @@ export async function harakaPayBalanceHandler(req: Request, res: Response) {
     ensureBillingManager(profile.role);
     const { apiKey, baseUrl } = harakaConfiguration();
     const response = await fetch(new URL("/api/v1/balance", baseUrl), { headers: { "X-API-Key": apiKey, accept: "application/json" } });
-    const payload = await parseProviderResponse(response);
+    const payload = await parseProviderResponse<JsonRecord>(response);
     if (!response.ok) return sendError(res, 502, "HarakaPay balance could not be retrieved.");
     return res.status(200).json({ walletBalance: payload.wallet_balance ?? payload.balance ?? null, floatBalance: payload.float_balance ?? payload.float ?? null, currency: payload.currency ?? "TZS" });
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "HarakaPay balance could not be retrieved.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "HarakaPay balance could not be retrieved.");
   }
 }

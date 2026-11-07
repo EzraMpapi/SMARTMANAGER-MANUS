@@ -1,0 +1,363 @@
+=== ALL WORKFLOW SOURCES ===
+--- 01_login_signup_onboarding.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Entry])
+  S1[Enter credentials]
+  S2[Validate identity]
+  S3[Confirm email/passkey]
+  S4[Create or join company]
+  S5[Load entitled workspace]
+  S6((Success: role-aware home))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  S5 --> S6
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S6 result;
+  %% Owner: Visitor / owner / invited user
+--- 02_customer_creation.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Open CRM])
+  S1[Start customer form]
+  S2[Validate identity and duplicate risk]
+  S3[Confirm customer]
+  S4[Persist profile + audit]
+  S5((Success: customer 360))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: CRM / Sales
+--- 03_sales_to_receipt.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Select customer])
+  S1[Build quotation or order]
+  S2[Validate stock, tax, terms]
+  S3[Confirm invoice]
+  S4[Process payment]
+  S5((Success: receipt + ledger + fiscal evidence))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: Sales / Finance / TRA
+--- 04_procurement_cycle.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Raise need])
+  S1[Create requisition]
+  S2[Validate budget and approval]
+  S3[Approve purchase order]
+  S4[Receive goods]
+  S5((Success: stock + payable evidence))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: Procurement / Inventory / Finance
+--- 05_inventory_movement.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Choose source/destination])
+  S1[Enter movement]
+  S2[Validate available quantity]
+  S3[Confirm movement]
+  S4[Post movement record]
+  S5((Success: balances + audit))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: Inventory / SCM
+--- 06_pos_transaction.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Open till])
+  S1[Scan/select items]
+  S2[Validate tender and stock]
+  S3[Confirm sale]
+  S4[Print or issue receipt]
+  S5((Success: shift and ledger update))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: POS / Inventory / Finance
+--- 07_loan_lifecycle.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Register borrower/member])
+  S1[Submit application]
+  S2[Score + validate guarantors/collateral]
+  S3[Maker-checker approval]
+  S4[Disburse and schedule]
+  S5((Success: repayment plan + arrears monitoring))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: Microfinance / Bank & MFI / VICOBA
+--- 08_payment_reconciliation.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Select account or settlement])
+  S1[Import or record payment]
+  S2[Validate reference/idempotency]
+  S3[Match to source]
+  S4[Approve exception]
+  S5((Success: reconciled balance))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: Finance / Banking / POS
+--- 09_employee_onboarding.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Create employee])
+  S1[Capture identity and contract]
+  S2[Validate role and department]
+  S3[Confirm onboarding]
+  S4[Notify employee]
+  S5((Success: self-service profile))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: HR / Employee Portal
+--- 10_healthcare_patient_journey.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Register patient])
+  S1[Book encounter]
+  S2[Capture consent and triage]
+  S3[Document encounter and orders]
+  S4[Sign and dispense/bill]
+  S5((Success: governed clinical record))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: Healthcare / Pharmacy
+--- 11_school_admission.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Receive enquiry])
+  S1[Create application]
+  S2[Validate learner/guardian data]
+  S3[Approve admission]
+  S4[Assign class and fee plan]
+  S5((Success: learner record))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: School / Finance
+--- 12_hotel_reservation.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Search availability])
+  S1[Capture guest and dates]
+  S2[Validate room/rate/deposit]
+  S3[Confirm reservation]
+  S4[Check-in / consume / settle]
+  S5((Success: folio closed))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: Hotel / Restaurant / Finance
+--- 13_restaurant_order.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Open table])
+  S1[Take order]
+  S2[Validate menu and stock]
+  S3[Send to kitchen]
+  S4[Serve and bill]
+  S5((Success: closed table + stock))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: Restaurant / POS / Inventory
+--- 14_fleet_trip.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Request trip])
+  S1[Assign vehicle and driver]
+  S2[Validate availability and compliance]
+  S3[Dispatch]
+  S4[Capture fuel/odometer/POD]
+  S5((Success: trip reconciled))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: Fleet / SCM / Finance
+--- 15_property_rental.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Publish unit])
+  S1[Receive application]
+  S2[Validate tenant and lease]
+  S3[Approve lease]
+  S4[Bill and receive rent]
+  S5((Success: occupancy + statement))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: Property / CRM / Finance
+--- 16_money_agent_transaction.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Identify customer])
+  S1[Capture cash-in/out intent]
+  S2[Validate limits, KYC, balance, idempotency]
+  S3[Maker-checker if required]
+  S4[Settle provider or mark pending]
+  S5((Success: receipt + ledger + settlement state))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: Money Agent / Finance / Banking
+--- 17_vicoba_saccos_transaction.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Open meeting/member context])
+  S1[Record share/savings/contribution]
+  S2[Validate membership and amount]
+  S3[Confirm group decision]
+  S4[Post cooperative ledger]
+  S5((Success: member balance + meeting evidence))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: VICOBA / Bank & MFI / Finance
+--- 18_reports_settings.mmd ---
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Choose report or setting])
+  S1[Edit parameters]
+  S2[Validate permissions and values]
+  S3[Confirm save/generation]
+  S4[Persist and audit]
+  S5((Success: updated state or delivered report))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: Reports / Settings / Administration

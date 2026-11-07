@@ -1,0 +1,27 @@
+---
+title: SMART MANAGER — Webhook Delivery and Replay Safety
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#f5f3ff'
+    primaryBorderColor: '#7c3aed'
+    lineColor: '#64748b'
+---
+stateDiagram-v2
+  [*] --> Queued
+  Queued --> Delivered: POST signed event
+  Delivered --> Acknowledged: 2xx + event recorded
+  Delivered --> Retryable: timeout / 429 / 5xx
+  Retryable --> Delivered: exponential backoff
+  Delivered --> Duplicate: same event_id seen
+  Duplicate --> Acknowledged: return prior outcome
+  Delivered --> Rejected: invalid signature / schema
+  Rejected --> DeadLetter: retain for investigation
+  Retryable --> DeadLetter: retry budget exhausted
+  Acknowledged --> [*]
+  DeadLetter --> Replayed: operator replays after correction
+  Replayed --> Delivered
+  note right of Delivered
+    Verify signature, timestamp window,
+    event_id, tenant binding, and schema version.
+  end note

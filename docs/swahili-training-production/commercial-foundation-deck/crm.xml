@@ -1,0 +1,27 @@
+<slide id="crm">
+  <background color="bg-content"/>
+  <shape id="gold-rule" type="line" x="60" y="64" width="150" height="0" stroke="accent" stroke-width="3"/>
+  <text id="slide-title" x="60" y="92" width="800" height="44" font="heading" size="34" color="brand" wrap="false">Sura 09: CRM huweka ufuatiliaji wazi</text>
+  <text id="slide-subtitle" x="60" y="145" width="1030" height="46" font="body" size="20" color="muted">CRM hufundishwa kwa vocabulary, ownership na data quality—si kwa kuonyesha taarifa ya mteja.</text>
+  <text id="vocabulary-label" x="60" y="225" width="400" height="22" font="caption" size="14" color="muted" wrap="false">MNYORORO WA DHANA YA CRM</text>
+  <shape id="lead-card" type="rect" x="60" y="265" width="235" height="48" fill="surface" stroke="border" stroke-width="1"/>
+  <text id="lead-text" x="76" y="279" width="200" height="20" font="body" size="17" color="brand" wrap="false">Lead • ishara ya awali</text>
+  <shape id="arrow-lead-contact" type="arrow" x="305" y="272" width="50" height="32" fill="accent" head-ratio="0.32"/>
+  <shape id="contact-card" type="rect" x="365" y="265" width="225" height="48" fill="surface" stroke="border" stroke-width="1"/>
+  <text id="contact-text" x="381" y="279" width="192" height="20" font="body" size="17" color="brand" wrap="false">Contact • mawasiliano</text>
+  <shape id="opportunity-card" type="rect" x="60" y="345" width="235" height="48" fill="surface" stroke="border" stroke-width="1"/>
+  <text id="opportunity-text" x="76" y="359" width="200" height="20" font="body" size="16" color="brand" wrap="false">Opportunity • fursa</text>
+  <shape id="arrow-opportunity-follow" type="arrow" x="305" y="352" width="50" height="32" fill="accent" head-ratio="0.32"/>
+  <shape id="follow-card" type="rect" x="365" y="345" width="225" height="48" fill="surface" stroke="border" stroke-width="1"/>
+  <text id="follow-text" x="381" y="359" width="192" height="20" font="body" size="16" color="brand" wrap="false">Follow-up • ufuatiliaji</text>
+  <shape id="pipeline-card" type="rect" x="180" y="425" width="290" height="54" fill="brand"/>
+  <text id="pipeline-text" x="198" y="442" width="254" height="20" font="body" size="18" color="ink-light" align="center" wrap="false">Pipeline • mfuatano wa hatua</text>
+  <text id="ownership-heading" x="690" y="240" width="430" height="28" font="body" size="21" color="brand" wrap="false">Nidhamu ya uhusiano</text>
+  <text id="ownership-body" x="690" y="292" width="455" height="125" font="body" size="19" color="ink-dark" line-height="1.35"><p>• Ownership hufanya hatua inayofuata ionekane.</p><p>• Ubora wa data huja kabla ya uharaka.</p><p>• Madhumuni na ruhusa huongoza mawasiliano.</p></text>
+  <shape id="crm-gate" type="rect" x="690" y="450" width="440" height="102" fill="#FFF8E8" stroke="accent" stroke-width="2"/>
+  <icon id="crm-gate-icon" name="lock" x="712" y="478" width="36" height="36" color="accent"/>
+  <text id="crm-gate-text" x="770" y="466" width="330" height="58" font="body" size="18" color="brand" line-height="1.25"><p><strong>CRM UI bado haijapitishwa.</strong></p><p>Hakuna contact, owner, note, attachment au pipeline data.</p></text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="border" stroke-width="1"/>
+  <text id="footer-title" x="60" y="675" width="520" height="18" font="caption" color="muted" wrap="false">SMART MANAGER ERP • Sura 07–09 Commercial Foundation</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="18" font="caption" color="muted" align="right" wrap="false">06</text>
+</slide>

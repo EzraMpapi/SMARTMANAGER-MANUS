@@ -1,9 +1,10 @@
 import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { defineConfig, type Plugin, type ViteDevServer } from "vite";
+import { defineConfig, type HtmlTagDescriptor, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 // =============================================================================
@@ -12,6 +13,10 @@ import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 // =============================================================================
 
 const PROJECT_ROOT = import.meta.dirname;
+const PUBLIC_SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
+const PUBLIC_SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY ?? "";
+const PUBLIC_ANALYTICS_ENDPOINT = (process.env.VITE_ANALYTICS_ENDPOINT ?? "").replace(/\/$/, "");
+const PUBLIC_ANALYTICS_WEBSITE_ID = process.env.VITE_ANALYTICS_WEBSITE_ID ?? "";
 const LOG_DIR = path.join(PROJECT_ROOT, ".manus-logs");
 const MAX_LOG_SIZE_BYTES = 1 * 1024 * 1024; // 1MB per log file
 const TRIM_TARGET_BYTES = Math.floor(MAX_LOG_SIZE_BYTES * 0.6); // Trim to 60% to avoid constant re-trimming
@@ -79,22 +84,29 @@ function vitePluginManusDebugCollector(): Plugin {
     name: "manus-debug-collector",
 
     transformIndexHtml(html) {
-      if (process.env.NODE_ENV === "production") {
-        return html;
-      }
-      return {
-        html,
-        tags: [
-          {
-            tag: "script",
-            attrs: {
-              src: "/__manus__/debug-collector.js",
-              defer: true,
-            },
-            injectTo: "head",
+      const tags: HtmlTagDescriptor[] = [];
+      if (PUBLIC_ANALYTICS_ENDPOINT && PUBLIC_ANALYTICS_WEBSITE_ID) {
+        tags.push({
+          tag: "script",
+          attrs: {
+            src: `${PUBLIC_ANALYTICS_ENDPOINT}/umami`,
+            "data-website-id": PUBLIC_ANALYTICS_WEBSITE_ID,
+            defer: true,
           },
-        ],
-      };
+          injectTo: "body",
+        });
+      }
+      if (process.env.NODE_ENV !== "production") {
+        tags.push({
+          tag: "script",
+          attrs: {
+            src: "/__manus__/debug-collector.js",
+            defer: true,
+          },
+          injectTo: "head",
+        });
+      }
+      return tags.length > 0 ? { html, tags } : html;
     },
 
     configureServer(server: ViteDevServer) {
@@ -150,10 +162,37 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+function deploymentVersion() {
+  return process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || (() => {
+    try {
+      return execFileSync("git", ["rev-parse", "HEAD"], { cwd: PROJECT_ROOT, encoding: "utf8" }).trim();
+    } catch {
+      return "development";
+    }
+  })();
+}
+
+function vitePluginDeploymentVersion(): Plugin {
+  return {
+    name: "smart-manager-deployment-version",
+    generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "build-version.json",
+        source: JSON.stringify({ version: deploymentVersion() }),
+      });
+    },
+  };
+}
+
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginDeploymentVersion()];
 
 export default defineConfig({
   plugins,
+  define: {
+    "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(PUBLIC_SUPABASE_URL),
+    "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(PUBLIC_SUPABASE_ANON_KEY),
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
@@ -168,10 +207,21 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
     chunkSizeWarningLimit: 2500,
+    // Gzip size reporting is diagnostic-only and runs after asset emission.
+    // Disabling it avoids an avoidable high-memory post-bundle pass in the
+    // constrained build worker without changing emitted application assets.
+    reportCompressedSize: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
           const moduleId = id.replaceAll("\\", "/");
+          // Keep the largest dashboard-local reusable factories and immutable
+          // seed data out of the already-lazy dashboard entry chunk. These
+          // remain static imports, preserving loading order and behavior;
+          // Rollup emits smaller cacheable assets for the shared code.
+          if (moduleId.endsWith("/client/src/dashboardExtractedModules.jsx")) return "dashboard-community-modules";
+          if (moduleId.endsWith("/client/src/dashboardAdditionalModules.jsx")) return "dashboard-additional-modules";
+          if (moduleId.endsWith("/client/src/dashboardStaticData.js")) return "dashboard-static-data";
           if (!moduleId.includes("/node_modules/")) return;
           if (moduleId.includes("/node_modules/react/") || moduleId.includes("/node_modules/react-dom/") || moduleId.includes("/node_modules/scheduler/")) return "react-runtime";
           if (moduleId.includes("/node_modules/lucide-react/")) return "icon-library";

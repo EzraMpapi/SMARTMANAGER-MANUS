@@ -1,0 +1,35 @@
+---
+title: SMART MANAGER — Security, Tenant Isolation, and Governance
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#fef2f2'
+    primaryBorderColor: '#dc2626'
+    lineColor: '#64748b'
+---
+flowchart TB
+  REQUEST["Authenticated request\nOAuth session cookie"]
+  PROFILE["Verified profile\nuser · company · role"]
+  PROCEDURE["Protected tRPC procedure\nvalidated input + authorization"]
+  COMPANY["Tenant boundary\ncurrent company_id only"]
+  ROLES["Granular permissions\nadmin · manager · officer · teller · employee"]
+  RLS["Supabase RLS\npolicies enforce row visibility"]
+  APPROVAL["Maker-checker\nseparate submitter and approver"]
+  IDEMPOTENCY["Idempotency + concurrency\nkeys · row locks · versions"]
+  AML["AML / fraud controls\nrisk flags · review states"]
+  AUDIT["Audit trail\nwho · what · when · why"]
+  DATA["Persistent records\nfinancial and operational tables"]
+  REQUEST --> PROFILE --> PROCEDURE
+  PROCEDURE --> COMPANY
+  PROCEDURE --> ROLES
+  COMPANY --> RLS --> DATA
+  PROCEDURE --> APPROVAL --> AUDIT
+  PROCEDURE --> IDEMPOTENCY --> AUDIT
+  PROCEDURE --> AML --> AUDIT
+  DATA --> AUDIT
+  classDef entry fill:#eef2ff,stroke:#4338ca,color:#1e1b4b,stroke-width:1.6px;
+  classDef policy fill:#fef2f2,stroke:#dc2626,color:#7f1d1d,stroke-width:1.8px;
+  classDef data fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.6px;
+  class REQUEST,PROFILE,PROCEDURE entry;
+  class COMPANY,ROLES,RLS,APPROVAL,IDEMPOTENCY,AML,AUDIT policy;
+  class DATA data;

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Advisory Locking & Bounded Leases</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.slide-container{width:1280px;min-height:720px;background:#0b1220;color:#edf4f2;font-family:Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
+.content{min-height:720px;margin:0 74px;padding-top:56px;display:flex;flex-direction:column}
+.kicker{font-size:14px;letter-spacing:3px;text-transform:uppercase;color:#55d6be;font-weight:700}
+h2{font-size:42px;line-height:1.08;letter-spacing:-1px;margin-top:16px;font-weight:750}
+.intro{color:#9fb3b0;font-size:19px;line-height:1.45;max-width:790px;margin-top:17px}
+.rule{height:1px;background:#29403c;margin-top:34px}
+.columns{display:grid;grid-template-columns:1fr 1px 1fr;gap:50px;margin-top:45px;flex:1}
+.divider{background:#29403c;height:100%}
+.col h3{font-size:26px;color:#55d6be;letter-spacing:-0.5px;margin-bottom:20px}
+.col h3 span{color:#f2b84b;font-weight:400;font-size:20px;margin-left:10px;letter-spacing:0}
+.feature-list{list-style:none;margin-top:25px}
+.feature-list li{position:relative;padding-left:24px;margin-bottom:22px;font-size:17px;line-height:1.5;color:#aebfbe}
+.feature-list li::before{content:"";position:absolute;left:0;top:8px;width:8px;height:8px;background:#55d6be;border-radius:50%}
+.code-block{font-family:monospace;background:#131f33;color:#8fa4a0;padding:12px 16px;font-size:15px;margin-top:15px;border-left:3px solid #55d6be}
+.footer{display:flex;justify-content:space-between;color:#617873;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding-top:15px;margin-bottom:29px;border-top:1px solid #29403c}
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <div class="content">
+    <div class="kicker">03 / Concurrency control</div>
+    <h2>Advisory Locking &amp; Bounded Leases</h2>
+    <p class="intro">Safe concurrent workers require strict serialization at the account level and non-blocking row leases at the queue level to prevent race conditions.</p>
+    <div class="rule"></div>
+    
+    <div class="columns">
+      <div class="col">
+        <h3>Provider-Account Serialization <span>Level 1</span></h3>
+        <div class="code-block">pg_advisory_xact_lock(...)</div>
+        <ul class="feature-list">
+          <li><strong>Single active drain run:</strong> Ensures only one remediation worker can operate on a specific provider account at any given time.</li>
+          <li><strong>Transaction-scoped:</strong> The lock is automatically released when the transaction completes, preventing orphaned locks.</li>
+          <li><strong>Namespace isolation:</strong> Locks are keyed by provider and merchant-account scope, allowing concurrent processing across different accounts.</li>
+        </ul>
+      </div>
+      
+      <div class="divider"></div>
+      
+      <div class="col">
+        <h3>Bounded Queue Leasing <span>Level 2</span></h3>
+        <div class="code-block">FOR UPDATE OF p, r SKIP LOCKED</div>
+        <ul class="feature-list">
+          <li><strong>Non-blocking acquisition:</strong> Safely leases available rows without waiting for other transactions to release their locks.</li>
+          <li><strong>Strict batch caps:</strong> Leases are capped at 10 items internally and 100 items per run to bound execution time and memory.</li>
+          <li><strong>Lease expiration:</strong> Stale leases expire automatically and are reconciled rather than blindly replayed, ensuring fault tolerance.</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer"><span>Concurrency architecture</span><span>04 / 08</span></div>
+  </div>
+</div>
+</body>
+</html>

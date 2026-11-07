@@ -1,0 +1,23 @@
+<slide id="evidence_rule">
+  <background color="ivory"/>
+  <shape id="top-accent" type="line" x="1020" y="56" width="200" height="0" stroke="gold" stroke-width="3"/>
+  <text id="slide-title" x="60" y="62" width="900" height="46" font="heading" size="34" color="emerald" wrap="false">Ushahidi unaongoza kila madai</text>
+  <text id="slide-subtitle" x="60" y="114" width="1090" height="52" font="body" size="20" color="slate">Kila scene hutajwa kwa uaminifu: dhana, UI iliyosafishwa, au hali ya uwezo unaotegemea mazingira.</text>
+  <shape id="concept-card" type="rect" x="60" y="205" width="330" height="360" fill="mist" stroke="hairline" stroke-width="1"/>
+  <icon id="concept-icon" name="sparkles" x="88" y="235" width="42" height="42" color="emerald"/>
+  <text id="concept-title" x="145" y="238" width="210" height="28" font="body" size="22" color="emerald" wrap="false">Taswira ya 3D</text>
+  <text id="concept-body" x="88" y="300" width="270" height="220" font="body" size="18" color="ink" line-height="1.35"><p><strong>Inaeleza:</strong> dhana, transition na hadithi ya wahusika.</p><p><strong>Inaweza:</strong> kuonyesha mtiririko wa kufikiri.</p><p><strong>Haiwezi:</strong> kuthibitisha transaction, provider, role au workflow halisi.</p></text>
+  <shape id="ui-card" type="rect" x="445" y="205" width="330" height="360" fill="#EAF1EE" stroke="#B7D4C9" stroke-width="1"/>
+  <icon id="ui-icon" name="monitor" x="473" y="235" width="42" height="42" color="emerald"/>
+  <text id="ui-title" x="530" y="238" width="210" height="28" font="body" size="22" color="emerald" wrap="false">UI iliyosafishwa</text>
+  <text id="ui-body" x="473" y="300" width="270" height="220" font="body" size="18" color="ink" line-height="1.35"><p><strong>Inaeleza:</strong> mwelekeo wa module shell.</p><p><strong>Inahitaji:</strong> privacy review na claim-to-screen match.</p><p><strong>Haiwezi:</strong> kuwa role, KPI au record proof.</p></text>
+  <shape id="status-card" type="rect" x="830" y="205" width="330" height="360" fill="#FFF7DE" stroke="#E6C86D" stroke-width="1"/>
+  <icon id="status-icon" name="shield-check" x="858" y="235" width="42" height="42" color="gold"/>
+  <text id="status-title" x="915" y="238" width="210" height="28" font="body" size="22" color="emerald" wrap="false">Lebo ya ukweli</text>
+  <text id="status-body" x="858" y="300" width="270" height="220" font="body" size="18" color="ink" line-height="1.35"><p><strong>Hali:</strong> imejengwa, partial, UI tu, au planned.</p><p><strong>Dependency:</strong> usanidi au huduma ya nje pale inapohusika.</p><p><strong>Kanuni:</strong> usibadilishe lebo kuwa ahadi.</p></text>
+  <shape id="policy-band" type="rect" x="60" y="590" width="1100" height="38" fill="emerald"/>
+  <text id="policy-band-text" x="80" y="598" width="1060" height="20" font="caption" size="15" color="ivory" align="center" wrap="false">Picha nzuri haziwezi kuchukua nafasi ya ushahidi ulioidhinishwa.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="footer-course" x="60" y="675" width="460" height="20" font="caption" color="slate" wrap="false">SMART MANAGER ERP • Msingi wa Kozi ya Kiswahili</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="20" font="caption" color="slate" align="right" wrap="false">03</text>
+</slide>

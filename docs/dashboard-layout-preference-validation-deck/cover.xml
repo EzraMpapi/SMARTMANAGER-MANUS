@@ -1,0 +1,16 @@
+<slide id="cover">
+  <background color="navy"/>
+  <shape id="grid-v1" type="line" x="860" y="70" width="0" height="570" stroke="grid" stroke-width="1" opacity="0.45"/>
+  <shape id="grid-v2" type="line" x="1010" y="70" width="0" height="570" stroke="grid" stroke-width="1" opacity="0.45"/>
+  <shape id="grid-v3" type="line" x="1160" y="70" width="0" height="570" stroke="grid" stroke-width="1" opacity="0.45"/>
+  <shape id="grid-h1" type="line" x="760" y="175" width="440" height="0" stroke="grid" stroke-width="1" opacity="0.45"/>
+  <shape id="grid-h2" type="line" x="760" y="325" width="440" height="0" stroke="grid" stroke-width="1" opacity="0.45"/>
+  <shape id="grid-h3" type="line" x="760" y="475" width="440" height="0" stroke="grid" stroke-width="1" opacity="0.45"/>
+  <shape id="evergreen-field" type="rect" x="860" y="175" width="300" height="300" corner-radius="24" fill="evergreen" opacity="0.25"/>
+  <text id="cover-kicker" x="80" y="112" width="600" height="26" font="caption" size="14" color="gold" wrap="false">SMART MANAGER · TECHNICAL VALIDATION REPORT</text>
+  <text id="cover-title" x="80" y="215" width="910" height="140" font="display" size="52" color="paper" line-height="1.05"><p>Dashboard Layout</p><p>Preferences</p></text>
+  <shape id="cover-rule" type="line" x="80" y="402" width="180" height="0" stroke="gold" stroke-width="5"/>
+  <text id="cover-subtitle" x="80" y="438" width="710" height="60" font="body" size="22" color="muted" line-height="1.3">Tenant-safe customization, isolated browser verification, and production build evidence</text>
+  <text id="cover-date" x="80" y="562" width="410" height="24" font="caption" size="14" color="paper" wrap="false">26 AUG 2026 · INTERNAL ENGINEERING REVIEW</text>
+  <text id="cover-page" x="1175" y="662" width="64" height="24" font="caption" size="14" color="muted" align="right" wrap="false">01 / 08</text>
+</slide>

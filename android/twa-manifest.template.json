@@ -1,0 +1,22 @@
+{
+  "packageId": "tz.smartmanager.erp",
+  "host": "menejajanja.vercel.app",
+  "name": "Smart Manager — Enterprise ERP",
+  "launcherName": "Smart Manager",
+  "display": "standalone",
+  "themeColor": "#101828",
+  "themeColorDark": "#101828",
+  "navigationColor": "#101828",
+  "backgroundColor": "#101828",
+  "startUrl": "/",
+  "iconUrl": "https://menejajanja.vercel.app/brand/smart-manager-logo.png",
+  "maskableIconUrl": "https://menejajanja.vercel.app/brand/smart-manager-logo.png",
+  "splashScreenFadeOutDuration": 300,
+  "fallbackType": "customtabs",
+  "enableNotifications": false,
+  "webManifestUrl": "https://menejajanja.vercel.app/manifest.webmanifest",
+  "signingKey": {
+    "path": "REPLACE_WITH_ORGANIZATION_KEYSTORE_PATH",
+    "alias": "REPLACE_WITH_ORGANIZATION_KEY_ALIAS"
+  }
+}

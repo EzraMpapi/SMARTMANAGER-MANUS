@@ -3,7 +3,10 @@ import { ENV } from "./_core/env";
 import { clearPatientPortalReference, linkPatientPortalReference, listPortalReferenceReconciliation } from "./healthcarePortalReconciliation";
 import { resolveVerifiedProfile } from "./aiApprovals";
 
-vi.mock("./aiApprovals", () => ({ resolveVerifiedProfile: vi.fn() }));
+vi.mock("./aiApprovals", () => ({
+  resolveVerifiedProfile: vi.fn(),
+  canonicalVerifiedRole: (role: string) => String(role || "").trim(),
+}));
 
 const resolvedProfile = vi.mocked(resolveVerifiedProfile);
 const original = { url: ENV.supabaseUrl, key: ENV.supabaseSecretKey };

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff; color: #334155; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            display: flex;
+            flex-direction: column;
+            padding: 60px 80px 40px;
+            background-color: #ffffff;
+            position: relative;
+        }
+        .header {
+            margin-bottom: 40px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .slide-title {
+            font-size: 42px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .slide-subtitle {
+            font-size: 20px;
+            color: #10b981;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .content-area {
+            display: flex;
+            gap: 40px;
+            flex: 1;
+        }
+        .domain-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8fafc;
+            border-top: 6px solid;
+            padding: 30px;
+        }
+        .procurement-col { border-color: #3b82f6; }
+        .pharmacy-col { border-color: #10b981; }
+
+        .domain-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .domain-icon {
+            font-size: 32px;
+        }
+        .procurement-col .domain-icon { color: #3b82f6; }
+        .pharmacy-col .domain-icon { color: #10b981; }
+
+        .domain-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .feature-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .feature-item {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+        .check-icon {
+            color: #10b981;
+            font-size: 20px;
+            margin-top: 4px;
+        }
+        .feature-text {
+            font-size: 18px;
+            line-height: 1.5;
+            color: #475569;
+        }
+        .feature-text strong {
+            color: #0f172a;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .footer-note {
+            position: absolute;
+            bottom: 40px;
+            left: 80px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header">
+            <h1 class="slide-title">Procurement & Pharmacy Repairs</h1>
+            <div class="slide-subtitle">Verified Workflow Integrations</div>
+        </div>
+
+        <div class="content-area">
+            <div class="domain-col procurement-col">
+                <div class="domain-header">
+                    <i class="fas fa-boxes domain-icon"></i>
+                    <h2 class="domain-title">Inventory Reorder</h2>
+                </div>
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <i class="fas fa-check-circle check-icon"></i>
+                        <div class="feature-text">
+                            <strong>Validation & Calculation</strong>
+                            Requires an active supplier and automatically calculates minimum reorder quantity.
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <i class="fas fa-check-circle check-icon"></i>
+                        <div class="feature-text">
+                            <strong>Relational Persistence</strong>
+                            Creates company-scoped records in existing <code>procurement_purchase_orders</code> and matching line items.
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <i class="fas fa-check-circle check-icon"></i>
+                        <div class="feature-text">
+                            <strong>Transactional Integrity</strong>
+                            Removes header if line-item persistence fails, and only closes UI panel after confirmed success.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="domain-col pharmacy-col">
+                <div class="domain-header">
+                    <i class="fas fa-prescription-bottle-alt domain-icon"></i>
+                    <h2 class="domain-title">Pharmacy Operations</h2>
+                </div>
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <i class="fas fa-check-circle check-icon"></i>
+                        <div class="feature-text">
+                            <strong>Server-Confirmed State</strong>
+                            "Add Drug" and "Dispense" mutations wait for Supabase confirmation before updating local UI state.
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <i class="fas fa-check-circle check-icon"></i>
+                        <div class="feature-text">
+                            <strong>Stock Availability Guards</strong>
+                            Dispensing logic verifies a live stock row exists and quantity is sufficient before writing.
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <i class="fas fa-check-circle check-icon"></i>
+                        <div class="feature-text">
+                            <strong>Atomic Updates</strong>
+                            Safely handles simultaneous writes to dispensing records and inventory stock reductions.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-note">Source: BUTTON_ACTION_FOLLOWUP_20260824.md</div>
+    </div>
+</body>
+</html>

@@ -21,4 +21,8 @@ describe("password-login validation and error mapping", () => {
     expect(toAuthUserMessage(Object.assign(new Error("Authentication is not configured."), { code: "AUTH_CONFIGURATION_MISSING" }))).toContain("not configured");
     expect(toAuthUserMessage(Object.assign(new Error("Unable to reach the authentication server."), { code: "NETWORK_ERROR" }))).toContain("Unable to connect");
   });
+
+  it("explains password-recovery email delivery outages separately from sign-in outages", () => {
+    expect(toAuthUserMessage(Object.assign(new Error("SMTP unavailable"), { code: "AUTH_RECOVERY_SERVICE_UNAVAILABLE", status: 503 }))).toContain("Password recovery email delivery is temporarily unavailable");
+  });
 });

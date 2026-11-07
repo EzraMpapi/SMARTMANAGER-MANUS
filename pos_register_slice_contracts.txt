@@ -1,0 +1,665 @@
+=== POS SHIFT/CASH UI ===
+server/posCashierAcceptance.test.ts-1-import { readFileSync } from "node:fs";
+server/posCashierAcceptance.test.ts-2-import { describe, expect, it } from "vitest";
+server/posCashierAcceptance.test.ts-3-
+server/posCashierAcceptance.test.ts-4-const source = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+server/posCashierAcceptance.test.ts:5:const shifts = source.slice(source.indexOf("function PosShiftPanel"), source.indexOf("function POS"));
+server/posCashierAcceptance.test.ts-6-const checkout = source.slice(source.indexOf("function Checkout"), source.indexOf("function ReceiptPanel"));
+server/posCashierAcceptance.test.ts-7-const receipt = source.slice(source.indexOf("function ReceiptPanel"), source.indexOf("function RegisterHistory"));
+server/posCashierAcceptance.test.ts-8-
+server/posCashierAcceptance.test.ts-9-describe("POS cashier acceptance contract", () => {
+server/posCashierAcceptance.test.ts:10:  it("requires a server-confirmed opening float and captures cash movements for the active shift", () => {
+server/posCashierAcceptance.test.ts:11:    expect(shifts).toContain('useCompanyTable("pos_shifts"');
+server/posCashierAcceptance.test.ts:12:    expect(shifts).toContain('useCompanyTable("pos_cash_movements"');
+server/posCashierAcceptance.test.ts:13:    expect(shifts).toContain('sb("pos_shifts").insert');
+server/posCashierAcceptance.test.ts:14:    expect(shifts).toContain('sb("pos_cash_movements").insert');
+server/posCashierAcceptance.test.ts:15:    expect(shifts).toContain("One drawer, one shift");
+server/posCashierAcceptance.test.ts-16-  });
+server/posCashierAcceptance.test.ts-17-
+server/posCashierAcceptance.test.ts-18-  it("requires a drawer count before closing and makes the reconciliation variance visible in a Z-report", () => {
+server/posCashierAcceptance.test.ts:19:    expect(shifts).toContain("Count the drawer first");
+server/posCashierAcceptance.test.ts:20:    expect(shifts).toContain('status: "Closed"');
+server/posCashierAcceptance.test.ts:21:    expect(shifts).toContain("Expected in Drawer");
+server/posCashierAcceptance.test.ts:22:    expect(shifts).toContain("VARIANCE");
+server/posCashierAcceptance.test.ts:23:    expect(shifts).toContain("Z-Report printed");
+server/posCashierAcceptance.test.ts-24-  });
+server/posCashierAcceptance.test.ts-25-
+server/posCashierAcceptance.test.ts-26-  it("supports product search, scanner input, stock-safe cart updates, held carts, payments, tax, and confirmed sale completion", () => {
+server/posCashierAcceptance.test.ts-27-    expect(checkout).toContain("productMatchesPosLookup");
+server/posCashierAcceptance.test.ts-28-    expect(checkout).toContain("normalizeScannerInput(query, deviceProfile)");
+--
+server/posStagingAcceptanceScript.test.ts-2-import { describe, expect, it } from "vitest";
+server/posStagingAcceptanceScript.test.ts-3-
+server/posStagingAcceptanceScript.test.ts-4-const script = readFileSync(new URL("../scripts/preparePosStagingTransactionAcceptance.mjs", import.meta.url), "utf8");
+server/posStagingAcceptanceScript.test.ts-5-
+server/posStagingAcceptanceScript.test.ts-6-describe("POS staging transaction acceptance preflight", () => {
+server/posStagingAcceptanceScript.test.ts:7:  it("requires an explicit staging environment and approved product/shift identifiers", () => {
+server/posStagingAcceptanceScript.test.ts-8-    expect(script).toContain('environment !== "staging"');
+server/posStagingAcceptanceScript.test.ts-9-    expect(script).toContain("--test-product");
+server/posStagingAcceptanceScript.test.ts:10:    expect(script).toContain("--test-shift");
+server/posStagingAcceptanceScript.test.ts-11-  });
+server/posStagingAcceptanceScript.test.ts-12-
+server/posStagingAcceptanceScript.test.ts-13-  it("does not automate transactional click paths without a designated operator", () => {
+server/posStagingAcceptanceScript.test.ts-14-    expect(script).toContain("--approved-staging-write");
+server/posStagingAcceptanceScript.test.ts-15-    expect(script).toContain("does not click transactional POS controls");
+--
+client/src/BusinessSphereDashboard.jsx-510-hr_attendance hr_benefits hr_candidates hr_duties hr_employees hr_leave_requests hr_payroll_runs hr_performance_reviews
+client/src/BusinessSphereDashboard.jsx-511-htl_bookings htl_rooms integration_connections inventory_batches inventory_items inventory_stock_movements inventory_suppliers inventory_transfers inventory_warehouses
+client/src/BusinessSphereDashboard.jsx-512-journal_entries kb_articles loan_repayments manufacturing_bom_components manufacturing_boms manufacturing_qc_inspections manufacturing_work_orders
+client/src/BusinessSphereDashboard.jsx-513-marketing_campaigns mfi_clients mfi_loans mfi_savings network_profiles network_rfqs notebook_notes notification_log
+client/src/BusinessSphereDashboard.jsx-514-other_debtors other_income period_closes phm_dispense phm_drugs phm_stock phm_suppliers
+client/src/BusinessSphereDashboard.jsx:515:pos_cash_movements pos_return_items pos_returns pos_shifts pos_transaction_items pos_transactions
+client/src/BusinessSphereDashboard.jsx-516-procurement_purchase_orders project_milestones project_tasks purchase_order_items resource_bookings
+client/src/BusinessSphereDashboard.jsx-517-rst_menu rst_orders rst_reservations rst_tables sales_invoice_items sales_invoices sales_order_return_items sales_order_returns sales_payments sales_quotations sales_subscriptions
+client/src/BusinessSphereDashboard.jsx-518-sch_books sch_classes sch_exams sch_fees sch_students sch_teachers sch_transport scm_shipments scm_vehicles
+client/src/BusinessSphereDashboard.jsx-519-signatures sms_group_members sms_groups sms_templates stock_audit_items stock_audits support_call_log support_chat_conversations support_chat_messages support_ticket_messages
+client/src/BusinessSphereDashboard.jsx-520-vicoba_loans vicoba_meetings vicoba_members whatsapp_messages
+--
+client/src/BusinessSphereDashboard.jsx-1161-export function mapPosCashMovementRow(r) {
+client/src/BusinessSphereDashboard.jsx-1162-  const data = r.data && typeof r.data === "object" ? r.data : {};
+client/src/BusinessSphereDashboard.jsx-1163-  return {
+client/src/BusinessSphereDashboard.jsx-1164-    id: r.id,
+client/src/BusinessSphereDashboard.jsx-1165-    dbId: r.id,
+client/src/BusinessSphereDashboard.jsx:1166:    shiftId: data.shift_id || data.shiftId || null,
+client/src/BusinessSphereDashboard.jsx-1167-    kind: data.kind || r.status || "Pay In",
+client/src/BusinessSphereDashboard.jsx-1168-    amount: Number(r.amount) || 0,
+client/src/BusinessSphereDashboard.jsx-1169-    reason: data.reason || r.notes || "",
+client/src/BusinessSphereDashboard.jsx-1170-  };
+client/src/BusinessSphereDashboard.jsx-1171-}
+--
+client/src/BusinessSphereDashboard.jsx-31203-          { label: "Current monthly revenue", value: baseline.pnl.collected },
+client/src/BusinessSphereDashboard.jsx-31204-          { label: `Projected revenue at ${priceChangePct >= 0 ? "+" : ""}${priceChangePct}%`, value: newRevenue, highlight: true },
+client/src/BusinessSphereDashboard.jsx-31205-          { label: "Expenses (unchanged)", value: -baseline.pnl.expTotal },
+client/src/BusinessSphereDashboard.jsx-31206-          { label: "Projected net position", value: newNet, bold: true },
+client/src/BusinessSphereDashboard.jsx-31207-        ],
+client/src/BusinessSphereDashboard.jsx:31208:        caveat: "Assumes sales volume stays the same — a real price change often shifts volume too, in either direction, which this can't predict.",
+client/src/BusinessSphereDashboard.jsx-31209-      };
+client/src/BusinessSphereDashboard.jsx-31210-    }
+client/src/BusinessSphereDashboard.jsx-31211-    if (scenario === "hiring") {
+client/src/BusinessSphereDashboard.jsx-31212-      const addedCost = baseline.avgSalary * newHires;
+client/src/BusinessSphereDashboard.jsx-31213-      const newPayroll = baseline.monthlyPayroll + addedCost;
+--
+client/src/BusinessSphereDashboard.jsx-32856-          <div className="p-3 flex gap-2 items-end" style={{background:"#f0ece4"}}>
+client/src/BusinessSphereDashboard.jsx-32857-            <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+client/src/BusinessSphereDashboard.jsx-32858-              <textarea
+client/src/BusinessSphereDashboard.jsx-32859-                rows={Math.min(4, compose.split("\n").length+1)}
+client/src/BusinessSphereDashboard.jsx-32860-                value={compose} onChange={e=>setCompose(e.target.value)}
+client/src/BusinessSphereDashboard.jsx:32861:                onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}}}
+client/src/BusinessSphereDashboard.jsx-32862-                placeholder="Type a message…"
+client/src/BusinessSphereDashboard.jsx-32863-                className="w-full px-4 py-3 text-[13px] resize-none outline-none text-[#111827]"/>
+client/src/BusinessSphereDashboard.jsx-32864-              {compose&&(
+client/src/BusinessSphereDashboard.jsx-32865-                <div className="px-4 pb-2">
+client/src/BusinessSphereDashboard.jsx-32866-                  <p className="text-[10px] text-slate-400 font-medium">Preview (WhatsApp formatting)</p>
+--
+client/src/BusinessSphereDashboard.jsx-33859-            )}
+client/src/BusinessSphereDashboard.jsx-33860-            <div className="p-3 border-t border-slate-100 shrink-0 flex flex-col gap-2">
+client/src/BusinessSphereDashboard.jsx-33861-              <div className="flex gap-2">
+client/src/BusinessSphereDashboard.jsx-33862-                <input
+client/src/BusinessSphereDashboard.jsx-33863-                  value={draft} onChange={(e) => setDraft(e.target.value)}
+client/src/BusinessSphereDashboard.jsx:33864:                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+client/src/BusinessSphereDashboard.jsx-33865-                  placeholder={replyingToId ? `Reply in thread…` : `Message #${activeChannel.name}`}
+client/src/BusinessSphereDashboard.jsx-33866-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30"
+client/src/BusinessSphereDashboard.jsx-33867-                />
+client/src/BusinessSphereDashboard.jsx-33868-                <button onClick={sendMessage} disabled={(!draft.trim() && !attachmentUrl) || messageSending} aria-busy={messageSending} className="btn-primary text-white rounded-lg px-3 disabled:cursor-not-allowed disabled:opacity-40" aria-label={messageSending ? "Sending message" : "Send message"}><Send size={15} className={messageSending ? "animate-pulse" : ""} /></button>
+client/src/BusinessSphereDashboard.jsx-33869-              </div>
+--
+client/src/BusinessSphereDashboard.jsx-38285-  );
+client/src/BusinessSphereDashboard.jsx-38286-}
+client/src/BusinessSphereDashboard.jsx-38287-
+client/src/BusinessSphereDashboard.jsx-38288-const MARKETPLACE_PACKS = [
+client/src/BusinessSphereDashboard.jsx-38289-  { id: "payroll", label: "Payroll Plugin", icon: Wallet, modules: ["hr"], blurb: "Real payroll runs, PAYE/SDL/WCF via the Tax Center, leave and attendance — the full HR module." },
+client/src/BusinessSphereDashboard.jsx:38290:  { id: "restaurant", label: "Restaurant Module", icon: Store, modules: ["sales", "inventory", "hr", "finance"], blurb: "Counter POS, perishable stock with real audits, shift staff, daily books." },
+client/src/BusinessSphereDashboard.jsx-38291-  { id: "hospital", label: "Hospital Module", icon: HeartPulse, modules: ["inventory", "crm", "sales", "finance"], blurb: "Expiry-tracked stock, patient/client records via CRM, billing. Clinical records are real future work." },
+client/src/BusinessSphereDashboard.jsx-38292-  { id: "school", label: "School Module", icon: BookOpen, modules: ["crm", "projects", "finance", "hr"], blurb: "Students-as-CRM, programs-as-projects, fees, staff. Gradebooks are real future work." },
+client/src/BusinessSphereDashboard.jsx-38293-  { id: "construction", label: "Construction Module", icon: HardHat, modules: ["projects", "procurement", "manufacturing", "inventory", "finance"], blurb: "Job sites as projects, materials procurement, equipment via Fixed Assets — this platform deepest pack." },
+client/src/BusinessSphereDashboard.jsx-38294-  { id: "agriculture", label: "Agriculture Module", icon: Package, modules: ["inventory", "procurement", "finance", "sales"], blurb: "Inputs and harvest stock, supplier lead times, seasonal cash flow via the real month-view reports." },
+client/src/BusinessSphereDashboard.jsx-38295-  { id: "hotel", label: "Hotel Module", icon: Building2, modules: ["sales", "inventory", "hr", "finance", "crm"], blurb: "Front-desk billing, housekeeping stock, guest records via CRM. Room-night booking is real future work." },
+--
+client/src/BusinessSphereDashboard.jsx-39448-            <Mic size={15} />
+client/src/BusinessSphereDashboard.jsx-39449-          </button>
+client/src/BusinessSphereDashboard.jsx-39450-          <input
+client/src/BusinessSphereDashboard.jsx-39451-            value={input}
+client/src/BusinessSphereDashboard.jsx-39452-            onChange={(e) => setInput(e.target.value)}
+client/src/BusinessSphereDashboard.jsx:39453:            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
+client/src/BusinessSphereDashboard.jsx-39454-            placeholder={listening ? "Listening..." : "Ask anything, or use the mic..."}
+client/src/BusinessSphereDashboard.jsx-39455-            disabled={busy}
+client/src/BusinessSphereDashboard.jsx-39456-            className={`${inputClass} flex-1 disabled:opacity-60`}
+client/src/BusinessSphereDashboard.jsx-39457-          />
+client/src/BusinessSphereDashboard.jsx-39458-          <button onClick={() => send(input)} disabled={busy || !input.trim()} className="btn-primary text-white rounded-lg px-4 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed shrink-0" aria-label="Send">
+--
+client/src/BusinessSphereDashboard.jsx-40463-  { id: "reconciliation", label: "Reconciliation", icon: RefreshCw },
+client/src/BusinessSphereDashboard.jsx-40464-];
+client/src/BusinessSphereDashboard.jsx-40465-
+client/src/BusinessSphereDashboard.jsx-40466-// POS Shifts & Cash Drawer — the control a till cannot run without, and
+client/src/BusinessSphereDashboard.jsx-40467-// the one real gap a competitive audit exposed. Expected cash is COMPUTED
+client/src/BusinessSphereDashboard.jsx:40468:// (opening float + cash sales + pay-ins - pay-outs); counted cash is what
+client/src/BusinessSphereDashboard.jsx-40469-// a human physically finds in the drawer; the variance between them is
+client/src/BusinessSphereDashboard.jsx-40470-// the entire point. Both directions matter and the UI says so: short can
+client/src/BusinessSphereDashboard.jsx-40471-// be theft or a miskeyed sale, over means a customer was overcharged or a
+client/src/BusinessSphereDashboard.jsx:40472:// sale never rung. One shift open at a time, so attributing sales by
+client/src/BusinessSphereDashboard.jsx-40473-// timestamp is unambiguous rather than a guess.
+client/src/BusinessSphereDashboard.jsx-40474-function PosShiftPanel({ transactions, currentUser }) {
+client/src/BusinessSphereDashboard.jsx-40475-  const [now, setNow] = useState(new Date());
+client/src/BusinessSphereDashboard.jsx-40476-  useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
+client/src/BusinessSphereDashboard.jsx:40477:  const shifts = useCompanyTable("pos_shifts", [], { order: { col: "created_at", ascending: false }, mapRow: mapPosShiftRow });
+client/src/BusinessSphereDashboard.jsx:40478:  const moves = useCompanyTable("pos_cash_movements", [], { order: { col: "created_at", ascending: false }, mapRow: mapPosCashMovementRow });
+client/src/BusinessSphereDashboard.jsx-40479-  const [floatDraft, setFloatDraft] = useState("");
+client/src/BusinessSphereDashboard.jsx-40480-  const [countDraft, setCountDraft] = useState("");
+client/src/BusinessSphereDashboard.jsx-40481-  const [move, setMove] = useState({ kind: "Pay In", amount: "", reason: "" });
+client/src/BusinessSphereDashboard.jsx-40482-
+client/src/BusinessSphereDashboard.jsx:40483:  const open = shifts.rows.find((s) => s.status === "Open");
+client/src/BusinessSphereDashboard.jsx-40484-  const valueOf = (t) => (t.items || []).reduce((s, it) => s + it.qty * it.price, 0);
+client/src/BusinessSphereDashboard.jsx-40485-
+client/src/BusinessSphereDashboard.jsx-40486-  const sales = useMemo(() => {
+client/src/BusinessSphereDashboard.jsx-40487-    if (!open) return { count: 0, gross: 0, cash: 0, other: 0 };
+client/src/BusinessSphereDashboard.jsx-40488-    const rows = transactions.rows.filter((t) => t.createdAt && t.createdAt >= open.openedAt);
+client/src/BusinessSphereDashboard.jsx-40489-    const cash = rows.filter((t) => t.method === "Cash").reduce((s, t) => s + valueOf(t), 0);
+client/src/BusinessSphereDashboard.jsx-40490-    const gross = rows.reduce((s, t) => s + valueOf(t), 0);
+client/src/BusinessSphereDashboard.jsx-40491-    return { count: rows.length, gross, cash, other: gross - cash };
+client/src/BusinessSphereDashboard.jsx-40492-  }, [transactions.rows, open]);
+client/src/BusinessSphereDashboard.jsx-40493-
+client/src/BusinessSphereDashboard.jsx:40494:  const mine = open ? moves.rows.filter((m) => m.shiftId === (open.dbId || open.id)) : [];
+client/src/BusinessSphereDashboard.jsx-40495-  const payIns = mine.filter((m) => m.kind === "Pay In").reduce((s, m) => s + m.amount, 0);
+client/src/BusinessSphereDashboard.jsx-40496-  const payOuts = mine.filter((m) => m.kind === "Pay Out").reduce((s, m) => s + m.amount, 0);
+client/src/BusinessSphereDashboard.jsx-40497-  const expected = open ? open.openingFloat + sales.cash + payIns - payOuts : 0;
+client/src/BusinessSphereDashboard.jsx-40498-  const counted = Number(countDraft);
+client/src/BusinessSphereDashboard.jsx-40499-  const variance = countDraft.trim() === "" || isNaN(counted) ? null : counted - expected;
+client/src/BusinessSphereDashboard.jsx-40500-
+client/src/BusinessSphereDashboard.jsx-40501-  async function openShift() {
+client/src/BusinessSphereDashboard.jsx-40502-    const f = Number(floatDraft);
+client/src/BusinessSphereDashboard.jsx:40503:    if (isNaN(f) || f < 0) { notify("Enter the counted opening float.", "error"); return; }
+client/src/BusinessSphereDashboard.jsx:40504:    if (open) { notify("A shift is already open — close it first. One drawer, one shift.", "error"); return; }
+client/src/BusinessSphereDashboard.jsx-40505-    const row = { id: `SH-${Date.now()}`, cashier: currentUser?.name || "Cashier", openingFloat: f, countedCash: null, status: "Open", openedAt: new Date().toISOString(), closedAt: null };
+client/src/BusinessSphereDashboard.jsx-40506-    if (IS_CONFIGURED) {
+client/src/BusinessSphereDashboard.jsx-40507-      try {
+client/src/BusinessSphereDashboard.jsx:40508:        const header = await sb("pos_shifts").insert({
+client/src/BusinessSphereDashboard.jsx-40509-          name: row.cashier,
+client/src/BusinessSphereDashboard.jsx-40510-          status: "Open",
+client/src/BusinessSphereDashboard.jsx-40511-          amount: f,
+client/src/BusinessSphereDashboard.jsx:40512:          notes: "POS shift opened",
+client/src/BusinessSphereDashboard.jsx-40513-          data: { cashier: row.cashier, opening_float: f, counted_cash: null, opened_at: row.openedAt, closed_at: null },
+client/src/BusinessSphereDashboard.jsx-40514-        }).single().run();
+client/src/BusinessSphereDashboard.jsx:40515:        shifts.setRows((prev) => [mapPosShiftRow(header), ...prev]);
+client/src/BusinessSphereDashboard.jsx:40516:      } catch (error) { notify(persistenceFailureMessage("Opening the shift", error), "error"); return; }
+client/src/BusinessSphereDashboard.jsx-40517-    } else {
+client/src/BusinessSphereDashboard.jsx:40518:      shifts.setRows((prev) => [row, ...prev]);
+client/src/BusinessSphereDashboard.jsx-40519-    }
+client/src/BusinessSphereDashboard.jsx-40520-    setFloatDraft("");
+client/src/BusinessSphereDashboard.jsx-40521-    notify(`Shift opened by ${row.cashier} — float TZS ${money(f)}k.`);
+client/src/BusinessSphereDashboard.jsx-40522-  }
+client/src/BusinessSphereDashboard.jsx-40523-
+client/src/BusinessSphereDashboard.jsx-40524-  async function addMove() {
+client/src/BusinessSphereDashboard.jsx-40525-    const amt = Number(move.amount);
+client/src/BusinessSphereDashboard.jsx-40526-    if (!open || isNaN(amt) || amt <= 0) { notify("Enter an amount above zero.", "error"); return; }
+client/src/BusinessSphereDashboard.jsx:40527:    const row = { id: `CM-${Date.now()}`, shiftId: open.dbId || open.id, kind: move.kind, amount: amt, reason: move.reason.trim() };
+client/src/BusinessSphereDashboard.jsx-40528-    if (IS_CONFIGURED) {
+client/src/BusinessSphereDashboard.jsx:40529:      if (!open.dbId) { notify("The active shift is not confirmed on the server. Please retry opening it.", "error"); return; }
+client/src/BusinessSphereDashboard.jsx-40530-      try {
+client/src/BusinessSphereDashboard.jsx:40531:        const header = await sb("pos_cash_movements").insert({
+client/src/BusinessSphereDashboard.jsx-40532-          name: `${row.kind} · ${open.cashier}`,
+client/src/BusinessSphereDashboard.jsx-40533-          status: row.kind,
+client/src/BusinessSphereDashboard.jsx-40534-          amount: amt,
+client/src/BusinessSphereDashboard.jsx-40535-          notes: row.reason || null,
+client/src/BusinessSphereDashboard.jsx:40536:          data: { shift_id: open.dbId, kind: row.kind, reason: row.reason || "" },
+client/src/BusinessSphereDashboard.jsx-40537-        }).single().run();
+client/src/BusinessSphereDashboard.jsx-40538-        moves.setRows((prev) => [mapPosCashMovementRow(header), ...prev]);
+client/src/BusinessSphereDashboard.jsx-40539-      } catch (error) { notify(persistenceFailureMessage("Recording the cash movement", error), "error"); return; }
+client/src/BusinessSphereDashboard.jsx-40540-    } else {
+client/src/BusinessSphereDashboard.jsx-40541-      moves.setRows((prev) => [row, ...prev]);
+client/src/BusinessSphereDashboard.jsx-40542-    }
+client/src/BusinessSphereDashboard.jsx-40543-    setMove({ kind: move.kind, amount: "", reason: "" });
+client/src/BusinessSphereDashboard.jsx-40544-    notify(`${row.kind} of TZS ${money(amt)}k recorded — expected cash updated.`);
+client/src/BusinessSphereDashboard.jsx-40545-  }
+client/src/BusinessSphereDashboard.jsx-40546-
+client/src/BusinessSphereDashboard.jsx:40547:  function printZReport(shiftData, salesData, movesData, co) {
+client/src/BusinessSphereDashboard.jsx:40548:    const { open: sh, expected: exp, variance: va, counted: cnt2, payIns: pIn, payOuts: pOut } = shiftData;
+client/src/BusinessSphereDashboard.jsx-40549-    const openedAt = sh.openedAt || sh.createdAt || "";
+client/src/BusinessSphereDashboard.jsx-40550-    const closedAt = new Date().toISOString();
+client/src/BusinessSphereDashboard.jsx-40551-    const durationMins = openedAt ? Math.round((Date.now()-new Date(openedAt).getTime())/60000) : 0;
+client/src/BusinessSphereDashboard.jsx-40552-    const varColor = va===0?"#16A34A":va<0?"#EF4444":"#F59E0B";
+client/src/BusinessSphereDashboard.jsx-40553-    const rows = movesData.map((mv,i)=>`<tr style="background:${i%2===0?"white":"#F8FAFB"}"><td>${mv.kind}</td><td>${mv.reason||"—"}</td><td class="r" style="color:${mv.kind==="Pay In"?"#16A34A":"#EF4444"}">${mv.kind==="Pay In"?"+":"-"}TZS ${money(mv.amount||0)}k</td></tr>`).join("");
+--
+client/src/BusinessSphereDashboard.jsx-40572-      <p style="padding:12px;font-size:11px;color:#9CA3AF;text-align:center">Opened: ${new Date(openedAt).toLocaleString()} · Duration: ${Math.floor(durationMins/60)}h ${durationMins%60}m · Closed: ${new Date(closedAt).toLocaleString()}</p>
+client/src/BusinessSphereDashboard.jsx-40573-    `, co||{});
+client/src/BusinessSphereDashboard.jsx-40574-  }
+client/src/BusinessSphereDashboard.jsx-40575-
+client/src/BusinessSphereDashboard.jsx-40576-  async function closeShift() {
+client/src/BusinessSphereDashboard.jsx:40577:    if (!open || variance === null) { notify("Count the drawer first — a shift closed without a count proves nothing.", "error"); return; }
+client/src/BusinessSphereDashboard.jsx-40578-    const closedAt = new Date().toISOString();
+client/src/BusinessSphereDashboard.jsx-40579-    const verdict = variance === 0 ? "balanced exactly" : variance < 0 ? `SHORT by TZS ${money(Math.abs(variance))}k` : `OVER by TZS ${money(variance)}k`;
+client/src/BusinessSphereDashboard.jsx-40580-    if (IS_CONFIGURED) {
+client/src/BusinessSphereDashboard.jsx:40581:      if (!open.dbId) { notify("The active shift is not confirmed on the server. Please retry opening it.", "error"); return; }
+client/src/BusinessSphereDashboard.jsx-40582-      try {
+client/src/BusinessSphereDashboard.jsx:40583:        await sb("pos_shifts").eq("id", open.dbId).update({
+client/src/BusinessSphereDashboard.jsx-40584-          name: open.cashier,
+client/src/BusinessSphereDashboard.jsx-40585-          status: "Closed",
+client/src/BusinessSphereDashboard.jsx-40586-          amount: open.openingFloat,
+client/src/BusinessSphereDashboard.jsx:40587:          notes: "POS shift closed",
+client/src/BusinessSphereDashboard.jsx-40588-          data: { ...(open.rawData || {}), cashier: open.cashier, opening_float: open.openingFloat, counted_cash: counted, opened_at: open.openedAt, closed_at: closedAt },
+client/src/BusinessSphereDashboard.jsx-40589-        }).single().run();
+client/src/BusinessSphereDashboard.jsx:40590:      } catch (error) { notify(persistenceFailureMessage("Closing the shift", error), "error"); return; }
+client/src/BusinessSphereDashboard.jsx-40591-    }
+client/src/BusinessSphereDashboard.jsx-40592-    // Auto-print Z-Report on close
+client/src/BusinessSphereDashboard.jsx-40593-    printZReport({open, expected, variance, counted, payIns, payOuts}, sales, mine, window.__smartManagerCompany||{});
+client/src/BusinessSphereDashboard.jsx:40594:    shifts.setRows((prev) => prev.map((s) => (s.id === open.id ? { ...s, status: "Closed", countedCash: counted, closedAt } : s)));
+client/src/BusinessSphereDashboard.jsx-40595-    notify(`Shift closed — drawer ${verdict}. Z-Report printed.`, variance === 0 ? "success" : "error");
+client/src/BusinessSphereDashboard.jsx:40596:    logAudit("POS shift closed", "Point of Sale", `${open.cashier}: expected ${money(Math.round(expected))}k, counted ${money(counted)}k — ${verdict}`, currentUser?.name || "Cashier");
+client/src/BusinessSphereDashboard.jsx-40597-    setCountDraft("");
+client/src/BusinessSphereDashboard.jsx-40598-  }
+client/src/BusinessSphereDashboard.jsx-40599-
+client/src/BusinessSphereDashboard.jsx-40600-  const Row = ({ label, value, strong }) => (
+client/src/BusinessSphereDashboard.jsx-40601-    <div className={`flex items-center justify-between py-1.5 ${strong ? "border-t border-slate-200 mt-1 pt-2" : ""}`}>
+--
+client/src/BusinessSphereDashboard.jsx-40603-      <span className={`text-[12.5px] font-mono ${strong ? "font-bold text-[#111827]" : "text-slate-600"}`}>{value}</span>
+client/src/BusinessSphereDashboard.jsx-40604-    </div>
+client/src/BusinessSphereDashboard.jsx-40605-  );
+client/src/BusinessSphereDashboard.jsx-40606-
+client/src/BusinessSphereDashboard.jsx-40607-  if (!open) {
+client/src/BusinessSphereDashboard.jsx:40608:    const last = shifts.rows.find((s) => s.status === "Closed");
+client/src/BusinessSphereDashboard.jsx-40609-    const lastVar = last && last.countedCash !== null ? null : null;
+client/src/BusinessSphereDashboard.jsx-40610-    return (
+client/src/BusinessSphereDashboard.jsx-40611-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 mb-4">
+client/src/BusinessSphereDashboard.jsx-40612-        <div className="flex items-center justify-between gap-3 flex-wrap">
+client/src/BusinessSphereDashboard.jsx-40613-          <div>
+client/src/BusinessSphereDashboard.jsx:40614:            <p className="text-[13.5px] font-semibold text-[#111827]">No shift open</p>
+client/src/BusinessSphereDashboard.jsx:40615:            <p className="text-[11px] text-slate-400">Count the drawer and open a shift before selling — sales rung with no shift open are recorded, but reconcile to nothing.</p>
+client/src/BusinessSphereDashboard.jsx-40616-          </div>
+client/src/BusinessSphereDashboard.jsx-40617-          <div className="flex gap-2 items-center shrink-0">
+client/src/BusinessSphereDashboard.jsx-40618-            <input type="number" min="0" className={inputClass + " w-36"} value={floatDraft} onChange={(e) => setFloatDraft(e.target.value)} placeholder="Opening float (TZS k)" />
+client/src/BusinessSphereDashboard.jsx-40619-            <button onClick={openShift} className="btn-primary text-white text-[12px] font-medium rounded-lg px-3.5 py-2 shrink-0">Open Shift</button>
+client/src/BusinessSphereDashboard.jsx-40620-          </div>
+client/src/BusinessSphereDashboard.jsx-40621-        </div>
+client/src/BusinessSphereDashboard.jsx:40622:        {last && <p className="text-[10.5px] text-slate-400 mt-2.5 pt-2.5 border-t border-slate-100">Last shift: {last.cashier} · closed {(last.closedAt || "").slice(0, 16).replace("T", " ")} · counted TZS {money(last.countedCash ?? 0)}k</p>}
+client/src/BusinessSphereDashboard.jsx-40623-      </div>
+client/src/BusinessSphereDashboard.jsx-40624-    );
+client/src/BusinessSphereDashboard.jsx-40625-  }
+client/src/BusinessSphereDashboard.jsx-40626-
+client/src/BusinessSphereDashboard.jsx-40627-  const mins = Math.max(0, Math.round((now - new Date(open.openedAt)) / 60000));
+--
+client/src/BusinessSphereDashboard.jsx-40670-          )}
+client/src/BusinessSphereDashboard.jsx-40671-        </div>
+client/src/BusinessSphereDashboard.jsx-40672-
+client/src/BusinessSphereDashboard.jsx-40673-        <div>
+client/src/BusinessSphereDashboard.jsx-40674-          <p className="text-[12px] font-semibold text-[#111827] mb-1">Pay In / Pay Out</p>
+client/src/BusinessSphereDashboard.jsx:40675:          <p className="text-[10.5px] text-slate-400 mb-2">Any money crossing the till that is not a sale — a float top-up, petty cash, or a refund paid out from an earlier shift. Without these, expected cash is a lie the moment anyone opens the drawer.</p>
+client/src/BusinessSphereDashboard.jsx-40676-          <div className="flex flex-wrap gap-2">
+client/src/BusinessSphereDashboard.jsx-40677-            <select className={inputClass + " max-w-[110px]"} value={move.kind} onChange={(e) => setMove({ ...move, kind: e.target.value })}>
+client/src/BusinessSphereDashboard.jsx-40678-              <option>Pay In</option><option>Pay Out</option>
+client/src/BusinessSphereDashboard.jsx-40679-            </select>
+client/src/BusinessSphereDashboard.jsx-40680-            <input type="number" min="0" className={inputClass + " max-w-[110px]"} value={move.amount} onChange={(e) => setMove({ ...move, amount: e.target.value })} placeholder="TZS k" />
+--
+client/src/BusinessSphereDashboard.jsx-43241-  food_hospitality: {
+client/src/BusinessSphereDashboard.jsx-43242-    label: "Food & Hospitality", icon: Store,
+client/src/BusinessSphereDashboard.jsx-43243-    recommendedModules: ["sales", "inventory", "hr", "finance"],
+client/src/BusinessSphereDashboard.jsx-43244-    tips: [
+client/src/BusinessSphereDashboard.jsx-43245-      "Sales & POS for the counter, Inventory for real perishable stock — the Stock Audit tab (Inventory) is genuinely useful here for catching real spoilage variance, not just theft.",
+client/src/BusinessSphereDashboard.jsx:43246:      "HR & Payroll matters more in this industry than most — shift-based staff and real leave tracking, not just a headcount number.",
+client/src/BusinessSphereDashboard.jsx-43247-      "Expenses' 'Rent & Utilities' category tends to be the largest real cost center here — watch it in Reports' Profit & Loss.",
+client/src/BusinessSphereDashboard.jsx-43248-    ],
+client/src/BusinessSphereDashboard.jsx-43249-  },
+client/src/BusinessSphereDashboard.jsx-43250-  professional_services: {
+client/src/BusinessSphereDashboard.jsx-43251-    label: "Professional & Creative Services", icon: Briefcase,
+--
+client/src/BusinessSphereDashboard.jsx-43259-  personal_care: {
+client/src/BusinessSphereDashboard.jsx-43260-    label: "Personal Care & Wellness", icon: Sparkles,
+client/src/BusinessSphereDashboard.jsx-43261-    recommendedModules: ["sales", "crm", "hr", "finance"],
+client/src/BusinessSphereDashboard.jsx-43262-    tips: [
+client/src/BusinessSphereDashboard.jsx-43263-      "CRM matters more here than in most retail businesses — real repeat-client relationships and their real preferences are the actual asset.",
+client/src/BusinessSphereDashboard.jsx:43264:      "Sales & POS for real day-to-day transactions, with HR & Payroll if staff work on commission or shifts.",
+client/src/BusinessSphereDashboard.jsx-43265-      "The Scenario Planner (Predictive Intelligence) is genuinely useful for modeling a real price change against real client volume before raising rates.",
+client/src/BusinessSphereDashboard.jsx-43266-    ],
+client/src/BusinessSphereDashboard.jsx-43267-  },
+client/src/BusinessSphereDashboard.jsx-43268-  healthcare: {
+client/src/BusinessSphereDashboard.jsx-43269-    label: "Healthcare & Veterinary", icon: HeartPulse,
+--
+client/src/BusinessSphereDashboard.jsx-51470-      if (event.key !== "Tab" || !dialogRef.current) return;
+client/src/BusinessSphereDashboard.jsx-51471-      const focusable = Array.from(dialogRef.current.querySelectorAll("button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])"));
+client/src/BusinessSphereDashboard.jsx-51472-      if (focusable.length === 0) return;
+client/src/BusinessSphereDashboard.jsx-51473-      const first = focusable[0];
+client/src/BusinessSphereDashboard.jsx-51474-      const last = focusable[focusable.length - 1];
+client/src/BusinessSphereDashboard.jsx:51475:      if (event.shiftKey && document.activeElement === first) {
+client/src/BusinessSphereDashboard.jsx-51476-        event.preventDefault();
+client/src/BusinessSphereDashboard.jsx-51477-        last.focus();
+client/src/BusinessSphereDashboard.jsx:51478:      } else if (!event.shiftKey && document.activeElement === last) {
+client/src/BusinessSphereDashboard.jsx-51479-        event.preventDefault();
+client/src/BusinessSphereDashboard.jsx-51480-        first.focus();
+client/src/BusinessSphereDashboard.jsx-51481-      }
+client/src/BusinessSphereDashboard.jsx-51482-    }
+client/src/BusinessSphereDashboard.jsx-51483-    document.addEventListener("keydown", handleKeyDown);
+=== POS CLIENT HELPERS ===
+--- client/src/lib/posTransactionEngine.js
+export function normalizePosLookup(value) {
+  return String(value || "").trim().toLocaleLowerCase();
+}
+
+export function productMatchesPosLookup(product, lookup) {
+  const term = normalizePosLookup(lookup);
+  if (!term) return true;
+  return [product?.name, product?.sku, product?.barcode, product?.code, product?.category, product?.brand]
+    .some((candidate) => normalizePosLookup(candidate).includes(term));
+}
+
+export function calculatePosPaymentSummary(payments, total) {
+  const amountDue = Math.max(0, Number(total) || 0);
+  const normalized = (Array.isArray(payments) ? payments : []).map((payment) => ({
+    id: String(payment?.id || ""),
+    method: String(payment?.method || "Cash"),
+    amount: Math.max(0, Number(payment?.amount) || 0),
+  }));
+  const paid = normalized.reduce((sum, payment) => sum + payment.amount, 0);
+  let remainingToAllocate = amountDue;
+  const allocations = normalized.filter((payment) => payment.amount > 0).map((payment) => {
+    const appliedAmount = Math.min(payment.amount, remainingToAllocate);
+    remainingToAllocate = Math.max(0, remainingToAllocate - appliedAmount);
+    return { ...payment, appliedAmount };
+  });
+  const overpayment = Math.max(0, paid - amountDue);
+  const cashTendered = normalized.filter((payment) => payment.method === "Cash").reduce((sum, payment) => sum + payment.amount, 0);
+  return {
+    amountDue,
+    paid,
+    remaining: Math.max(0, amountDue - paid),
+    change: cashTendered > 0 ? overpayment : 0,
+    overpaymentWithoutCash: cashTendered === 0 ? overpayment : 0,
+    allocations,
+    isComplete: amountDue > 0 && paid >= amountDue && (cashTendered > 0 || overpayment === 0),
+  };
+}
+
+export function createPosSaleAttempt({ createDocumentNumber, createIdempotencyKey }) {
+  const docNumber = createDocumentNumber();
+  return {
+    docNumber,
+    idempotencyKey: createIdempotencyKey?.() || `${docNumber}-${Date.now().toString(36)}`,
+  };
+}
+
+export function addProductToPosCart(cart, product, availableQuantity) {
+  const currentCart = Array.isArray(cart) ? cart : [];
+  const stock = Math.max(0, Number(availableQuantity) || 0);
+  const index = currentCart.findIndex((line) => line.sku === product.sku);
+  if (stock <= 0) return { cart: currentCart, added: false, reason: "OUT_OF_STOCK" };
+  if (index < 0) {
+    return { cart: [...currentCart, { sku: product.sku, name: product.name, price: product.price, qty: 1, unit: product.unit, barcode: product.barcode || null }], added: true };
+  }
+  if (currentCart[index].qty >= stock) return { cart: currentCart, added: false, reason: "INSUFFICIENT_STOCK" };
+  return {
+    cart: currentCart.map((line, lineIndex) => lineIndex === index ? { ...line, qty: line.qty + 1 } : line),
+    added: true,
+  };
+}
+--- client/src/lib/posPendingQueue.js
+const QUEUE_PREFIX = "smart_manager:pos:pending:v1";
+
+export function posPendingQueueKey({ companyId, userId }) {
+  return `${QUEUE_PREFIX}:${String(companyId || "workspace")}:${String(userId || "session")}`;
+}
+
+export function readPendingPosSales(storage, scope) {
+  try {
+    const parsed = JSON.parse(storage?.getItem(posPendingQueueKey(scope)) || "[]");
+    return Array.isArray(parsed) ? parsed.filter((record) => record && record.idempotencyKey && record.docNumber && Array.isArray(record.items)) : [];
+  } catch (_error) {
+    return [];
+  }
+}
+
+export function writePendingPosSales(storage, scope, records) {
+  const safeRecords = Array.isArray(records) ? records : [];
+  try {
+    storage?.setItem(posPendingQueueKey(scope), JSON.stringify(safeRecords));
+  } catch (_error) {
+    // The checkout remains usable; the UI will make clear that the sale could
+    // not be retained for retry when device storage is unavailable.
+  }
+  return safeRecords;
+}
+
+export function createPendingPosSale({ attempt, items, payments, subtotal, tax, total, customerId, customerName, queuedAt = new Date().toISOString() }) {
+  return {
+    idempotencyKey: attempt.idempotencyKey,
+    docNumber: attempt.docNumber,
+    items,
+    payments: payments.map((payment) => ({ method: payment.method, amount: Number(payment.amount) || 0 })),
+    subtotal,
+    tax,
+    total,
+    customerId: customerId || null,
+    customerName: customerName || "Guest",
+    status: "pending",
+    attempts: 0,
+    queuedAt,
+    lastError: null,
+  };
+}
+
+export function isRetryablePosTransportError(error) {
+  const status = Number(error?.status || 0);
+  const message = String(error?.message || "").toLowerCase();
+  return status === 0 || [408, 429, 502, 503, 504].includes(status) || /failed to fetch|network|offline|timeout|gateway/.test(message);
+}
+
+export function updatePendingPosSale(records, idempotencyKey, patch) {
+  return (Array.isArray(records) ? records : []).map((record) => record.idempotencyKey === idempotencyKey ? { ...record, ...patch } : record);
+}
+--- client/src/lib/posDeviceProfiles.js
+const PROFILE_PREFIX = "smart_manager:pos:device-profile:v1";
+const EXPORT_KIND = "smart-manager-pos-device-profile";
+const EXPORT_VERSION = 1;
+
+export const DEFAULT_POS_DEVICE_PROFILE = Object.freeze({
+  printerLabel: "Browser print dialog",
+  printerMode: "browser_print",
+  paperWidth: "80mm",
+  autoPrint: false,
+  copyCount: 1,
+  scannerMode: "keyboard",
+  scanTerminator: "Enter",
+  scannerPrefix: "",
+  minScanLength: 3,
+  scanFeedback: true,
+  scanDebounceMs: 250,
+});
+
+export function posDeviceProfileKey({ companyId, userId }) {
+  return `${PROFILE_PREFIX}:${String(companyId || "workspace")}:${String(userId || "session")}`;
+}
+
+export function normalizePosDeviceProfile(profile = {}) {
+  return {
+    printerLabel: String(profile.printerLabel || DEFAULT_POS_DEVICE_PROFILE.printerLabel).slice(0, 80),
+    printerMode: profile.printerMode === "pdf_only" ? "pdf_only" : DEFAULT_POS_DEVICE_PROFILE.printerMode,
+    paperWidth: ["58mm", "80mm", "A4"].includes(profile.paperWidth) ? profile.paperWidth : DEFAULT_POS_DEVICE_PROFILE.paperWidth,
+    autoPrint: Boolean(profile.autoPrint),
+    copyCount: Math.min(5, Math.max(1, Number.parseInt(profile.copyCount, 10) || DEFAULT_POS_DEVICE_PROFILE.copyCount)),
+    scannerMode: profile.scannerMode === "keyboard" ? "keyboard" : DEFAULT_POS_DEVICE_PROFILE.scannerMode,
+    scanTerminator: profile.scanTerminator === "Tab" ? "Tab" : "Enter",
+    scannerPrefix: String(profile.scannerPrefix || "").slice(0, 24),
+    minScanLength: Math.min(64, Math.max(1, Number.parseInt(profile.minScanLength, 10) || DEFAULT_POS_DEVICE_PROFILE.minScanLength)),
+    scanFeedback: profile.scanFeedback !== false,
+    scanDebounceMs: Math.min(1500, Math.max(0, Number.parseInt(profile.scanDebounceMs, 10) || 0)),
+  };
+}
+
+export function readPosDeviceProfile(storage, scope) {
+  try {
+    const parsed = JSON.parse(storage?.getItem(posDeviceProfileKey(scope)) || "{}");
+    return normalizePosDeviceProfile(parsed);
+  } catch (_error) {
+    return { ...DEFAULT_POS_DEVICE_PROFILE };
+  }
+}
+
+export function writePosDeviceProfile(storage, scope, profile) {
+  const normalized = normalizePosDeviceProfile(profile);
+  try { storage?.setItem(posDeviceProfileKey(scope), JSON.stringify(normalized)); } catch (_error) { /* device storage is optional */ }
+  return normalized;
+}
+
+export function normalizeScannerInput(value, profile) {
+  let normalized = String(value || "").trim();
+  const prefix = normalizePosDeviceProfile(profile).scannerPrefix;
+  if (prefix && normalized.startsWith(prefix)) normalized = normalized.slice(prefix.length);
+  return normalized.trim();
+}
+
+export function serializePosDeviceProfile(profile, exportedAt = new Date().toISOString()) {
+  return JSON.stringify({
+    kind: EXPORT_KIND,
+    version: EXPORT_VERSION,
+    exportedAt,
+    profile: normalizePosDeviceProfile(profile),
+  }, null, 2);
+}
+
+export function parsePosDeviceProfileImport(serializedProfile) {
+  let parsed;
+  try {
+    parsed = JSON.parse(String(serializedProfile || ""));
+  } catch (_error) {
+    throw new Error("The selected file is not valid JSON.");
+  }
+  if (!parsed || parsed.kind !== EXPORT_KIND || parsed.version !== EXPORT_VERSION || !parsed.profile || typeof parsed.profile !== "object") {
+    throw new Error("This file is not a compatible Smart Manager POS device profile.");
+  }
+  return normalizePosDeviceProfile(parsed.profile);
+}
+--- client/src/lib/posReconciliationExport.js
+const CSV_HEADERS = ["Outcome", "Request key", "Server transaction", "Created", "Updated", "Detail"];
+
+export function escapePosCsvCell(value) {
+  const text = String(value ?? "").replace(/[\r\n]+/g, " ").trim();
+  const formulaSafe = /^[=+\-@]/.test(text) ? `'${text}` : text;
+  return `"${formulaSafe.replaceAll('"', '""')}"`;
+}
+
+export function buildPosReconciliationCsv(rows = []) {
+  const lines = [CSV_HEADERS, ...rows.map((row) => [
+    row.status === "synced" ? "Synchronized" : "Needs attention",
+    row.idempotency_key || "",
+    row.transaction_id || "",
+    row.created_at || "",
+    row.updated_at || "",
+    row.message || "",
+  ])];
+  return lines.map((line) => line.map(escapePosCsvCell).join(",")).join("\r\n");
+}
+
+export function posReconciliationExportFilename(date = new Date()) {
+  return `smart-manager-pos-reconciliation-${date.toISOString().slice(0, 10)}.csv`;
+}
+=== POS MIGRATIONS ===
+supabase/migrations/20260816_004_pos_transaction_engine.sql-1-BEGIN;
+supabase/migrations/20260816_004_pos_transaction_engine.sql-2-
+supabase/migrations/20260816_004_pos_transaction_engine.sql:3:CREATE TABLE IF NOT EXISTS public.pos_transaction_commits (
+supabase/migrations/20260816_004_pos_transaction_engine.sql-4-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+supabase/migrations/20260816_004_pos_transaction_engine.sql-5-  company_id uuid NOT NULL REFERENCES public.companies(id) ON DELETE RESTRICT,
+supabase/migrations/20260816_004_pos_transaction_engine.sql-6-  transaction_id uuid NOT NULL REFERENCES public.pos_transactions(id) ON DELETE RESTRICT,
+--
+supabase/migrations/20260816_004_pos_transaction_engine.sql-8-  created_by uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
+supabase/migrations/20260816_004_pos_transaction_engine.sql-9-  created_at timestamptz NOT NULL DEFAULT now(),
+supabase/migrations/20260816_004_pos_transaction_engine.sql-10-  updated_at timestamptz NOT NULL DEFAULT now(),
+supabase/migrations/20260816_004_pos_transaction_engine.sql:11:  CONSTRAINT pos_transaction_commits_company_idempotency_key UNIQUE (company_id, idempotency_key)
+supabase/migrations/20260816_004_pos_transaction_engine.sql-12-);
+supabase/migrations/20260816_004_pos_transaction_engine.sql-13-
+supabase/migrations/20260816_004_pos_transaction_engine.sql:14:CREATE INDEX IF NOT EXISTS pos_transaction_commits_company_created_idx
+supabase/migrations/20260816_004_pos_transaction_engine.sql:15:  ON public.pos_transaction_commits (company_id, created_at DESC);
+supabase/migrations/20260816_004_pos_transaction_engine.sql-16-
+supabase/migrations/20260816_004_pos_transaction_engine.sql:17:ALTER TABLE public.pos_transaction_commits ENABLE ROW LEVEL SECURITY;
+supabase/migrations/20260816_004_pos_transaction_engine.sql-18-
+supabase/migrations/20260816_004_pos_transaction_engine.sql:19:DROP POLICY IF EXISTS pos_transaction_commits_company_select ON public.pos_transaction_commits;
+supabase/migrations/20260816_004_pos_transaction_engine.sql:20:CREATE POLICY pos_transaction_commits_company_select
+supabase/migrations/20260816_004_pos_transaction_engine.sql:21:  ON public.pos_transaction_commits
+supabase/migrations/20260816_004_pos_transaction_engine.sql-22-  FOR SELECT
+supabase/migrations/20260816_004_pos_transaction_engine.sql-23-  TO authenticated
+supabase/migrations/20260816_004_pos_transaction_engine.sql-24-  USING (company_id = (SELECT public.current_company_id()));
+--
+supabase/migrations/20260816_004_pos_transaction_engine.sql-80-  PERFORM pg_advisory_xact_lock(hashtext(v_company_id::text || ':' || trim(p_idempotency_key)));
+supabase/migrations/20260816_004_pos_transaction_engine.sql-81-  SELECT c.transaction_id, t.data ->> 'doc_number'
+supabase/migrations/20260816_004_pos_transaction_engine.sql-82-    INTO v_transaction_id, v_existing_doc
+supabase/migrations/20260816_004_pos_transaction_engine.sql:83:    FROM public.pos_transaction_commits c
+supabase/migrations/20260816_004_pos_transaction_engine.sql-84-    JOIN public.pos_transactions t ON t.id = c.transaction_id
+supabase/migrations/20260816_004_pos_transaction_engine.sql-85-   WHERE c.company_id = v_company_id
+supabase/migrations/20260816_004_pos_transaction_engine.sql-86-     AND c.idempotency_key = trim(p_idempotency_key)
+--
+supabase/migrations/20260816_004_pos_transaction_engine.sql-213-    jsonb_build_object('transaction_id', v_transaction_id, 'idempotency_key', trim(p_idempotency_key), 'subtotal', p_subtotal, 'tax', p_tax, 'total', p_total)
+supabase/migrations/20260816_004_pos_transaction_engine.sql-214-  );
+supabase/migrations/20260816_004_pos_transaction_engine.sql-215-
+supabase/migrations/20260816_004_pos_transaction_engine.sql:216:  INSERT INTO public.pos_transaction_commits (company_id, transaction_id, idempotency_key, created_by)
+supabase/migrations/20260816_004_pos_transaction_engine.sql-217-  VALUES (v_company_id, v_transaction_id, trim(p_idempotency_key), v_user_id);
+supabase/migrations/20260816_004_pos_transaction_engine.sql-218-
+supabase/migrations/20260816_004_pos_transaction_engine.sql-219-  RETURN jsonb_build_object(
+--
+supabase/migrations/20260816_005_pos_return_engine.sql-1-BEGIN;
+supabase/migrations/20260816_005_pos_return_engine.sql-2-
+supabase/migrations/20260816_005_pos_return_engine.sql:3:CREATE TABLE IF NOT EXISTS public.pos_return_commits (
+supabase/migrations/20260816_005_pos_return_engine.sql-4-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+supabase/migrations/20260816_005_pos_return_engine.sql-5-  company_id uuid NOT NULL REFERENCES public.companies(id) ON DELETE RESTRICT,
+supabase/migrations/20260816_005_pos_return_engine.sql-6-  return_id uuid NOT NULL REFERENCES public.pos_returns(id) ON DELETE RESTRICT,
+--
+supabase/migrations/20260816_005_pos_return_engine.sql-8-  created_by uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
+supabase/migrations/20260816_005_pos_return_engine.sql-9-  created_at timestamptz NOT NULL DEFAULT now(),
+supabase/migrations/20260816_005_pos_return_engine.sql-10-  updated_at timestamptz NOT NULL DEFAULT now(),
+supabase/migrations/20260816_005_pos_return_engine.sql:11:  CONSTRAINT pos_return_commits_company_idempotency_key UNIQUE (company_id, idempotency_key)
+supabase/migrations/20260816_005_pos_return_engine.sql-12-);
+supabase/migrations/20260816_005_pos_return_engine.sql-13-
+supabase/migrations/20260816_005_pos_return_engine.sql:14:CREATE INDEX IF NOT EXISTS pos_return_commits_company_created_idx
+supabase/migrations/20260816_005_pos_return_engine.sql:15:  ON public.pos_return_commits (company_id, created_at DESC);
+supabase/migrations/20260816_005_pos_return_engine.sql-16-
+supabase/migrations/20260816_005_pos_return_engine.sql:17:ALTER TABLE public.pos_return_commits ENABLE ROW LEVEL SECURITY;
+supabase/migrations/20260816_005_pos_return_engine.sql-18-
+supabase/migrations/20260816_005_pos_return_engine.sql:19:DROP POLICY IF EXISTS pos_return_commits_company_select ON public.pos_return_commits;
+supabase/migrations/20260816_005_pos_return_engine.sql:20:CREATE POLICY pos_return_commits_company_select
+supabase/migrations/20260816_005_pos_return_engine.sql:21:  ON public.pos_return_commits
+supabase/migrations/20260816_005_pos_return_engine.sql-22-  FOR SELECT
+supabase/migrations/20260816_005_pos_return_engine.sql-23-  TO authenticated
+supabase/migrations/20260816_005_pos_return_engine.sql-24-  USING (company_id = (SELECT public.current_company_id()));
+--
+supabase/migrations/20260816_005_pos_return_engine.sql-68-
+supabase/migrations/20260816_005_pos_return_engine.sql-69-  PERFORM pg_advisory_xact_lock(hashtext(v_company_id::text || ':return:' || trim(p_idempotency_key)));
+supabase/migrations/20260816_005_pos_return_engine.sql-70-  SELECT return_id INTO v_existing_return_id
+supabase/migrations/20260816_005_pos_return_engine.sql:71:    FROM public.pos_return_commits
+supabase/migrations/20260816_005_pos_return_engine.sql-72-   WHERE company_id = v_company_id AND idempotency_key = trim(p_idempotency_key)
+supabase/migrations/20260816_005_pos_return_engine.sql-73-   LIMIT 1;
+supabase/migrations/20260816_005_pos_return_engine.sql-74-  IF v_existing_return_id IS NOT NULL THEN
+--
+supabase/migrations/20260816_005_pos_return_engine.sql-152-  VALUES (v_company_id, 'POS refund · ' || coalesce(v_doc_number, p_transaction_id::text), 'Refunded', -p_refund_total, p_reason, jsonb_build_object('pos_transaction_id', p_transaction_id, 'pos_return_id', v_return_id, 'transaction_ref', v_doc_number, 'method', 'Original method', 'refund_total', p_refund_total));
+supabase/migrations/20260816_005_pos_return_engine.sql-153-  INSERT INTO public.audit_log (company_id, action, module, actor, details, subject, detail)
+supabase/migrations/20260816_005_pos_return_engine.sql-154-  VALUES (v_company_id, 'POS return completed', 'Point of Sale', v_cashier, format('Return processed for receipt %s: %.2f.', coalesce(v_doc_number, p_transaction_id::text), p_refund_total), coalesce(v_doc_number, p_transaction_id::text), jsonb_build_object('return_id', v_return_id, 'transaction_id', p_transaction_id, 'reason', p_reason, 'refund_total', p_refund_total));
+supabase/migrations/20260816_005_pos_return_engine.sql:155:  INSERT INTO public.pos_return_commits (company_id, return_id, idempotency_key, created_by)
+supabase/migrations/20260816_005_pos_return_engine.sql-156-  VALUES (v_company_id, v_return_id, trim(p_idempotency_key), v_user_id);
+supabase/migrations/20260816_005_pos_return_engine.sql-157-
+supabase/migrations/20260816_005_pos_return_engine.sql-158-  RETURN jsonb_build_object('return_id', v_return_id, 'transaction_id', p_transaction_id, 'refund_total', p_refund_total, 'idempotent_replay', false);
+--
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-1-BEGIN;
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-2-
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql:3:CREATE TABLE IF NOT EXISTS public.pos_sync_events (
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-4-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-5-  company_id uuid NOT NULL REFERENCES public.companies(id) ON DELETE RESTRICT,
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-6-  idempotency_key text NOT NULL,
+--
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-10-  created_by uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-11-  created_at timestamptz NOT NULL DEFAULT now(),
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-12-  updated_at timestamptz NOT NULL DEFAULT now(),
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql:13:  CONSTRAINT pos_sync_events_company_idempotency_key UNIQUE (company_id, idempotency_key)
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-14-);
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-15-
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql:16:CREATE INDEX IF NOT EXISTS pos_sync_events_company_updated_idx
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql:17:  ON public.pos_sync_events (company_id, updated_at DESC);
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-18-
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql:19:ALTER TABLE public.pos_sync_events ENABLE ROW LEVEL SECURITY;
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-20-
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql:21:DROP POLICY IF EXISTS pos_sync_events_company_select ON public.pos_sync_events;
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql:22:CREATE POLICY pos_sync_events_company_select
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql:23:  ON public.pos_sync_events
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-24-  FOR SELECT
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-25-  TO authenticated
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-26-  USING (company_id = (SELECT public.current_company_id()));
+--
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-54-      RAISE EXCEPTION 'A synchronized POS event must reference a workspace transaction.' USING ERRCODE = '42501';
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-55-    END IF;
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-56-  END IF;
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql:57:  INSERT INTO public.pos_sync_events (company_id, idempotency_key, transaction_id, status, message, created_by)
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-58-  VALUES (v_company_id, trim(p_idempotency_key), p_transaction_id, p_status, nullif(left(trim(coalesce(p_message, '')), 500), ''), v_user_id)
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-59-  ON CONFLICT (company_id, idempotency_key) DO UPDATE
+supabase/migrations/20260816_007_pos_sync_reconciliation.sql-60-    SET transaction_id = EXCLUDED.transaction_id,

@@ -1,0 +1,103 @@
+---
+title: SMART MANAGER — Bank & MFI ↔ VICOBA/SACCOS Integration Architecture
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#eef2ff'
+    primaryTextColor: '#172554'
+    primaryBorderColor: '#4f46e5'
+    lineColor: '#64748b'
+    secondaryColor: '#ecfdf5'
+    tertiaryColor: '#fff7ed'
+---
+flowchart LR
+  subgraph PLATFORM["SMART MANAGER Platform Boundary"]
+    AUTH["Secure authentication\nverified profile + role"]
+    TENANT["Tenant isolation\ncompany scope + RLS"]
+    TRPC["Protected tRPC API\nvalidated procedures"]
+    AUDIT["Audit + security layer\nmaker-checker · idempotency · fraud/AML"]
+    AUTH --> TENANT --> TRPC --> AUDIT
+  end
+
+  subgraph BANK["Bank & MFI Module"]
+    B_SETUP["Institution + branches\nTZS · Africa/Dar_es_Salaam"]
+    B_CUSTOMERS["Customers + KYC/KYB\nIDs · TIN · PEP · documents"]
+    B_ACCOUNTS["Accounts + products\nsavings · wallets · beneficiaries"]
+    B_PAYMENTS["Transactions + channels\ndeposit · withdrawal · transfer · mobile money"]
+    B_CREDIT["Credit lifecycle\nproducts · scoring · approval · guarantors · collateral"]
+    B_LOANS["Loans + servicing\ndisbursement · schedules · interest · fees · penalties"]
+    B_CONTROLS["Controls + operations\ntellers · cash · agents · reconciliation · PAR/NPL"]
+    B_SETUP --> B_CUSTOMERS --> B_ACCOUNTS --> B_PAYMENTS
+    B_CUSTOMERS --> B_CREDIT --> B_LOANS --> B_CONTROLS
+    B_ACCOUNTS --> B_CREDIT
+  end
+
+  subgraph SACCO["VICOBA / SACCOS Module"]
+    S_SETUP["SACCOS/VICOBA registration\nbranches · rules · committees"]
+    S_MEMBERS["Members + membership KYC\nmember accounts · identification"]
+    S_CAPITAL["Shares + share capital\ncontributions · dividends"]
+    S_SAVINGS["Savings + member balances\ndeposits · withdrawals · statements"]
+    S_GROUPS["Groups + lending circles\nmeetings · attendance · elections"]
+    S_WELFARE["Welfare funds\ncontributions · disbursements · approvals"]
+    S_LOANS["Cooperative lending\napplications · guarantors · collateral · repayments"]
+    S_SETUP --> S_MEMBERS --> S_CAPITAL --> S_SAVINGS
+    S_MEMBERS --> S_GROUPS --> S_LOANS
+    S_GROUPS --> S_WELFARE
+  end
+
+  subgraph SHARED["Shared Financial Control Plane"]
+    LEDGER["Double-entry GL / journal engine\nbalanced debit-credit batches"]
+    RECON["Reconciliation + financial statements\nledger · bank · cash · reports"]
+    SCHEDULES["Schedules + standing orders\nrepayment runs · arrears controls"]
+    NOTIFY["Receipts + notifications\ntransaction and member updates"]
+  end
+
+  TRPC --> BANK
+  TRPC --> SACCO
+  AUDIT --> BANK
+  AUDIT --> SACCO
+
+  B_CUSTOMERS <-->|"shared verified customer/member identity"| S_MEMBERS
+  B_ACCOUNTS <-->|"member accounts + savings balances"| S_SAVINGS
+  B_CREDIT <-->|"cooperative applications + guarantees"| S_LOANS
+  B_LOANS <-->|"disbursement + repayment servicing"| S_LOANS
+  B_PAYMENTS <-->|"cash / bank / mobile-money-ready channels"| S_SAVINGS
+  S_CAPITAL -->|"share purchase postings"| B_PAYMENTS
+  S_WELFARE -->|"controlled fund movements"| B_PAYMENTS
+
+  B_PAYMENTS --> LEDGER
+  B_LOANS --> LEDGER
+  S_CAPITAL --> LEDGER
+  S_SAVINGS --> LEDGER
+  S_WELFARE --> LEDGER
+  LEDGER --> RECON
+  LEDGER --> NOTIFY
+  SCHEDULES --> B_LOANS
+  SCHEDULES --> S_LOANS
+  SCHEDULES --> B_PAYMENTS
+  RECON --> AUDIT
+
+  subgraph INTEGRATIONS["SMART MANAGER Integrations"]
+    FINANCE["Finance + Accounting"]
+    HR["Employee / HR\nroles · tellers · approvers"]
+    POS["POS + Inventory"]
+    COMMUNITY["Community Groups"]
+    REPORTS["Executive dashboards\nanalytics · regulatory reports"]
+  end
+
+  LEDGER --> FINANCE
+  HR --> AUDIT
+  POS --> B_PAYMENTS
+  COMMUNITY <--> S_GROUPS
+  RECON --> REPORTS
+
+  classDef boundary fill:#f8fafc,stroke:#334155,stroke-width:2px,color:#0f172a;
+  classDef bank fill:#eef2ff,stroke:#4f46e5,stroke-width:1.5px,color:#172554;
+  classDef sacco fill:#ecfdf5,stroke:#059669,stroke-width:1.5px,color:#064e3b;
+  classDef shared fill:#fff7ed,stroke:#ea580c,stroke-width:1.5px,color:#7c2d12;
+  classDef integration fill:#f5f3ff,stroke:#7c3aed,stroke-width:1.5px,color:#4c1d95;
+  class PLATFORM,INTEGRATIONS boundary;
+  class B_SETUP,B_CUSTOMERS,B_ACCOUNTS,B_PAYMENTS,B_CREDIT,B_LOANS,B_CONTROLS bank;
+  class S_SETUP,S_MEMBERS,S_CAPITAL,S_SAVINGS,S_GROUPS,S_WELFARE,S_LOANS sacco;
+  class LEDGER,RECON,SCHEDULES,NOTIFY shared;
+  class FINANCE,HR,POS,COMMUNITY,REPORTS integration;

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Responsive design preserves operational usefulness</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background-color: #F1F5F9;
+            font-family: 'Inter', sans-serif;
+            padding-top: 64px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .header-container {
+            width: 1152px;
+            margin-bottom: 32px;
+        }
+        
+        h1 {
+            color: #0B1120;
+            font-weight: 900;
+            font-size: 44px;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+        }
+        
+        .subtitle {
+            color: #334155;
+            font-weight: 500;
+            font-size: 22px;
+            line-height: 1.4;
+            max-width: 1000px;
+        }
+        
+        .content-card {
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            width: 1152px;
+            height: 420px;
+            display: flex;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(11, 17, 32, 0.05);
+        }
+        
+        .image-panel {
+            width: 40%;
+            height: 100%;
+            background-color: #E2E8F0;
+        }
+        
+        .reference-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+        }
+        
+        .text-panel {
+            width: 60%;
+            padding: 32px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .point-item {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 16px;
+        }
+        
+        .point-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .point-rule {
+            position: absolute;
+            left: 0;
+            top: 4px;
+            bottom: 4px;
+            width: 4px;
+            background-color: #008A45;
+            border-radius: 4px;
+        }
+        
+        .point-title {
+            color: #0B1120;
+            font-weight: 900;
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+        
+        .point-desc {
+            color: #334155;
+            font-weight: 500;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header-container">
+            <h1>Responsive design preserves operational usefulness</h1>
+            <p class="subtitle">Responsive behavior changes the frame—not the integrity of the work.</p>
+        </div>
+        
+        <div class="content-card">
+            <div class="image-panel">
+                <img class="reference-image" src="/home/ubuntu/SMARTMANAGER-MANUS/UI-UX-DESIGN/05-Visual-Assets/19-mobile-operations.png" alt="Mobile Operations">
+            </div>
+            
+            <div class="text-panel">
+                <div class="point-item">
+                    <div class="point-rule"></div>
+                    <div class="point-title">Desktop</div>
+                    <div class="point-desc">Persistent sidebar, two-column workspaces, dense but legible tables.</div>
+                </div>
+                
+                <div class="point-item">
+                    <div class="point-rule"></div>
+                    <div class="point-title">Tablet</div>
+                    <div class="point-desc">Collapsed navigation drawer; split panes only when both remain readable.</div>
+                </div>
+                
+                <div class="point-item">
+                    <div class="point-rule"></div>
+                    <div class="point-title">Mobile</div>
+                    <div class="point-desc">Top bar, horizontal tab strip, stacked KPIs, full-width actions, one-column forms.</div>
+                </div>
+                
+                <div class="point-item">
+                    <div class="point-rule"></div>
+                    <div class="point-title">Data safety</div>
+                    <div class="point-desc">Tables use dedicated horizontal scrolling rather than compressing critical columns into unreadable layouts.</div>
+                </div>
+                
+                <div class="point-item">
+                    <div class="point-rule"></div>
+                    <div class="point-title">Touch and motion</div>
+                    <div class="point-desc">44px minimum targets and reduced-motion behavior are part of the contract.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

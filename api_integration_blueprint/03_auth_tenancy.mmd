@@ -1,0 +1,27 @@
+---
+title: SMART MANAGER — Integration Authentication and Tenant Isolation
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#fef2f2'
+    primaryBorderColor: '#dc2626'
+    lineColor: '#64748b'
+---
+flowchart TB
+  REQUEST["Partner request\nHTTPS + correlation ID"]
+  CRED["Credential verification\nOAuth 2.0 client credentials / delegated OAuth\nor HMAC-signed API key"]
+  INTEGRATION["Integration identity\npartner_id · connection_id · scopes"]
+  TENANT["Tenant binding\nconnection.company_id only\nnever trust body company_id"]
+  ACTOR["Actor context\nservice principal + optional human actor"]
+  RBAC["Scope + role authorization\nread · write · post · approve · reconcile"]
+  RLS["Supabase RLS / secured RPC\ncompany-scoped row visibility"]
+  AUDIT["Audit evidence\nrequest hash · actor · source · decision"]
+  REQUEST --> CRED --> INTEGRATION --> TENANT --> ACTOR --> RBAC --> RLS
+  RBAC --> AUDIT
+  RLS --> AUDIT
+  classDef entry fill:#eef2ff,stroke:#4338ca,color:#1e1b4b,stroke-width:1.7px;
+  classDef policy fill:#fef2f2,stroke:#dc2626,color:#7f1d1d,stroke-width:1.8px;
+  classDef audit fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.6px;
+  class REQUEST,CRED,INTEGRATION entry;
+  class TENANT,ACTOR,RBAC,RLS policy;
+  class AUDIT audit;

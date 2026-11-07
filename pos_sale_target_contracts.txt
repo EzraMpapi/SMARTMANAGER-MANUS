@@ -1,0 +1,756 @@
+client/src/lib/posPendingQueue.js-23-  }
+client/src/lib/posPendingQueue.js-24-  return safeRecords;
+client/src/lib/posPendingQueue.js-25-}
+client/src/lib/posPendingQueue.js-26-
+client/src/lib/posPendingQueue.js:27:export function createPendingPosSale({ attempt, items, payments, subtotal, tax, total, customerId, customerName, queuedAt = new Date().toISOString() }) {
+client/src/lib/posPendingQueue.js-28-  return {
+client/src/lib/posPendingQueue.js-29-    idempotencyKey: attempt.idempotencyKey,
+client/src/lib/posPendingQueue.js-30-    docNumber: attempt.docNumber,
+client/src/lib/posPendingQueue.js-31-    items,
+client/src/lib/posPendingQueue.js-32-    payments: payments.map((payment) => ({ method: payment.method, amount: Number(payment.amount) || 0 })),
+client/src/lib/posPendingQueue.js-33-    subtotal,
+client/src/lib/posPendingQueue.js-34-    tax,
+client/src/lib/posPendingQueue.js-35-    total,
+client/src/lib/posPendingQueue.js:36:    customerId: customerId || null,
+client/src/lib/posPendingQueue.js-37-    customerName: customerName || "Guest",
+client/src/lib/posPendingQueue.js-38-    status: "pending",
+client/src/lib/posPendingQueue.js-39-    attempts: 0,
+client/src/lib/posPendingQueue.js-40-    queuedAt,
+--
+client/src/BusinessSphereDashboard.jsx-27-import { trpc } from "./lib/trpc";
+client/src/BusinessSphereDashboard.jsx-28-import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "./lib/authErrors";
+client/src/BusinessSphereDashboard.jsx-29-import { PASSWORD_REQUIREMENT_LABELS, authScreenFromSearch, companyDefaultsForCountry, getPasswordChecks, isEnterprisePassword, passwordStrength } from "./lib/authOnboarding";
+client/src/BusinessSphereDashboard.jsx-30-import { addProductToPosCart, calculatePosPaymentSummary, createPosSaleAttempt, productMatchesPosLookup } from "./lib/posTransactionEngine";
+client/src/BusinessSphereDashboard.jsx:31:import { createPendingPosSale, isRetryablePosTransportError, readPendingPosSales, updatePendingPosSale, writePendingPosSales } from "./lib/posPendingQueue";
+client/src/BusinessSphereDashboard.jsx-32-import { DEFAULT_POS_DEVICE_PROFILE, normalizeScannerInput, parsePosDeviceProfileImport, readPosDeviceProfile, serializePosDeviceProfile, writePosDeviceProfile } from "./lib/posDeviceProfiles";
+client/src/BusinessSphereDashboard.jsx-33-import { buildPosReconciliationCsv, posReconciliationExportFilename } from "./lib/posReconciliationExport";
+client/src/BusinessSphereDashboard.jsx-34-import { calculateSupportMetrics } from "./lib/supportMetrics";
+client/src/BusinessSphereDashboard.jsx-35-import { auditEvidenceExportFilename, buildAuditEvidenceCsv } from "./lib/auditEvidenceExport";
+--
+client/src/BusinessSphereDashboard.jsx-528-// typed document contracts. Keep those verified contract fields out of the
+client/src/BusinessSphereDashboard.jsx-529-// JSON envelope so PostgREST filters, joins, dates, and financial reporting
+client/src/BusinessSphereDashboard.jsx-530-// read the same canonical values the UI writes.
+client/src/BusinessSphereDashboard.jsx-531-const GENERIC_TYPED_COLUMNS = {
+client/src/BusinessSphereDashboard.jsx:532:  sales_quotations: new Set(["doc_number", "customer", "issue_date", "valid_until", "owner_id"]),
+client/src/BusinessSphereDashboard.jsx:533:  sales_invoices: new Set(["doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid"]),
+client/src/BusinessSphereDashboard.jsx-534-  sales_invoice_items: new Set(["invoice_id", "item_name", "item_sku", "qty", "rate", "sort_order"]),
+client/src/BusinessSphereDashboard.jsx-535-  sales_payments: new Set(["invoice_id", "method", "payment_date", "reference"]),
+client/src/BusinessSphereDashboard.jsx:536:  sales_subscriptions: new Set(["doc_number", "customer", "plan", "cycle", "start_date", "next_billing_date"]),
+client/src/BusinessSphereDashboard.jsx-537-  finance_expenses: new Set(["vendor", "category", "expense_date", "due_date", "method", "department"]),
+client/src/BusinessSphereDashboard.jsx-538-  sales_order_returns: new Set(["order_id", "reason"]),
+client/src/BusinessSphereDashboard.jsx-539-  sales_order_return_items: new Set(["return_id", "item_name", "item_sku", "qty", "rate"]),
+client/src/BusinessSphereDashboard.jsx-540-};
+--
+client/src/BusinessSphereDashboard.jsx-555-
+client/src/BusinessSphereDashboard.jsx-556-function genericRecordName(table, record, data, fallback) {
+client/src/BusinessSphereDashboard.jsx-557-  return firstDefined(
+client/src/BusinessSphereDashboard.jsx-558-    record.name, record.full_name, record.contact_name, record.item_name,
+client/src/BusinessSphereDashboard.jsx:559:    record.customer, record.cashier, record.doc_number, record.sku,
+client/src/BusinessSphereDashboard.jsx-560-    data.name, data.full_name, data.contact_name, data.item_name,
+client/src/BusinessSphereDashboard.jsx:561:    data.customer, data.cashier, data.doc_number, data.sku,
+client/src/BusinessSphereDashboard.jsx-562-    fallback?.name, `${table.replace(/_/g, " ")} record`,
+client/src/BusinessSphereDashboard.jsx-563-  );
+client/src/BusinessSphereDashboard.jsx-564-}
+client/src/BusinessSphereDashboard.jsx-565-
+--
+client/src/BusinessSphereDashboard.jsx-1162-  const data = r.data && typeof r.data === "object" ? r.data : {};
+client/src/BusinessSphereDashboard.jsx-1163-  return {
+client/src/BusinessSphereDashboard.jsx-1164-    id: r.id,
+client/src/BusinessSphereDashboard.jsx-1165-    dbId: r.id,
+client/src/BusinessSphereDashboard.jsx:1166:    shiftId: data.shift_id || data.shiftId || null,
+client/src/BusinessSphereDashboard.jsx-1167-    kind: data.kind || r.status || "Pay In",
+client/src/BusinessSphereDashboard.jsx-1168-    amount: Number(r.amount) || 0,
+client/src/BusinessSphereDashboard.jsx-1169-    reason: data.reason || r.notes || "",
+client/src/BusinessSphereDashboard.jsx-1170-  };
+--
+client/src/BusinessSphereDashboard.jsx-1202-}
+client/src/BusinessSphereDashboard.jsx-1203-
+client/src/BusinessSphereDashboard.jsx-1204-function mapPurchaseOrderRow(r) {
+client/src/BusinessSphereDashboard.jsx-1205-  return {
+client/src/BusinessSphereDashboard.jsx:1206:    id: r.doc_number, dbId: r.id,
+client/src/BusinessSphereDashboard.jsx-1207-    supplier: r.supplier, status: r.status, orderDate: r.order_date, expectedDate: r.expected_date,
+client/src/BusinessSphereDashboard.jsx-1208-    requestedBy: r.requested_by || "", items: mapPoItems(r.purchase_order_items),
+client/src/BusinessSphereDashboard.jsx-1209-  };
+client/src/BusinessSphereDashboard.jsx-1210-}
+client/src/BusinessSphereDashboard.jsx-1211-
+client/src/BusinessSphereDashboard.jsx-1212-function mapProcurementContractRow(r) {
+client/src/BusinessSphereDashboard.jsx-1213-  return {
+client/src/BusinessSphereDashboard.jsx:1214:    id: r.doc_number, dbId: r.id,
+client/src/BusinessSphereDashboard.jsx-1215-    supplier: r.supplier, type: r.contract_type, startDate: r.start_date, endDate: r.end_date,
+client/src/BusinessSphereDashboard.jsx-1216-    value: Number(r.value) || 0, notes: r.notes || "",
+client/src/BusinessSphereDashboard.jsx-1217-  };
+client/src/BusinessSphereDashboard.jsx-1218-}
+--
+client/src/BusinessSphereDashboard.jsx-1250-}
+client/src/BusinessSphereDashboard.jsx-1251-
+client/src/BusinessSphereDashboard.jsx-1252-function mapQuotationRow(r) {
+client/src/BusinessSphereDashboard.jsx-1253-  return {
+client/src/BusinessSphereDashboard.jsx:1254:    id: r.doc_number, dbId: r.id,
+client/src/BusinessSphereDashboard.jsx-1255-    customer: r.customer, date: r.issue_date, validUntil: r.valid_until,
+client/src/BusinessSphereDashboard.jsx-1256-    status: r.status, owner: r.owner_id || "Unassigned",
+client/src/BusinessSphereDashboard.jsx-1257-    items: mapDocItems(r.items ?? r.sales_quotation_items),
+client/src/BusinessSphereDashboard.jsx-1258-  };
+--
+client/src/BusinessSphereDashboard.jsx-1266-}
+client/src/BusinessSphereDashboard.jsx-1267-
+client/src/BusinessSphereDashboard.jsx-1268-function mapOrderRow(r) {
+client/src/BusinessSphereDashboard.jsx-1269-  return {
+client/src/BusinessSphereDashboard.jsx:1270:    id: r.doc_number, dbId: r.id,
+client/src/BusinessSphereDashboard.jsx-1271-    customer: r.customer, date: r.order_date, quotationRef: r.quotation_reference || (r.quotation_id ? "linked" : "—"),
+client/src/BusinessSphereDashboard.jsx-1272-    status: r.status, owner: r.owner_name || r.owner_id || "Unassigned",
+client/src/BusinessSphereDashboard.jsx-1273-    items: mapDocItems(r.items ?? r.sales_order_items),
+client/src/BusinessSphereDashboard.jsx-1274-    returns: (r.returns ?? r.sales_order_returns ?? []).map(mapOrderReturnRow),
+--
+client/src/BusinessSphereDashboard.jsx-1282-
+client/src/BusinessSphereDashboard.jsx-1283-function mapInvoiceRow(r) {
+client/src/BusinessSphereDashboard.jsx-1284-  const data = r.data && typeof r.data === "object" ? r.data : {};
+client/src/BusinessSphereDashboard.jsx-1285-  return {
+client/src/BusinessSphereDashboard.jsx:1286:    id: r.doc_number || data.doc_number || r.id, dbId: r.id,
+client/src/BusinessSphereDashboard.jsx-1287-    customer: r.customer || data.customer || r.name, date: r.issue_date || data.issue_date || r.created_at, dueDate: r.due_date || data.due_date,
+client/src/BusinessSphereDashboard.jsx-1288-    orderRef: r.order_id || data.order_id ? "linked" : "—", status: r.status || data.status,
+client/src/BusinessSphereDashboard.jsx-1289-    amountPaid: Number(r.amount_paid ?? data.amount_paid) || 0,
+client/src/BusinessSphereDashboard.jsx-1290-    items: mapDocItems(r.items ?? r.sales_invoice_items ?? data.items),
+--
+client/src/BusinessSphereDashboard.jsx-1293-}
+client/src/BusinessSphereDashboard.jsx-1294-
+client/src/BusinessSphereDashboard.jsx-1295-function mapSubscriptionRow(r) {
+client/src/BusinessSphereDashboard.jsx-1296-  return {
+client/src/BusinessSphereDashboard.jsx:1297:    id: r.doc_number, dbId: r.id,
+client/src/BusinessSphereDashboard.jsx-1298-    customer: r.customer, plan: r.plan, amount: Number(r.amount) || 0, cycle: r.cycle,
+client/src/BusinessSphereDashboard.jsx-1299-    status: r.status, startDate: r.start_date, nextBillingDate: r.next_billing_date,
+client/src/BusinessSphereDashboard.jsx-1300-  };
+client/src/BusinessSphereDashboard.jsx-1301-}
+--
+client/src/BusinessSphereDashboard.jsx-1523-}
+client/src/BusinessSphereDashboard.jsx-1524-
+client/src/BusinessSphereDashboard.jsx-1525-function mapTicketRow(r) {
+client/src/BusinessSphereDashboard.jsx-1526-  return {
+client/src/BusinessSphereDashboard.jsx:1527:    id: r.doc_number, dbId: r.id,
+client/src/BusinessSphereDashboard.jsx-1528-    subject: r.subject, customer: r.customer, category: r.category, priority: r.priority,
+client/src/BusinessSphereDashboard.jsx-1529-    status: r.status, assignee: r.assignee || "", createdDate: r.created_date,
+client/src/BusinessSphereDashboard.jsx-1530-    createdAt: r.created_at || r.created_date || null,
+client/src/BusinessSphereDashboard.jsx-1531-    resolvedAt: r.resolved_at || null,
+--
+client/src/BusinessSphereDashboard.jsx-1704-}
+client/src/BusinessSphereDashboard.jsx-1705-
+client/src/BusinessSphereDashboard.jsx-1706-function mapOnlineOrderRow(r) {
+client/src/BusinessSphereDashboard.jsx-1707-  return {
+client/src/BusinessSphereDashboard.jsx:1708:    id: r.doc_number, dbId: r.id,
+client/src/BusinessSphereDashboard.jsx-1709-    customer: r.customer_name, email: r.customer_email || "",
+client/src/BusinessSphereDashboard.jsx-1710-    items: mapOnlineOrderItems(r.ecommerce_order_items),
+client/src/BusinessSphereDashboard.jsx-1711-    total: Number(r.total) || 0, status: r.status, method: r.payment_method || "", date: r.order_date,
+client/src/BusinessSphereDashboard.jsx-1712-  };
+--
+client/src/BusinessSphereDashboard.jsx-1743-
+client/src/BusinessSphereDashboard.jsx-1744-function mapPosTransactionRow(r) {
+client/src/BusinessSphereDashboard.jsx-1745-  const data = r.data && typeof r.data === "object" ? r.data : {};
+client/src/BusinessSphereDashboard.jsx-1746-  return {
+client/src/BusinessSphereDashboard.jsx:1747:    id: r.doc_number, dbId: r.id,
+client/src/BusinessSphereDashboard.jsx-1748-    cashier: r.profiles?.full_name || data.cashier || "Unknown", method: r.payment_method || data.payment_method || "",
+client/src/BusinessSphereDashboard.jsx:1749:    status: r.status || data.status || "Completed", customerId: data.customer_id || null, customer: data.customer_name || "Guest", rawData: data, date: r.created_at?.slice(0, 10),
+client/src/BusinessSphereDashboard.jsx-1750-    createdAt: r.created_at || null,
+client/src/BusinessSphereDashboard.jsx-1751-    items: mapPosItems(r.pos_transaction_items?.length ? r.pos_transaction_items : data.items),
+client/src/BusinessSphereDashboard.jsx-1752-    returns: (r.pos_returns || []).map(mapReturnRow),
+client/src/BusinessSphereDashboard.jsx-1753-  };
+--
+client/src/BusinessSphereDashboard.jsx-10664-      }
+client/src/BusinessSphereDashboard.jsx-10665-      let invoiceHeader = null;
+client/src/BusinessSphereDashboard.jsx-10666-      try {
+client/src/BusinessSphereDashboard.jsx-10667-        invoiceHeader = await sb("sales_invoices").insert({
+client/src/BusinessSphereDashboard.jsx:10668:          doc_number: newInv.id,
+client/src/BusinessSphereDashboard.jsx-10669-          customer: newInv.customer,
+client/src/BusinessSphereDashboard.jsx-10670-          issue_date: newInv.date,
+client/src/BusinessSphereDashboard.jsx-10671-          due_date: newInv.dueDate,
+client/src/BusinessSphereDashboard.jsx-10672-          status: newInv.status,
+--
+client/src/BusinessSphereDashboard.jsx-10736-      const fk = { quotations: "quotation_id", orders: "order_id", invoices: "invoice_id" }[tab];
+client/src/BusinessSphereDashboard.jsx-10737-      let header = null;
+client/src/BusinessSphereDashboard.jsx-10738-      try {
+client/src/BusinessSphereDashboard.jsx-10739-        header = await sb(table).insert({
+client/src/BusinessSphereDashboard.jsx:10740:          doc_number: draft.id,
+client/src/BusinessSphereDashboard.jsx-10741-          customer: form.customer,
+client/src/BusinessSphereDashboard.jsx-10742-          ...(tab !== "orders" && { status: draft.status }),
+client/src/BusinessSphereDashboard.jsx-10743-          ...(tab === "quotations" && { valid_until: form.secondaryDate }),
+client/src/BusinessSphereDashboard.jsx-10744-          ...(tab === "orders" ? {
+--
+client/src/BusinessSphereDashboard.jsx-11775-    };
+client/src/BusinessSphereDashboard.jsx-11776-    if (requiresConfirmedPersistence()) {
+client/src/BusinessSphereDashboard.jsx-11777-      try {
+client/src/BusinessSphereDashboard.jsx-11778-        const header = await sb("sales_subscriptions").insert({
+client/src/BusinessSphereDashboard.jsx:11779:          doc_number: draft.id, customer: draft.customer, plan: draft.plan, amount: draft.amount,
+client/src/BusinessSphereDashboard.jsx-11780-          cycle: draft.cycle, status: "Active", start_date: draft.startDate, next_billing_date: draft.startDate,
+client/src/BusinessSphereDashboard.jsx-11781-        }).single().run();
+client/src/BusinessSphereDashboard.jsx-11782-        if (!header?.id) throw buildConfirmedMutationError({ table: "sales_subscriptions", method: "POST", status: 200 });
+client/src/BusinessSphereDashboard.jsx-11783-        setRows((prev) => [{ ...draft, dbId: header.id }, ...prev]);
+--
+client/src/BusinessSphereDashboard.jsx-11832-      if (!sub.dbId) { notify("This subscription is not linked to a confirmed server record. Refresh Sales before generating an invoice.", "error"); return false; }
+client/src/BusinessSphereDashboard.jsx-11833-      let header = null;
+client/src/BusinessSphereDashboard.jsx-11834-      try {
+client/src/BusinessSphereDashboard.jsx-11835-        header = await sb("sales_invoices").insert({
+client/src/BusinessSphereDashboard.jsx:11836:          doc_number: draft.id, customer: draft.customer, issue_date: draft.date, due_date: draft.dueDate, status: "Unpaid", amount_paid: 0,
+client/src/BusinessSphereDashboard.jsx-11837-        }).single().run();
+client/src/BusinessSphereDashboard.jsx-11838-        if (!header?.id) throw buildConfirmedMutationError({ table: "sales_invoices", method: "POST", status: 200 });
+client/src/BusinessSphereDashboard.jsx-11839-        await sb("sales_invoice_items").insert([{ invoice_id: header.id, item_name: draft.items[0].name, qty: 1, rate: draft.items[0].rate, sort_order: 0 }]).run();
+client/src/BusinessSphereDashboard.jsx-11840-        await sb("sales_subscriptions").eq("id", sub.dbId).update({ next_billing_date: nextDate }).single().run();
+--
+client/src/BusinessSphereDashboard.jsx-14108-    };
+client/src/BusinessSphereDashboard.jsx-14109-    if (IS_CONFIGURED) {
+client/src/BusinessSphereDashboard.jsx-14110-      try {
+client/src/BusinessSphereDashboard.jsx-14111-        const header = await sb("procurement_purchase_orders").insert({
+client/src/BusinessSphereDashboard.jsx:14112:          doc_number: draft.id, supplier: draft.supplier, status, order_date: draft.orderDate,
+client/src/BusinessSphereDashboard.jsx-14113-          expected_date: draft.expectedDate, requested_by: draft.requestedBy,
+client/src/BusinessSphereDashboard.jsx-14114-        }).single().run();
+client/src/BusinessSphereDashboard.jsx-14115-        try {
+client/src/BusinessSphereDashboard.jsx-14116-          const savedItems = await sb("purchase_order_items").insert(
+--
+client/src/BusinessSphereDashboard.jsx-14583-    notify(`Contract added: ${draft.supplier}`);
+client/src/BusinessSphereDashboard.jsx-14584-    if (IS_CONFIGURED) {
+client/src/BusinessSphereDashboard.jsx-14585-      try {
+client/src/BusinessSphereDashboard.jsx-14586-        await sb("procurement_contracts").insert({
+client/src/BusinessSphereDashboard.jsx:14587:          doc_number: draft.id, supplier: draft.supplier, contract_type: draft.type, start_date: draft.startDate,
+client/src/BusinessSphereDashboard.jsx-14588-          end_date: draft.endDate, value: draft.value, notes: draft.notes,
+client/src/BusinessSphereDashboard.jsx-14589-        }).run();
+client/src/BusinessSphereDashboard.jsx-14590-      } catch (_e) { notify("Contract added locally, but saving to the server failed.", "error"); }
+client/src/BusinessSphereDashboard.jsx-14591-    }
+--
+client/src/BusinessSphereDashboard.jsx-19429-// ranges that could produce duplicates (CON-10 through CON-99 = 90 values).
+client/src/BusinessSphereDashboard.jsx-19430-// Format: PREFIX-YYYYMMDD-XXXX where XXXX is 4 hex digits from the current
+client/src/BusinessSphereDashboard.jsx-19431-// millisecond, giving 65,536 values within the same millisecond while staying
+client/src/BusinessSphereDashboard.jsx-19432-// human-readable. Used for all locally-generated draft ids; the server's
+client/src/BusinessSphereDashboard.jsx:19433:// generate_doc_number() RPC follows the same pattern for the persisted copy.
+client/src/BusinessSphereDashboard.jsx-19434-function docId(prefix) {
+client/src/BusinessSphereDashboard.jsx-19435-  const d = new Date();
+client/src/BusinessSphereDashboard.jsx-19436-  const date = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+client/src/BusinessSphereDashboard.jsx-19437-  const hex = (d.getTime() % 65536).toString(16).toUpperCase().padStart(4,'0');
+--
+client/src/BusinessSphereDashboard.jsx-27526-  const addInternalNote = trpc.support.addInternalNote.useMutation();
+client/src/BusinessSphereDashboard.jsx-27527-  const { rows: fallbackRows, setRows: setFallbackRows, loading: fallbackLoading } = tickets;
+client/src/BusinessSphereDashboard.jsx-27528-  const mapVerifiedTicket = (ticket) => ({
+client/src/BusinessSphereDashboard.jsx-27529-      id: ticket.id,
+client/src/BusinessSphereDashboard.jsx:27530:      docNumber: ticket.doc_number || ticket.id,
+client/src/BusinessSphereDashboard.jsx-27531-      subject: ticket.subject || "Untitled ticket",
+client/src/BusinessSphereDashboard.jsx-27532-      customer: ticket.customer || "Unassigned customer",
+client/src/BusinessSphereDashboard.jsx-27533-      category: ticket.category || "General",
+client/src/BusinessSphereDashboard.jsx-27534-      priority: ticket.priority || "Medium",
+--
+client/src/BusinessSphereDashboard.jsx-27564-          initialMessage: form.description || undefined,
+client/src/BusinessSphereDashboard.jsx-27565-        });
+client/src/BusinessSphereDashboard.jsx-27566-        await utils.support.listTickets.invalidate();
+client/src/BusinessSphereDashboard.jsx-27567-        setShowForm(false);
+client/src/BusinessSphereDashboard.jsx:27568:        notify(`Ticket created: ${result.ticket.doc_number || result.ticket.id}`);
+client/src/BusinessSphereDashboard.jsx-27569-      } catch (error) {
+client/src/BusinessSphereDashboard.jsx-27570-        notify(error?.message || "The server did not confirm this ticket. Your form remains open so you can retry.", "error");
+client/src/BusinessSphereDashboard.jsx-27571-      }
+client/src/BusinessSphereDashboard.jsx-27572-      return;
+--
+client/src/BusinessSphereDashboard.jsx-27582-    notify(`Ticket created: ${draft.id}`);
+client/src/BusinessSphereDashboard.jsx-27583-    if (IS_CONFIGURED) {
+client/src/BusinessSphereDashboard.jsx-27584-      try {
+client/src/BusinessSphereDashboard.jsx-27585-        const header = await sb("support_tickets").insert({
+client/src/BusinessSphereDashboard.jsx:27586:          doc_number: draft.id, subject: draft.subject, customer: draft.customer, category: draft.category,
+client/src/BusinessSphereDashboard.jsx-27587-          priority: draft.priority, status: "Open", assignee: draft.assignee, created_date: draft.createdDate,
+client/src/BusinessSphereDashboard.jsx-27588-        }).single().run();
+client/src/BusinessSphereDashboard.jsx-27589-        if (header?.id) {
+client/src/BusinessSphereDashboard.jsx-27590-          if (form.description) {
+--
+client/src/BusinessSphereDashboard.jsx-28249-        </div>
+client/src/BusinessSphereDashboard.jsx-28250-
+client/src/BusinessSphereDashboard.jsx-28251-        {IS_CONFIGURED && normalizedSearch.length === 1 && <p className="text-[11.5px] text-slate-500">Enter at least two characters to search confirmed workspace tickets.</p>}
+client/src/BusinessSphereDashboard.jsx-28252-        {searchResults.isLoading && <div className="h-10 rounded-lg skeleton-shimmer" />}
+client/src/BusinessSphereDashboard.jsx:28253:        {visibleTickets.length > 0 ? <FormField label="Ticket"><select className={inputClass} value={ticketId} onChange={(event) => { setTicketId(event.target.value); setDraftReply(""); setCautions([]); setError(null); }}>{visibleTickets.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.doc_number || candidate.docNumber || candidate.id} — {candidate.subject}</option>)}</select></FormField> : <div className="border border-dashed border-slate-200 rounded-lg py-8 text-center"><p className="text-[12.5px] text-slate-500">{normalizedSearch.length >= 2 ? "No tenant-visible tickets match this search." : "No confirmed tickets are available for drafting."}</p></div>}
+client/src/BusinessSphereDashboard.jsx-28254-
+client/src/BusinessSphereDashboard.jsx-28255-        {ticket && <div className="bg-slate-50 border border-slate-100 rounded-lg p-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Draft context</p><p className="text-[13px] font-medium text-[#111827] mt-1">{ticket.subject}</p><p className="text-[11.5px] text-slate-500 mt-0.5">{ticket.customer} · {ticket.category || "General"} · {ticket.priority || "Medium"}</p><p className="text-[10.5px] text-slate-400 mt-2">Internal notes and provider credentials are excluded from the AI request.</p></div>}
+client/src/BusinessSphereDashboard.jsx-28256-
+client/src/BusinessSphereDashboard.jsx-28257-        <button onClick={generateDraft} disabled={draftMutation.isPending || !ticket} className="btn-primary text-white text-[13px] font-medium rounded-lg py-2.5 w-full disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">{draftMutation.isPending ? <><LoaderCircle size={14} className="animate-spin" /> Preparing review draft...</> : <><Brain size={14} /> Generate review draft</>}</button>
+--
+client/src/BusinessSphereDashboard.jsx-39113-            const table = isInvoice ? "sales_invoices" : "sales_quotations";
+client/src/BusinessSphereDashboard.jsx-39114-            const itemsTable = isInvoice ? "sales_invoice_items" : "sales_quotation_items";
+client/src/BusinessSphereDashboard.jsx-39115-            const header = await sb(table).insert(
+client/src/BusinessSphereDashboard.jsx-39116-              isInvoice
+client/src/BusinessSphereDashboard.jsx:39117:                ? { doc_number: docId, customer: draft.customer, issue_date: draft.date, due_date: draft.dueDate, status: "Unpaid", amount_paid: 0 }
+client/src/BusinessSphereDashboard.jsx:39118:                : { doc_number: docId, customer: draft.customer, issue_date: draft.date, valid_until: draft.validUntil, status: "Draft" }
+client/src/BusinessSphereDashboard.jsx-39119-            ).single().run();
+client/src/BusinessSphereDashboard.jsx-39120-            if (header?.id) {
+client/src/BusinessSphereDashboard.jsx-39121-              await sb(itemsTable).insert(lineItems.map((li) => ({ [isInvoice ? "invoice_id" : "quotation_id"]: header.id, item_sku: li.sku, item_name: li.name, qty: li.qty, rate: li.rate }))).run();
+client/src/BusinessSphereDashboard.jsx-39122-              hook.setRows((prev) => prev.map((d) => (d.id === docId ? { ...d, dbId: header.id } : d)));
+--
+client/src/BusinessSphereDashboard.jsx-40539-          name: `${row.kind} · ${open.cashier}`,
+client/src/BusinessSphereDashboard.jsx-40540-          status: row.kind,
+client/src/BusinessSphereDashboard.jsx-40541-          amount: amt,
+client/src/BusinessSphereDashboard.jsx-40542-          notes: row.reason || null,
+client/src/BusinessSphereDashboard.jsx:40543:          data: { shift_id: open.dbId, kind: row.kind, reason: row.reason || "" },
+client/src/BusinessSphereDashboard.jsx-40544-        }).single().run();
+client/src/BusinessSphereDashboard.jsx-40545-        moves.setRows((prev) => [mapPosCashMovementRow(header), ...prev]);
+client/src/BusinessSphereDashboard.jsx-40546-      } catch (error) { notify(persistenceFailureMessage("Recording the cash movement", error), "error"); return; }
+client/src/BusinessSphereDashboard.jsx-40547-    } else {
+--
+client/src/BusinessSphereDashboard.jsx-40914-  const [cart, setCart] = useState([]); // [{ sku, name, price, qty }]
+client/src/BusinessSphereDashboard.jsx-40915-  const [payments, setPayments] = useState([{ id: "payment-1", method: "Cash", amount: "" }]);
+client/src/BusinessSphereDashboard.jsx-40916-  const [saleAttempt, setSaleAttempt] = useState(null);
+client/src/BusinessSphereDashboard.jsx-40917-  const [activeHeldOrder, setActiveHeldOrder] = useState(null);
+client/src/BusinessSphereDashboard.jsx:40918:  const [customerId, setCustomerId] = useState("guest");
+client/src/BusinessSphereDashboard.jsx-40919-  const [receipt, setReceipt] = useState(null);
+client/src/BusinessSphereDashboard.jsx-40920-  const [busy, setBusy] = useState(false);
+client/src/BusinessSphereDashboard.jsx-40921-  const [syncingQueue, setSyncingQueue] = useState(false);
+client/src/BusinessSphereDashboard.jsx-40922-  const [inspectingQueueItem, setInspectingQueueItem] = useState(null);
+--
+client/src/BusinessSphereDashboard.jsx-40969-  const tax = Math.round(subtotal * TAX_RATE);
+client/src/BusinessSphereDashboard.jsx-40970-  const total = subtotal + tax;
+client/src/BusinessSphereDashboard.jsx-40971-  const paymentSummary = useMemo(() => calculatePosPaymentSummary(payments, total), [payments, total]);
+client/src/BusinessSphereDashboard.jsx-40972-  const heldOrders = useMemo(() => transactions.rows.filter((transaction) => transaction.status === "Held"), [transactions.rows]);
+client/src/BusinessSphereDashboard.jsx:40973:  const selectedCustomer = useMemo(() => (customers || []).find((customer) => customer.dbId === customerId || customer.id === customerId) || null, [customers, customerId]);
+client/src/BusinessSphereDashboard.jsx-40974-  const usesCustomerCredit = paymentSummary.allocations.some((payment) => payment.method === "Customer Credit");
+client/src/BusinessSphereDashboard.jsx-40975-
+client/src/BusinessSphereDashboard.jsx-40976-  useEffect(() => {
+client/src/BusinessSphereDashboard.jsx-40977-    if (typeof window === "undefined") return;
+--
+client/src/BusinessSphereDashboard.jsx-41011-    setSaleAttempt(attempt);
+client/src/BusinessSphereDashboard.jsx-41012-    try {
+client/src/BusinessSphereDashboard.jsx-41013-      if (!IS_CONFIGURED) throw new Error("The POS is not connected to the configured server.");
+client/src/BusinessSphereDashboard.jsx-41014-      const { data, error } = await runCompanyTableMutation("pos_transactions", "insert", {
+client/src/BusinessSphereDashboard.jsx:41015:        doc_number: attempt.docNumber,
+client/src/BusinessSphereDashboard.jsx-41016-        cashier: currentUser?.name || "Cashier",
+client/src/BusinessSphereDashboard.jsx-41017-        status: "Held",
+client/src/BusinessSphereDashboard.jsx-41018-        amount: total,
+client/src/BusinessSphereDashboard.jsx-41019-        notes: "Held POS cart",
+--
+client/src/BusinessSphereDashboard.jsx-41120-    window.setTimeout(() => win.print(), 250);
+client/src/BusinessSphereDashboard.jsx-41121-  }
+client/src/BusinessSphereDashboard.jsx-41122-
+client/src/BusinessSphereDashboard.jsx-41123-  function queueCurrentSale(attempt, error) {
+client/src/BusinessSphereDashboard.jsx:41124:    const record = createPendingPosSale({
+client/src/BusinessSphereDashboard.jsx-41125-      attempt,
+client/src/BusinessSphereDashboard.jsx-41126-      cart,
+client/src/BusinessSphereDashboard.jsx-41127-      payments,
+client/src/BusinessSphereDashboard.jsx-41128-      subtotal,
+client/src/BusinessSphereDashboard.jsx-41129-      tax,
+client/src/BusinessSphereDashboard.jsx-41130-      total,
+client/src/BusinessSphereDashboard.jsx:41131:      customerId: selectedCustomer?.dbId || null,
+client/src/BusinessSphereDashboard.jsx-41132-      customerName: selectedCustomer?.name || "Guest",
+client/src/BusinessSphereDashboard.jsx-41133-    });
+client/src/BusinessSphereDashboard.jsx-41134-    const nextRecords = [...pendingSales.filter((pending) => pending.idempotencyKey !== record.idempotencyKey), { ...record, lastError: String(error?.message || "Connection unavailable") }];
+client/src/BusinessSphereDashboard.jsx-41135-    persistPendingSales(nextRecords);
+--
+client/src/BusinessSphereDashboard.jsx-41141-    const currentBeforeSync = readPendingPosSales(typeof window === "undefined" ? null : window.localStorage, queueScope);
+client/src/BusinessSphereDashboard.jsx-41142-    const syncing = updatePendingPosSale(currentBeforeSync, record.idempotencyKey, { status: "syncing", lastError: null });
+client/src/BusinessSphereDashboard.jsx-41143-    persistPendingSales(syncing);
+client/src/BusinessSphereDashboard.jsx-41144-    try {
+client/src/BusinessSphereDashboard.jsx:41145:      const confirmed = await callRpc("complete_pos_sale", {
+client/src/BusinessSphereDashboard.jsx-41146-        p_idempotency_key: record.idempotencyKey,
+client/src/BusinessSphereDashboard.jsx:41147:        p_doc_number: record.docNumber,
+client/src/BusinessSphereDashboard.jsx-41148-        p_items: record.items,
+client/src/BusinessSphereDashboard.jsx-41149-        p_payments: record.payments,
+client/src/BusinessSphereDashboard.jsx-41150-        p_subtotal: record.subtotal,
+client/src/BusinessSphereDashboard.jsx-41151-        p_tax: record.tax,
+client/src/BusinessSphereDashboard.jsx-41152-        p_total: record.total,
+client/src/BusinessSphereDashboard.jsx:41153:        p_customer_id: record.customerId,
+client/src/BusinessSphereDashboard.jsx-41154-        p_customer_name: record.customerName,
+client/src/BusinessSphereDashboard.jsx-41155-      }, getStoredAccessToken());
+client/src/BusinessSphereDashboard.jsx-41156-      const savedTransaction = await loadPosTransactionForDisplay(confirmed.transaction_id);
+client/src/BusinessSphereDashboard.jsx-41157-      transactions.setRows((previous) => [savedTransaction, ...previous.filter((transaction) => transaction.dbId !== savedTransaction.dbId)]);
+--
+client/src/BusinessSphereDashboard.jsx-41316-    });
+client/src/BusinessSphereDashboard.jsx-41317-    setSaleAttempt(attempt);
+client/src/BusinessSphereDashboard.jsx-41318-    try {
+client/src/BusinessSphereDashboard.jsx-41319-      if (!IS_CONFIGURED) throw new Error("The POS is not connected to the configured server.");
+client/src/BusinessSphereDashboard.jsx:41320:      const confirmed = await callRpc("complete_pos_sale", {
+client/src/BusinessSphereDashboard.jsx-41321-        p_idempotency_key: attempt.idempotencyKey,
+client/src/BusinessSphereDashboard.jsx:41322:        p_doc_number: attempt.docNumber,
+client/src/BusinessSphereDashboard.jsx-41323-        p_items: cart.map((line) => ({ sku: line.sku, name: line.name, qty: line.qty, price: line.price })),
+client/src/BusinessSphereDashboard.jsx-41324-        p_payments: payments.map((payment) => ({ method: payment.method, amount: Number(payment.amount) || 0 })),
+client/src/BusinessSphereDashboard.jsx-41325-        p_subtotal: subtotal,
+client/src/BusinessSphereDashboard.jsx-41326-        p_tax: tax,
+--
+client/src/BusinessSphereDashboard.jsx-41349-        console.warn("POS reconciliation event recording failed", reconciliationError);
+client/src/BusinessSphereDashboard.jsx-41350-      }
+client/src/BusinessSphereDashboard.jsx-41351-      await Promise.all([inventory.reload?.(), transactions.reload?.()].filter(Boolean));
+client/src/BusinessSphereDashboard.jsx-41352-      const methodLabel = paymentSummary.allocations.map((payment) => payment.method).join(" + ");
+client/src/BusinessSphereDashboard.jsx:41353:      notify(confirmed.idempotent_replay ? `Sale already confirmed — receipt ${confirmed.doc_number}.` : `Sale complete — TZS ${money(total)}k`);
+client/src/BusinessSphereDashboard.jsx-41354-      setReceipt({ ...savedTransaction, method: methodLabel, subtotal, tax, total, change: paymentSummary.change, payments: paymentSummary.allocations });
+client/src/BusinessSphereDashboard.jsx-41355-      resetSale();
+client/src/BusinessSphereDashboard.jsx-41356-    } catch (error) {
+client/src/BusinessSphereDashboard.jsx-41357-      if (isRetryablePosTransportError(error)) {
+--
+client/src/BusinessSphereDashboard.jsx-41576-        </div>
+client/src/BusinessSphereDashboard.jsx-41577-
+client/src/BusinessSphereDashboard.jsx-41578-        <div className="mb-4">
+client/src/BusinessSphereDashboard.jsx-41579-          <label className="block text-[11px] font-medium text-slate-500 mb-2" htmlFor="pos-customer">Customer</label>
+client/src/BusinessSphereDashboard.jsx:41580:          <select id="pos-customer" value={customerId} onChange={(event) => { setCustomerId(event.target.value); setSaleAttempt(null); }} className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-[11px] outline-none focus:border-[#16A34A]">
+client/src/BusinessSphereDashboard.jsx-41581-            <option value="guest">Guest sale</option>
+client/src/BusinessSphereDashboard.jsx-41582-            {(customers || []).map((customer) => <option key={customer.dbId || customer.id} value={customer.dbId || customer.id}>{customer.name}{customer.company ? ` · ${customer.company}` : ""}</option>)}
+client/src/BusinessSphereDashboard.jsx-41583-          </select>
+client/src/BusinessSphereDashboard.jsx-41584-          {usesCustomerCredit && !selectedCustomer && <p className="mt-1.5 text-[10.5px] text-[#EF4444]">Select a workspace customer before completing customer credit.</p>}
+--
+client/src/BusinessSphereDashboard.jsx-42812-    if (!form.subject.trim()) return;
+client/src/BusinessSphereDashboard.jsx-42813-    const draft = { id: docId("TK"), subject: form.subject, customer: customerName, category: form.category, priority: "Medium", status: "Open", assignee: null, createdDate: TODAY.toISOString().slice(0, 10) };
+client/src/BusinessSphereDashboard.jsx-42814-    if (IS_CONFIGURED) {
+client/src/BusinessSphereDashboard.jsx-42815-      try {
+client/src/BusinessSphereDashboard.jsx:42816:        const confirmed = await sb("support_tickets").insert({ doc_number: draft.id, subject: draft.subject, customer: draft.customer, category: draft.category }).single().run();
+client/src/BusinessSphereDashboard.jsx-42817-        if (!confirmed?.id) throw new Error("The server did not confirm the support ticket.");
+client/src/BusinessSphereDashboard.jsx-42818-        tickets.setRows((prev) => [{ ...draft, dbId: confirmed.id }, ...prev]);
+client/src/BusinessSphereDashboard.jsx-42819-        setShowForm(false);
+client/src/BusinessSphereDashboard.jsx-42820-        setForm({ subject: "", category: "General", description: "" });
+--
+client/src/BusinessSphereDashboard.jsx-43147-  async function saveDate(po) {
+client/src/BusinessSphereDashboard.jsx-43148-    if (!newDate) return;
+client/src/BusinessSphereDashboard.jsx-43149-    if (IS_CONFIGURED) {
+client/src/BusinessSphereDashboard.jsx-43150-      try {
+client/src/BusinessSphereDashboard.jsx:43151:        await callRpc("supplier_update_delivery_date", { p_po_doc_number: po.id, p_new_expected_date: newDate }, (typeof window !== "undefined" && window.localStorage.getItem("bs_access_token")) || "");
+client/src/BusinessSphereDashboard.jsx-43152-      } catch (_e) { notify("Couldn't update the delivery date on the server.", "error"); }
+client/src/BusinessSphereDashboard.jsx-43153-    }
+client/src/BusinessSphereDashboard.jsx-43154-    purchaseOrdersHook.setRows((prev) => prev.map((p) => (p.id === po.id ? { ...p, expectedDate: newDate } : p)));
+client/src/BusinessSphereDashboard.jsx-43155-    notify(`Delivery date updated for ${po.id}`);
+--
+server/posRegisterControlMigration.test.ts-24-    expect(migration).toContain("public.current_company_id()");
+server/posRegisterControlMigration.test.ts-25-  });
+server/posRegisterControlMigration.test.ts-26-
+server/posRegisterControlMigration.test.ts-27-  it("preserves legacy POS compatibility and enforces tenant-safe operational relationships", () => {
+server/posRegisterControlMigration.test.ts:28:    expect(migration).toContain("legacy_pos_shift_id uuid REFERENCES public.pos_shifts(id)");
+server/posRegisterControlMigration.test.ts-29-    expect(migration).toContain("legacy_pos_cash_movement_id uuid REFERENCES public.pos_cash_movements(id)");
+server/posRegisterControlMigration.test.ts:30:    expect(migration).toContain("FOREIGN KEY (company_id, register_id)");
+server/posRegisterControlMigration.test.ts-31-    expect(migration).toContain("FOREIGN KEY (company_id, terminal_id)");
+server/posRegisterControlMigration.test.ts:32:    expect(migration).toContain("FOREIGN KEY (company_id, shift_id)");
+server/posRegisterControlMigration.test.ts-33-    expect(migration).toContain("POS register branch does not belong to this workspace.");
+server/posRegisterControlMigration.test.ts-34-    expect(migration).toContain("POS register warehouse does not belong to this workspace.");
+server/posRegisterControlMigration.test.ts-35-    expect(migration).toContain("POS terminal must belong to the selected workspace register.");
+server/posRegisterControlMigration.test.ts-36-    expect(migration).toContain("POS cashier must belong to the selected workspace.");
+server/posRegisterControlMigration.test.ts-37-  });
+server/posRegisterControlMigration.test.ts-38-
+server/posRegisterControlMigration.test.ts-39-  it("enforces one open drawer, explicit close evidence, and replay-safe shift identity", () => {
+server/posRegisterControlMigration.test.ts:40:    expect(migration).toContain("pos_shift_sessions_one_open_register_idx");
+server/posRegisterControlMigration.test.ts-41-    expect(migration).toContain("WHERE status = 'Open'");
+server/posRegisterControlMigration.test.ts-42-    expect(migration).toContain("UNIQUE (company_id, open_idempotency_key)");
+server/posRegisterControlMigration.test.ts-43-    expect(migration).toContain("UNIQUE (company_id, close_idempotency_key)");
+server/posRegisterControlMigration.test.ts-44-    expect(migration).toContain("status NOT IN ('Pending Close', 'Closed', 'Exception') OR counted_cash IS NOT NULL");
+--
+server/moneyAgentOperations.ts-48-  CONFIGURE_COMMISSION: z.object({ serviceCode: text.max(40), commissionType: z.enum(["Flat", "Percentage"]), commissionValue: nonNegativeMoney, active: z.boolean().optional().default(true) }),
+server/moneyAgentOperations.ts-49-  CONFIGURE_LIMIT: z.object({ agentId: uuid.nullable().optional().default(null), transactionType, maxSingleAmount: money, dailyAmount: money, monthlyAmount: money, velocityWindowMinutes: z.number().int().min(1).max(1440).optional().default(10), velocityCount: z.number().int().min(1).max(1000).optional().default(10), active: z.boolean().optional().default(true) }),
+server/moneyAgentOperations.ts-50-  SET_AGENT_PIN: z.object({ agentId: uuid, pin: z.string().regex(/^\d{4,6}$/, "PIN must contain 4 to 6 digits.") }),
+server/moneyAgentOperations.ts-51-  VERIFY_AGENT_KYC: z.object({ agentId: uuid, kycStatus: z.enum(["Pending", "Verified", "Needs Review", "Rejected"]), kybStatus: z.enum(["Pending", "Verified", "Needs Review", "Rejected"]), note: optionalText }),
+server/moneyAgentOperations.ts:52:  VERIFY_CUSTOMER_KYC: z.object({ customerId: uuid, kycStatus: z.enum(["Pending", "Verified", "Needs Review", "Rejected"]), note: optionalText }),
+server/moneyAgentOperations.ts:53:  CREATE_TRANSACTION: z.object({ agentId: uuid.nullable().optional().default(null), branchId: uuid.nullable().optional().default(null), customerId: uuid.nullable().optional().default(null), serviceId: uuid.nullable().optional().default(null), transactionType, amount: money, idempotencyKey: uuid, authorizationMethod: z.enum(["agent_pin", "customer_otp", "supervisor_approval"]).optional().default("supervisor_approval"), authorizationReference: text.max(200), metadata: z.record(z.string(), z.unknown()).optional().default({}) }),
+server/moneyAgentOperations.ts-54-  APPROVE_TRANSACTION: z.object({ transactionId: uuid, note: optionalText }),
+server/moneyAgentOperations.ts-55-  REJECT_TRANSACTION: z.object({ transactionId: uuid, note: text.max(500) }),
+server/moneyAgentOperations.ts-56-  REVERSE_TRANSACTION: z.object({ transactionId: uuid, note: text.max(500) }),
+server/moneyAgentOperations.ts-57-  REFUND_TRANSACTION: z.object({ transactionId: uuid, note: text.max(500) }),
+--
+server/bankMfiOperations.ts-137-export async function registerCustomer(req: BankRequest, payload: Record<string, unknown>) {
+server/bankMfiOperations.ts-138-  const { token } = await resolveVerifiedProfile(req);
+server/bankMfiOperations.ts-139-  return callRpc(token, "bank_register_customer", { p_payload: payload });
+server/bankMfiOperations.ts-140-}
+server/bankMfiOperations.ts:141:export async function updateKyc(req: BankRequest, customerId: string, payload: Record<string, unknown>) {
+server/bankMfiOperations.ts-142-  const { token } = await resolveVerifiedProfile(req);
+server/bankMfiOperations.ts:143:  return callRpc(token, "bank_update_kyc", { p_customer_id: customerId, p_payload: payload });
+server/bankMfiOperations.ts-144-}
+server/bankMfiOperations.ts-145-export async function openAccount(req: BankRequest, payload: Record<string, unknown>) {
+server/bankMfiOperations.ts-146-  const { token } = await resolveVerifiedProfile(req);
+server/bankMfiOperations.ts-147-  return callRpc(token, "bank_open_account", { p_payload: payload });
+--
+server/subscriptionBilling.ts-137-  return asString(payload.order_id ?? payload.orderId ?? payload.transaction_id ?? payload.transactionId, 200);
+server/subscriptionBilling.ts-138-}
+server/subscriptionBilling.ts-139-
+server/subscriptionBilling.ts-140-function providerStatus(payload: JsonRecord) {
+server/subscriptionBilling.ts:141:  return asString(payload.status ?? payload.payment_status ?? payload.paymentStatus ?? payload.state, 80).toLowerCase() || "pending";
+server/subscriptionBilling.ts-142-}
+server/subscriptionBilling.ts-143-
+server/subscriptionBilling.ts-144-async function fetchHarakaStatus(orderId: string): Promise<JsonRecord> {
+server/subscriptionBilling.ts-145-  const { apiKey, baseUrl } = harakaConfiguration();
+--
+server/guardedServerBoundary.test.ts-37-  });
+server/guardedServerBoundary.test.ts-38-
+server/guardedServerBoundary.test.ts-39-  it.each([
+server/guardedServerBoundary.test.ts-40-    ["finance_expenses", { company_id: companyId, vendor: "TANESCO", category: "Utilities", amount: "1000", expense_date: "2026-08-20", status: "Paid", method: "Cash" }, { company_id: companyId, vendor: "TANESCO", category: "Utilities", amount: "1000", expense_date: "2026-08-20", status: "Paid", method: "Cash", cost_center: "ILLEGAL" }],
+server/guardedServerBoundary.test.ts:41:    ["sales_invoices", { company_id: companyId, status: "Draft", amount: "500", doc_number: "INV-99", customer: "Acme", issue_date: "2026-08-20", due_date: "2026-09-20" }, { company_id: companyId, status: "Draft", amount: "500", customer: "Acme", issue_date: "2026-08-20", due_date: "2026-09-20" }],
+server/guardedServerBoundary.test.ts-42-    ["inventory_items", { company_id: companyId, name: "Item A", status: "Active", amount: "10", data: { sku: "A" } }, { company_id: companyId, name: "Item A", status: "Active", amount: "10" }],
+server/guardedServerBoundary.test.ts-43-    ["crm_leads", { company_id: companyId, name: "Lead 1", status: "New", data: { email: "a@b.com" } }, { company_id: companyId, name: "Lead 1", status: "New" }],
+server/guardedServerBoundary.test.ts-44-  ] as const)("permits valid %s payloads and actively rejects drifted payloads", async (tableName, validPayload, driftedPayload) => {
+server/guardedServerBoundary.test.ts-45-    const successRes = await caller.persistSupabaseCriticalRow({
+--
+server/posReturnAuditFormatMigration.test.ts-5-
+server/posReturnAuditFormatMigration.test.ts-6-describe("POS return audit-format repair migration", () => {
+server/posReturnAuditFormatMigration.test.ts-7-  it("removes PostgreSQL-incompatible printf precision formatting from the return audit write", () => {
+server/posReturnAuditFormatMigration.test.ts-8-    expect(migration).not.toContain("%.2f");
+server/posReturnAuditFormatMigration.test.ts:9:    expect(migration).toContain("'Return processed for receipt ' || coalesce(v_doc_number, p_transaction_id::text) || ': ' || p_refund_total::text || '.'");
+server/posReturnAuditFormatMigration.test.ts-10-  });
+server/posReturnAuditFormatMigration.test.ts-11-
+server/posReturnAuditFormatMigration.test.ts-12-  it("keeps the authenticated tenant boundary, idempotency, inventory locking, and authenticated-only privilege contract", () => {
+server/posReturnAuditFormatMigration.test.ts-13-    expect(migration).toContain("v_user_id uuid := auth.uid()");
+--
+server/posPendingQueue.test.ts-1-import { describe, expect, it } from "vitest";
+server/posPendingQueue.test.ts-2-import {
+server/posPendingQueue.test.ts:3:  createPendingPosSale,
+server/posPendingQueue.test.ts-4-  isRetryablePosTransportError,
+server/posPendingQueue.test.ts-5-  posPendingQueueKey,
+server/posPendingQueue.test.ts-6-  readPendingPosSales,
+server/posPendingQueue.test.ts-7-  updatePendingPosSale,
+--
+server/posPendingQueue.test.ts-14-    expect(posPendingQueueKey({ companyId: "company-a", userId: "user-a" })).not.toBe(posPendingQueueKey({ companyId: "company-a", userId: "user-b" }));
+server/posPendingQueue.test.ts-15-  });
+server/posPendingQueue.test.ts-16-
+server/posPendingQueue.test.ts-17-  it("retains only a clearly pending, idempotent sale request without any provider secret", () => {
+server/posPendingQueue.test.ts:18:    const queued = createPendingPosSale({ attempt: { docNumber: "POS-1", idempotencyKey: "idem-1" }, items: [{ sku: "MILK", qty: 1, price: 3000 }], payments: [{ method: "Mobile Money", amount: 3540, token: "never-persisted" }], subtotal: 3000, tax: 540, total: 3540, customerId: null, customerName: "Guest" });
+server/posPendingQueue.test.ts-19-    expect(queued).toMatchObject({ status: "pending", docNumber: "POS-1", idempotencyKey: "idem-1", attempts: 0 });
+server/posPendingQueue.test.ts-20-    expect(queued.payments[0]).toEqual({ method: "Mobile Money", amount: 3540 });
+server/posPendingQueue.test.ts-21-    expect(JSON.stringify(queued)).not.toContain("never-persisted");
+server/posPendingQueue.test.ts-22-  });
+--
+server/posPendingQueue.test.ts-31-  it("persists and updates only valid pending records", () => {
+server/posPendingQueue.test.ts-32-    const values = new Map();
+server/posPendingQueue.test.ts-33-    const storage = { getItem: (key: string) => values.get(key) || null, setItem: (key: string, value: string) => values.set(key, value) };
+server/posPendingQueue.test.ts-34-    const scope = { companyId: "company-a", userId: "user-a" };
+server/posPendingQueue.test.ts:35:    const record = createPendingPosSale({ attempt: { docNumber: "POS-1", idempotencyKey: "idem-1" }, items: [], payments: [], subtotal: 0, tax: 0, total: 0 });
+server/posPendingQueue.test.ts-36-    writePendingPosSales(storage, scope, [record]);
+server/posPendingQueue.test.ts-37-    const pending = readPendingPosSales(storage, scope);
+server/posPendingQueue.test.ts-38-    expect(updatePendingPosSale(pending, "idem-1", { status: "needs_attention", attempts: 2 })[0]).toMatchObject({ status: "needs_attention", attempts: 2 });
+server/posPendingQueue.test.ts-39-  });
+--
+server/supportOperations.ts-36-const SUPPORT_WORKFLOW_TRIGGERS = new Set(["support.ticket.created", "support.ticket.updated"]);
+server/supportOperations.ts-37-const SUPPORT_WORKFLOW_ACTIONS = new Set(["add_internal_note", "set_ticket_priority", "assign_support_team"]);
+server/supportOperations.ts-38-
+server/supportOperations.ts-39-type SupportProfile = { id: string; company_id: string; role: string; full_name: string | null };
+server/supportOperations.ts:40:type SupportTicketRow = { id: string; company_id: string; doc_number?: string | null; subject?: string | null; customer?: string | null; category?: string | null; assignee?: string | null; status?: string | null; priority?: string | null; assigned_profile_id?: string | null; team_id?: string | null; source_channel?: string | null; customer_reference?: string | null; due_at?: string | null; created_at?: string | null; updated_at?: string | null };
+server/supportOperations.ts-41-type SupportWorkflowRow = { id: string; company_id: string; name?: string | null; trigger_type?: string | null; condition?: string | null; steps?: string | null; enabled?: string | boolean | null; last_run?: string | null; created_at?: string | null; updated_at?: string | null };
+server/supportOperations.ts-42-type SupportSlaPolicyRow = { id: string; company_id: string; name?: string | null; priority?: string | null; first_response_minutes?: number | null; resolution_minutes?: number | null; warning_minutes?: number | null; is_active?: boolean | null; created_at?: string | null; updated_at?: string | null };
+server/supportOperations.ts-43-type SupportWorkflowActionInput = { type: string; config?: Record<string, unknown> };
+server/supportOperations.ts-44-type SupportMessageRow = { body?: string | null; sender_kind?: string | null; sent_at?: string | null; is_internal?: boolean | null };
+--
+server/supportOperations.ts-202-
+server/supportOperations.ts-203-export async function listSupportTickets(req: CreateExpressContextOptions["req"]) {
+server/supportOperations.ts-204-  const { profile, token } = await resolveVerifiedProfile(req);
+server/supportOperations.ts-205-  requireSupportRole(profile);
+server/supportOperations.ts:206:  const rows = await requestWithSession("support_tickets?select=id,doc_number,subject,customer,category,priority,status,assignee,assigned_profile_id,team_id,source_channel,customer_reference,due_at,resolved_at,closed_at,created_at,updated_at&order=updated_at.desc&limit=100", token);
+server/supportOperations.ts-207-  return { tickets: rows as SupportTicketRow[], profile };
+server/supportOperations.ts-208-}
+server/supportOperations.ts-209-
+server/supportOperations.ts-210-export async function searchSupportTickets(req: CreateExpressContextOptions["req"], query: string) {
+server/supportOperations.ts-211-  const { profile, token } = await resolveVerifiedProfile(req);
+server/supportOperations.ts-212-  requireSupportRole(profile);
+server/supportOperations.ts-213-  const normalizedQuery = query.trim().toLowerCase();
+server/supportOperations.ts:214:  const rows = await requestWithSession("support_tickets?select=id,doc_number,subject,customer,category,priority,status,assigned_profile_id,team_id,source_channel,due_at,updated_at&order=updated_at.desc&limit=100", token) as SupportTicketRow[];
+server/supportOperations.ts:215:  const tickets = rows.filter((ticket) => [ticket.doc_number, ticket.subject, ticket.customer, ticket.category, ticket.status, ticket.priority].some((value) => value?.toLowerCase().includes(normalizedQuery))).slice(0, 25);
+server/supportOperations.ts-216-  return { tickets, query: normalizedQuery, profile };
+server/supportOperations.ts-217-}
+server/supportOperations.ts-218-
+server/supportOperations.ts-219-function boundedMessageText(value: unknown) {
+--
+server/supportOperations.ts-351-    method: "POST",
+server/supportOperations.ts-352-    headers: { Prefer: "return=representation" },
+server/supportOperations.ts-353-    body: JSON.stringify({
+server/supportOperations.ts-354-      company_id: profile.company_id,
+server/supportOperations.ts:355:      doc_number: supportNumber(),
+server/supportOperations.ts-356-      subject: input.subject.trim(),
+server/supportOperations.ts-357-      customer: input.customer.trim(),
+server/supportOperations.ts-358-      category: input.category?.trim() || "General",
+server/supportOperations.ts-359-      priority,
+--
+server/posCustomerCreditMigration.test.ts-11-    expect(migration).toContain("'Guest'");
+server/posCustomerCreditMigration.test.ts-12-  });
+server/posCustomerCreditMigration.test.ts-13-
+server/posCustomerCreditMigration.test.ts-14-  it("reuses the authenticated transaction boundary rather than bypassing RLS or inventory rules", () => {
+server/posCustomerCreditMigration.test.ts:15:    expect(migration).toContain("public.complete_pos_sale(p_idempotency_key");
+server/posCustomerCreditMigration.test.ts-16-    expect(migration).toContain("auth.uid() IS NULL");
+server/posCustomerCreditMigration.test.ts-17-    expect(migration).not.toContain("WITH CHECK (true)");
+server/posCustomerCreditMigration.test.ts-18-    expect(migration).not.toContain("DISABLE ROW LEVEL SECURITY");
+server/posCustomerCreditMigration.test.ts-19-  });
+--
+server/posCheckoutIntegration.test.ts-6-const registerHistory = source.slice(source.indexOf("function RegisterHistory"), source.indexOf("function POSReports"));
+server/posCheckoutIntegration.test.ts-7-
+server/posCheckoutIntegration.test.ts-8-describe("POS checkout confirmed persistence integration", () => {
+server/posCheckoutIntegration.test.ts-9-  it("uses the authenticated atomic completion RPC with a retry-stable idempotency key", () => {
+server/posCheckoutIntegration.test.ts:10:    expect(checkout).toContain('callRpc("complete_pos_sale"');
+server/posCheckoutIntegration.test.ts-11-    expect(checkout).toContain("p_idempotency_key: attempt.idempotencyKey");
+server/posCheckoutIntegration.test.ts-12-    expect(checkout).toContain("const attempt = saleAttempt || createPosSaleAttempt");
+server/posCheckoutIntegration.test.ts-13-    expect(checkout).toContain("confirmed.idempotent_replay");
+server/posCheckoutIntegration.test.ts-14-  });
+--
+server/posCheckoutIntegration.test.ts-48-    expect(registerHistory).not.toContain('notify("Return processed locally, but saving to the server failed.", "error")');
+server/posCheckoutIntegration.test.ts-49-  });
+server/posCheckoutIntegration.test.ts-50-
+server/posCheckoutIntegration.test.ts-51-  it("allows guest checkout while blocking customer credit until an existing workspace contact is selected", () => {
+server/posCheckoutIntegration.test.ts:52:    expect(checkout).toContain('const [customerId, setCustomerId] = useState("guest")');
+server/posCheckoutIntegration.test.ts-53-    expect(checkout).toContain("Guest sale");
+server/posCheckoutIntegration.test.ts-54-    expect(checkout).toContain("usesCustomerCredit && !selectedCustomer");
+server/posCheckoutIntegration.test.ts-55-    expect(checkout).toContain("Customer Credit requires an existing customer selected from this workspace.");
+server/posCheckoutIntegration.test.ts-56-    expect(checkout).toContain("p_customer_id: selectedCustomer?.dbId || null");
+--
+server/posCheckoutIntegration.test.ts-63-    expect(checkout).toContain('window.addEventListener("online", handleOnline)');
+server/posCheckoutIntegration.test.ts-64-    expect(checkout).toContain("Pending sync");
+server/posCheckoutIntegration.test.ts-65-    expect(checkout).toContain("These sales require server confirmation before inventory, revenue, receipt output, or customer balances change.");
+server/posCheckoutIntegration.test.ts-66-    expect(checkout).toContain("Force sync all");
+server/posCheckoutIntegration.test.ts:67:    expect(checkout).toContain('callRpc("complete_pos_sale"');
+server/posCheckoutIntegration.test.ts-68-    expect(checkout).toContain('callRpc("record_pos_sync_event"');
+server/posCheckoutIntegration.test.ts-69-    expect(checkout).toContain('p_status: "synced"');
+server/posCheckoutIntegration.test.ts-70-    expect(checkout).toContain('p_status: "needs_attention"');
+server/posCheckoutIntegration.test.ts-71-  });
+--
+server/supabase.schemaContract.test.ts-28-
+server/supabase.schemaContract.test.ts-29-  it("keeps the critical relational contract manifest aligned with the Finance boundary", () => {
+server/supabase.schemaContract.test.ts-30-    expect(contractManifest.finance_expenses.requiredColumns).toEqual(expect.arrayContaining(["vendor", "category", "amount", "expense_date", "status", "method"]));
+server/supabase.schemaContract.test.ts-31-    expect(contractManifest.finance_expenses.forbiddenColumns).toEqual(expect.arrayContaining(["data", "cost_center", "department"]));
+server/supabase.schemaContract.test.ts:32:    expect(contractManifest.sales_invoices.requiredColumns).toEqual(expect.arrayContaining(["doc_number", "customer", "issue_date", "due_date"]));
+server/supabase.schemaContract.test.ts-33-    expect(contractManifest.inventory_items.requiredColumns).toEqual(expect.arrayContaining(["data"]));
+server/supabase.schemaContract.test.ts-34-    expect(contractManifest.crm_leads.requiredColumns).toEqual(expect.arrayContaining(["data"]));
+server/supabase.schemaContract.test.ts-35-  });
+server/supabase.schemaContract.test.ts-36-
+--
+server/posCashierAcceptance.test.ts-30-    expect(checkout).toContain('status: "Held"');
+server/posCashierAcceptance.test.ts-31-    expect(checkout).toContain("calculatePosPaymentSummary");
+server/posCashierAcceptance.test.ts-32-    expect(receipt).toContain("Cash change");
+server/posCashierAcceptance.test.ts-33-    expect(checkout).toContain("VAT");
+server/posCashierAcceptance.test.ts:34:    expect(checkout).toContain('callRpc("complete_pos_sale"');
+server/posCashierAcceptance.test.ts-35-  });
+server/posCashierAcceptance.test.ts-36-
+server/posCashierAcceptance.test.ts-37-  it("provides return confirmation, reconciliation outcomes, receipt output, and device preferences without unsafe hardware access", () => {
+server/posCashierAcceptance.test.ts-38-    expect(source).toContain('callRpc("complete_pos_return"');
+--
+server/persistenceBoundary.test.ts-10-  );
+server/persistenceBoundary.test.ts-11-
+server/persistenceBoundary.test.ts-12-  it.each([
+server/persistenceBoundary.test.ts-13-    ["finance_expenses", { company_id: "comp-1", vendor: "TANESCO", category: "Rent & Utilities", amount: "1", expense_date: "2026-08-20", status: "Paid", method: "Bank Transfer" }],
+server/persistenceBoundary.test.ts:14:    ["sales_invoices", { company_id: "comp-1", status: "Draft", amount: "100", doc_number: "INV-001", customer: "Acme Corp", issue_date: "2026-08-20", due_date: "2026-09-20" }],
+server/persistenceBoundary.test.ts-15-    ["inventory_items", { company_id: "comp-1", name: "Widget", status: "Active", amount: "50", data: { sku: "WID-1" } }],
+server/persistenceBoundary.test.ts-16-    ["crm_leads", { company_id: "comp-1", name: "Lead Corp", status: "New", data: { email: "lead@corp.com" } }],
+server/persistenceBoundary.test.ts-17-  ] as const)("passes valid %s payloads before calling Supabase", async (tableName, payload) => {
+server/persistenceBoundary.test.ts-18-    const result = await persistSupabaseRow(tableName, payload, {
+--
+server/schemaDriftChecker.ts-13-    forbiddenColumns: ["data", "cost_center", "department"],
+server/schemaDriftChecker.ts-14-  },
+server/schemaDriftChecker.ts-15-  sales_invoices: {
+server/schemaDriftChecker.ts-16-    tableName: "sales_invoices",
+server/schemaDriftChecker.ts:17:    expectedColumns: ["id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at", "data", "doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid"],
+server/schemaDriftChecker.ts:18:    requiredColumns: ["company_id", "status", "amount", "doc_number", "customer", "issue_date", "due_date"],
+server/schemaDriftChecker.ts-19-    forbiddenColumns: [],
+server/schemaDriftChecker.ts-20-  },
+server/schemaDriftChecker.ts-21-  inventory_items: {
+server/schemaDriftChecker.ts-22-    tableName: "inventory_items",
+--
+server/schemaDriftChecker.test.ts-7-    expect(ERP_SCHEMA_CONTRACTS.finance_expenses.forbiddenColumns).toContain("cost_center");
+server/schemaDriftChecker.test.ts-8-    expect(ERP_SCHEMA_CONTRACTS.finance_expenses.forbiddenColumns).toContain("department");
+server/schemaDriftChecker.test.ts-9-    expect(ERP_SCHEMA_CONTRACTS.finance_expenses.forbiddenColumns).toContain("data");
+server/schemaDriftChecker.test.ts-10-
+server/schemaDriftChecker.test.ts:11:    expect(ERP_SCHEMA_CONTRACTS.sales_invoices.requiredColumns).toContain("doc_number");
+server/schemaDriftChecker.test.ts-12-    expect(ERP_SCHEMA_CONTRACTS.inventory_items.requiredColumns).toContain("data");
+server/schemaDriftChecker.test.ts-13-    expect(ERP_SCHEMA_CONTRACTS.crm_leads.requiredColumns).toContain("data");
+server/schemaDriftChecker.test.ts-14-    expect(ERP_SCHEMA_CONTRACTS.hc_patients.requiredColumns).toEqual(["company_id", "name", "status", "data"]);
+server/schemaDriftChecker.test.ts-15-    expect(ERP_SCHEMA_CONTRACTS.hc_lab_orders.expectedColumns).toContain("data");
+--
+server/schemaDriftChecker.test.ts-30-    const validInvoice = {
+server/schemaDriftChecker.test.ts-31-      company_id: "comp-1",
+server/schemaDriftChecker.test.ts-32-      status: "Draft",
+server/schemaDriftChecker.test.ts-33-      amount: "100",
+server/schemaDriftChecker.test.ts:34:      doc_number: "INV-001",
+server/schemaDriftChecker.test.ts-35-      customer: "Acme Corp",
+server/schemaDriftChecker.test.ts-36-      issue_date: "2026-08-20",
+server/schemaDriftChecker.test.ts-37-      due_date: "2026-09-20",
+server/schemaDriftChecker.test.ts-38-    };
+--
+server/dashboard.integration.test.ts-520-    const employee = normalizeGenericCompanyPayload("hr_employees", {
+server/dashboard.integration.test.ts-521-      full_name: "Juma Mtei", role: "Storekeeper", salary: 700000, department: "Operations", status: "Active",
+server/dashboard.integration.test.ts-522-    });
+server/dashboard.integration.test.ts-523-    const invoice = normalizeGenericCompanyPayload("sales_invoices", {
+server/dashboard.integration.test.ts:524:      doc_number: "INV-QA-1", customer: "Moshi Retail", amount: 350000, due_date: "2026-09-01", status: "Draft",
+server/dashboard.integration.test.ts-525-    });
+server/dashboard.integration.test.ts-526-    const payment = normalizeGenericCompanyPayload("sales_payments", {
+server/dashboard.integration.test.ts-527-      invoice_id: "invoice-1", amount: 350000, method: "Cash", payment_date: "2026-08-14", reference: "RCPT-QA-1",
+server/dashboard.integration.test.ts-528-    });
+--
+server/dashboard.integration.test.ts-540-    expect(product).toMatchObject({ name: "Solar inverter", amount: 380000, data: { sku: "PRD-001", qty_on_hand: 8, unit: "each" } });
+server/dashboard.integration.test.ts-541-    expect(product).not.toHaveProperty("company_id");
+server/dashboard.integration.test.ts-542-    expect(lead).toMatchObject({ name: "Amina", status: "Qualified", amount: 920000, data: { company_name: "Tanga Trade", email: "amina@example.test" } });
+server/dashboard.integration.test.ts-543-    expect(employee).toMatchObject({ name: "Juma Mtei", amount: 700000, data: { role: "Storekeeper", department: "Operations" } });
+server/dashboard.integration.test.ts:544:    expect(invoice).toMatchObject({ name: "Moshi Retail", status: "Draft", amount: 350000, doc_number: "INV-QA-1", customer: "Moshi Retail", due_date: "2026-09-01", data: {} });
+server/dashboard.integration.test.ts-545-    expect(payment).toMatchObject({ status: "Active", amount: 350000, invoice_id: "invoice-1", method: "Cash", reference: "RCPT-QA-1", data: {} });
+server/dashboard.integration.test.ts-546-    expect(supplier).toMatchObject({ name: "Arusha Supplies", data: { contact_person: "Neema", lead_time_days: 5 } });
+server/dashboard.integration.test.ts-547-    expect(expense).toMatchObject({ amount: 2000000, status: "Paid", vendor: "Tanesco" });
+server/dashboard.integration.test.ts-548-    expect(expense).not.toHaveProperty("data");
+--
+server/dashboard.integration.test.ts-719-      id: "shift-1", name: "Asha", status: "Open", amount: "75000", created_at: "2026-08-13T09:00:00.000Z",
+server/dashboard.integration.test.ts-720-      data: { cashier: "Asha", opening_float: 75000, opened_at: "2026-08-13T09:00:00.000Z", counted_cash: null },
+server/dashboard.integration.test.ts-721-    });
+server/dashboard.integration.test.ts-722-    const movement = mapPosCashMovementRow({
+server/dashboard.integration.test.ts:723:      id: "move-1", status: "Pay In", amount: "10000", notes: "Petty cash", data: { shift_id: "shift-1", kind: "Pay In", reason: "Petty cash" },
+server/dashboard.integration.test.ts-724-    });
+server/dashboard.integration.test.ts-725-    expect(shift).toMatchObject({ cashier: "Asha", openingFloat: 75000, countedCash: null, status: "Open" });
+server/dashboard.integration.test.ts-726-    expect(movement).toMatchObject({ shiftId: "shift-1", kind: "Pay In", amount: 10000, reason: "Petty cash" });
+server/dashboard.integration.test.ts-727-    expect(dashboardSource).not.toContain('insert({ cashier: row.cashier, opening_float: f, status: "Open", opened_at: row.openedAt })');
+--
+server/schemaContracts.json-6-    "forbiddenColumns": ["data", "cost_center", "department"]
+server/schemaContracts.json-7-  },
+server/schemaContracts.json-8-  "sales_invoices": {
+server/schemaContracts.json-9-    "tableName": "sales_invoices",
+server/schemaContracts.json:10:    "expectedColumns": ["id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at", "data", "doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid"],
+server/schemaContracts.json:11:    "requiredColumns": ["company_id", "status", "amount", "doc_number", "customer", "issue_date", "due_date"],
+server/schemaContracts.json-12-    "forbiddenColumns": []
+server/schemaContracts.json-13-  },
+server/schemaContracts.json-14-  "inventory_items": {
+server/schemaContracts.json-15-    "tableName": "inventory_items",
+--
+server/routers.ts-963-      teamId: z.string().uuid().optional(),
+server/routers.ts-964-      dueAt: z.string().datetime().optional(),
+server/routers.ts-965-    })).mutation(async ({ ctx, input }) => {
+server/routers.ts-966-      const result = await createSupportTicket(ctx.req, input);
+server/routers.ts:967:      await recordAuditLog(ctx.user, { companyId: result.profile.company_id, action: "Support ticket created", module: "Customer Support", details: `Confirmed ticket ${result.ticket.doc_number || result.ticket.id}.` });
+server/routers.ts-968-      return result;
+server/routers.ts-969-    }),
+server/routers.ts-970-    updateTicket: protectedProcedure.input(z.object({
+server/routers.ts-971-      ticketId: z.string().uuid(),
+--
+server/routers.ts-975-      teamId: z.string().uuid().nullable().optional(),
+server/routers.ts-976-      dueAt: z.string().datetime().nullable().optional(),
+server/routers.ts-977-    })).mutation(async ({ ctx, input }) => {
+server/routers.ts-978-      const result = await updateSupportTicket(ctx.req, input);
+server/routers.ts:979:      await recordAuditLog(ctx.user, { companyId: result.profile.company_id, action: "Support ticket updated", module: "Customer Support", details: `Confirmed ticket ${result.ticket.doc_number || result.ticket.id} update.` });
+server/routers.ts-980-      return result;
+server/routers.ts-981-    }),
+server/routers.ts-982-    addInternalNote: protectedProcedure.input(z.object({ ticketId: z.string().uuid(), body: z.string().trim().min(1).max(8_000) })).mutation(async ({ ctx, input }) => {
+server/routers.ts-983-      const result = await addSupportInternalNote(ctx.req, input);
+--
+server/routers.ts-1074-    createAccountType: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createBankAccountType(ctx.req, input.payload)),
+server/routers.ts-1075-    createLoanProduct: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createLoanProduct(ctx.req, input.payload)),
+server/routers.ts-1076-    setupInstitution: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => setupInstitution(ctx.req, input.payload)),
+server/routers.ts-1077-    registerCustomer: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => registerCustomer(ctx.req, input.payload)),
+server/routers.ts:1078:    updateKyc: protectedProcedure.input(z.object({ customerId: z.string().uuid(), payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => updateKyc(ctx.req, input.customerId, input.payload)),
+server/routers.ts-1079-    openAccount: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => openAccount(ctx.req, input.payload)),
+server/routers.ts-1080-    postTransaction: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => postTransaction(ctx.req, input.payload)),
+server/routers.ts-1081-    submitLoanApplication: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => submitLoanApplication(ctx.req, input.payload)),
+server/routers.ts-1082-    scoreLoanApplication: protectedProcedure.input(z.object({ applicationId: z.string().uuid(), payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => scoreLoanApplication(ctx.req, input.applicationId, input.payload)),
+--
+server/posRpcPrivilegeHardeningMigration.test.ts-5-
+server/posRpcPrivilegeHardeningMigration.test.ts-6-describe("POS RPC privilege hardening migration", () => {
+server/posRpcPrivilegeHardeningMigration.test.ts-7-  it("explicitly removes anonymous and public execution from every POS RPC signature", () => {
+server/posRpcPrivilegeHardeningMigration.test.ts-8-    expect(migration).toContain("FROM PUBLIC, anon");
+server/posRpcPrivilegeHardeningMigration.test.ts:9:    expect(migration).toContain("complete_pos_sale(text, text, jsonb, jsonb, numeric, numeric, numeric)");
+server/posRpcPrivilegeHardeningMigration.test.ts:10:    expect(migration).toContain("complete_pos_sale(text, text, jsonb, jsonb, numeric, numeric, numeric, uuid, text)");
+server/posRpcPrivilegeHardeningMigration.test.ts-11-    expect(migration).toContain("complete_pos_return(text, uuid, jsonb, text, numeric)");
+server/posRpcPrivilegeHardeningMigration.test.ts-12-    expect(migration).toContain("record_pos_sync_event(text, text, uuid, text)");
+server/posRpcPrivilegeHardeningMigration.test.ts-13-  });
+server/posRpcPrivilegeHardeningMigration.test.ts-14-
+--
+server/salesInteractionContracts.test.ts-75-    expect(dashboardSource).toContain("return null;");
+server/salesInteractionContracts.test.ts-76-  });
+server/salesInteractionContracts.test.ts-77-
+server/salesInteractionContracts.test.ts-78-  it("keeps the repaired typed Invoice contract out of generic JSON normalization", () => {
+server/salesInteractionContracts.test.ts:79:    expect(dashboardSource).toContain('sales_invoices: new Set(["doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid"])');
+server/salesInteractionContracts.test.ts-80-    expect(dashboardSource).toContain('sales_invoice_items: new Set(["invoice_id", "item_name", "item_sku", "qty", "rate", "sort_order"])');
+server/salesInteractionContracts.test.ts-81-    expect(dashboardSource).toContain('return GENERIC_COMPANY_TABLES.has(table) && !genericAllowedColumns(table).has(column)');
+server/salesInteractionContracts.test.ts-82-    expect(dashboardSource).toContain("const typedFields = Object.fromEntries(Object.entries(record).filter(([key]) => typedColumns.has(key)));");
+server/salesInteractionContracts.test.ts-83-  });
+--
+server/posStagingAcceptanceScript.test.ts-12-
+server/posStagingAcceptanceScript.test.ts-13-  it("does not automate transactional click paths without a designated operator", () => {
+server/posStagingAcceptanceScript.test.ts-14-    expect(script).toContain("--approved-staging-write");
+server/posStagingAcceptanceScript.test.ts-15-    expect(script).toContain("does not click transactional POS controls");
+server/posStagingAcceptanceScript.test.ts:16:    expect(script).not.toContain('callRpc("complete_pos_sale"');
+server/posStagingAcceptanceScript.test.ts-17-    expect(script).not.toContain('callRpc("complete_pos_return"');
+server/posStagingAcceptanceScript.test.ts-18-  });
+server/posStagingAcceptanceScript.test.ts-19-});
+--
+server/posSaleAuditFormatMigration.test.ts-5-
+server/posSaleAuditFormatMigration.test.ts-6-describe("POS sale audit-format repair migration", () => {
+server/posSaleAuditFormatMigration.test.ts-7-  it("removes PostgreSQL-incompatible printf precision formatting from the audit write", () => {
+server/posSaleAuditFormatMigration.test.ts-8-    expect(migration).not.toContain("%.2f");
+server/posSaleAuditFormatMigration.test.ts:9:    expect(migration).toContain("'Receipt ' || p_doc_number || ' completed for ' || p_total::text || '.'");
+server/posSaleAuditFormatMigration.test.ts-10-  });
+server/posSaleAuditFormatMigration.test.ts-11-
+server/posSaleAuditFormatMigration.test.ts-12-  it("preserves authenticated tenant resolution, security definer search path, inventory lock, idempotency, and privilege hardening", () => {
+server/posSaleAuditFormatMigration.test.ts-13-    expect(migration).toContain("v_user_id uuid := auth.uid()");

@@ -5,6 +5,7 @@ import path from "node:path";
 const portalMigration = fs.readFileSync(path.resolve(process.cwd(), "supabase/migrations/20260821_013_employee_portal_core.sql"), "utf8");
 const leaveGuardMigration = fs.readFileSync(path.resolve(process.cwd(), "supabase/migrations/20260822_017_leave_decision_immutability.sql"), "utf8");
 const workspace = fs.readFileSync(path.resolve(process.cwd(), "client/src/components/EmployeePortalWorkspace.jsx"), "utf8");
+const linkMigration = fs.readFileSync(path.resolve(process.cwd(), "supabase/migrations/20260824_070_employee_profile_link_admin.sql"), "utf8");
 
 describe("Employee self-service payslip and leave approval contracts", () => {
   it("shows payslips only through the authenticated portal snapshot and employee-scoped RLS path", () => {
@@ -22,6 +23,17 @@ describe("Employee self-service payslip and leave approval contracts", () => {
     expect(portalMigration).toContain("'Pending'");
     expect(portalMigration).toContain("INSERT INTO public.hr_approval_requests");
     expect(portalMigration).toContain("'LEAVE_REQUEST_SUBMITTED'");
+  });
+
+  it("keeps the employee portal fail-closed and explains the explicit HR remediation path", () => {
+    expect(workspace).toContain("no active HR employee record is linked");
+    expect(workspace).toContain("no automatic or name/email matching is performed");
+    expect(linkMigration).toContain("CREATE OR REPLACE FUNCTION public.hr_link_employee_profile");
+    expect(linkMigration).toContain("PERFORM public.hr_require_privileged()");
+    expect(linkMigration).toContain("public.current_company_id()");
+    expect(linkMigration).toContain("EMPLOYEE_PROFILE_LINKED");
+    expect(linkMigration).toContain("REVOKE ALL ON FUNCTION public.hr_link_employee_profile(uuid, uuid, text) FROM PUBLIC, anon");
+    expect(linkMigration).toContain("GRANT EXECUTE ON FUNCTION public.hr_link_employee_profile(uuid, uuid, text) TO authenticated");
   });
 
   it("requires manager authority, synchronizes outcomes, notifies the employee, and writes an audit event", () => {

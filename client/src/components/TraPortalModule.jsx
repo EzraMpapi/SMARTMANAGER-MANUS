@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLanguage } from "../contexts/LanguageContext";
 import {
   Activity,
   AlertCircle,
@@ -105,7 +106,8 @@ function StatusPill({ status, lang = "en" }) {
 }
 
 export function TraPortalModule({ companyId, lang = "en", onNavigate }) {
-  const currentLang = lang || "en";
+  const { lang: sharedLang } = useLanguage();
+  const currentLang = sharedLang || lang || "en";
   const [activeTab, setActiveTab] = useState("dashboard");
   const [notice, setNotice] = useState(null);
   const [darkMode, setDarkMode] = useState(false);

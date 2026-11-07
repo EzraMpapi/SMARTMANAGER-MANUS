@@ -1,0 +1,39 @@
+<slide id="safe_steps">
+  <background color="paper"/>
+  <text id="safe-breadcrumb" x="64" y="44" width="460" height="20" font="caption" size="12" color="muted" wrap="false">08  /  SAFE VALIDATION SEQUENCE</text>
+  <text id="safe-title" x="64" y="76" width="950" height="52" font="heading" size="34" color="ink" wrap="false">The exact safe path to protected-dashboard sign-off</text>
+  <text id="safe-intro" x="64" y="132" width="1090" height="32" font="body" size="18" color="muted">Complete this sequence in an approved non-production context. Each step protects authentication, tenant isolation, and production data from unnecessary interaction.</text>
+  <shape id="step-one" type="rect" x="64" y="250" width="200" height="222" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="step-one-rule" type="rect" x="64" y="250" width="200" height="4" fill="accent"/>
+  <text id="step-one-number" x="88" y="274" width="36" height="28" font="heading" size="24" color="accent" wrap="false">01</text>
+  <text id="step-one-title" x="88" y="322" width="146" height="48" font="body" size="19" color="ink">Use an approved isolated session</text>
+  <text id="step-one-body" x="88" y="400" width="148" height="44" font="caption" size="14" color="muted">Prefer the established e2e/browser fixture, not a production tenant.</text>
+  <shape id="step-one-arrow" type="line" x="264" y="361" width="24" height="0" stroke="accent" stroke-width="3" arrow-end="arrow"/>
+  <shape id="step-two" type="rect" x="288" y="250" width="200" height="222" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="step-two-rule" type="rect" x="288" y="250" width="200" height="4" fill="accent"/>
+  <text id="step-two-number" x="312" y="274" width="36" height="28" font="heading" size="24" color="accent" wrap="false">02</text>
+  <text id="step-two-title" x="312" y="322" width="148" height="48" font="body" size="19" color="ink">Confirm executive scope</text>
+  <text id="step-two-body" x="312" y="400" width="148" height="44" font="caption" size="14" color="muted">Verify role mapping, allowed modules, subscription guard, and company scope.</text>
+  <shape id="step-two-arrow" type="line" x="488" y="361" width="24" height="0" stroke="accent" stroke-width="3" arrow-end="arrow"/>
+  <shape id="step-three" type="rect" x="512" y="250" width="200" height="222" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="step-three-rule" type="rect" x="512" y="250" width="200" height="4" fill="accent"/>
+  <text id="step-three-number" x="536" y="274" width="36" height="28" font="heading" size="24" color="accent" wrap="false">03</text>
+  <text id="step-three-title" x="536" y="322" width="148" height="48" font="body" size="19" color="ink">Capture responsive states</text>
+  <text id="step-three-body" x="536" y="400" width="148" height="44" font="caption" size="14" color="muted">Capture executive overview at desktop and mobile with real permitted rows only.</text>
+  <shape id="step-three-arrow" type="line" x="712" y="361" width="24" height="0" stroke="accent" stroke-width="3" arrow-end="arrow"/>
+  <shape id="step-four" type="rect" x="736" y="250" width="200" height="222" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="step-four-rule" type="rect" x="736" y="250" width="200" height="4" fill="accent"/>
+  <text id="step-four-number" x="760" y="274" width="36" height="28" font="heading" size="24" color="accent" wrap="false">04</text>
+  <text id="step-four-title" x="760" y="322" width="148" height="48" font="body" size="19" color="ink">Run credentialed build</text>
+  <text id="step-four-body" x="760" y="400" width="148" height="44" font="caption" size="14" color="muted">Use the intended deployment-only Supabase variables and adequate memory.</text>
+  <shape id="step-four-arrow" type="line" x="936" y="361" width="24" height="0" stroke="accent" stroke-width="3" arrow-end="arrow"/>
+  <shape id="step-five" type="rect" x="960" y="250" width="256" height="222" fill="brand" stroke="brand" stroke-width="1"/>
+  <shape id="step-five-rule" type="rect" x="960" y="250" width="256" height="4" fill="accent"/>
+  <text id="step-five-number" x="984" y="274" width="36" height="28" font="heading" size="24" color="accent" wrap="false">05</text>
+  <text id="step-five-title" x="984" y="322" width="200" height="48" font="body" size="19" color="#FFFFFF">Review linked center alignment</text>
+  <text id="step-five-body" x="984" y="400" width="194" height="44" font="caption" size="14" color="#D9E6DF">Only then apply targeted visual alignment to Finance, Operations, and People pages.</text>
+  <shape id="safe-band" type="rect" x="64" y="552" width="1152" height="58" fill="#FFF9EE" stroke="#C5A059" stroke-width="1"/>
+  <icon id="safe-band-icon" name="shield-check" x="88" y="566" width="24" height="24" color="accent"/>
+  <text id="safe-band-text" x="128" y="567" width="1040" height="24" font="body" size="17" color="ink" wrap="false">Do not authenticate to production, create tenants or records, alter credentials, bypass RBAC, or change Supabase/Vercel configuration for this review.</text>
+  <text id="safe-page" x="1158" y="657" width="58" height="28" font="caption" size="14" color="muted" align="right" wrap="false">09</text>
+</slide>

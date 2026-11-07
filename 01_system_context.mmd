@@ -1,0 +1,42 @@
+---
+title: SMART MANAGER — System Context
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#eef2ff'
+    primaryBorderColor: '#4338ca'
+    lineColor: '#64748b'
+---
+flowchart LR
+  subgraph ACTORS["Actors"]
+    ADMIN["Owner / Admin"]
+    STAFF["Managers and staff"]
+    FRONTLINE["Tellers · cashiers · agents"]
+    SELF["Employees · customers · members"]
+  end
+  APP["SMART MANAGER ERP\nsecure responsive browser application"]
+  subgraph EXTERNAL["External boundary"]
+    OAUTH["Manus OAuth"]
+    STORAGE["Object storage"]
+    NOTIFY["Email · SMS · push-ready notifications"]
+    PAYMENTS["Bank and mobile-money providers"]
+    TAX["TRA / tax channels"]
+    GITHUB["GitHub source repository"]
+    HOST["Vercel / production hosting"]
+  end
+  ADMIN --> APP
+  STAFF --> APP
+  FRONTLINE --> APP
+  SELF --> APP
+  APP <--> OAUTH
+  APP <--> STORAGE
+  APP <--> NOTIFY
+  APP <--> PAYMENTS
+  APP <--> TAX
+  GITHUB --> HOST --> APP
+  classDef actor fill:#f8fafc,stroke:#334155,color:#0f172a,stroke-width:1.5px;
+  classDef app fill:#eef2ff,stroke:#4338ca,color:#1e1b4b,stroke-width:2px;
+  classDef ext fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+  class ADMIN,STAFF,FRONTLINE,SELF actor;
+  class APP app;
+  class OAUTH,STORAGE,NOTIFY,PAYMENTS,TAX,GITHUB,HOST ext;

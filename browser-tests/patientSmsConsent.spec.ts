@@ -1,11 +1,11 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "playwright/test";
+import { installManagedAuth } from "./support/authHarness";
 
 function trpcResult(data: unknown) {
   return { result: { data: { json: data } } };
 }
 
 test("lets a linked patient update and revoke SMS appointment consent without rendering clinical data", async ({ page }) => {
-  await page.addInitScript(() => window.localStorage.setItem("bs_access_token", "patient-e2e-token"));
   await page.route("**/api/trpc/**", async (route) => {
     const procedures = route.request().url().split("/api/trpc/")[1]?.split("?")[0].split(",") || [];
     const responses = procedures.map((procedure) => {
@@ -14,6 +14,13 @@ test("lets a linked patient update and revoke SMS appointment consent without re
       return trpcResult(null);
     });
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responses) });
+  });
+  await installManagedAuth(page, {
+    id: "patient-e2e-user",
+    email: "patient@e2e.invalid",
+    fullName: "Linked Patient",
+    profile: { id: "patient-e2e-user", company_id: "patient-e2e-company", full_name: "Linked Patient", role: "Customer", customer_ref: null },
+    company: { id: "patient-e2e-company", name: "Kilimanjaro Clinic", category: "healthcare", tax_rate: 18, timezone: "Africa/Dar_es_Salaam" },
   });
   await page.goto("/patient/sms-preferences", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "Appointment SMS preferences" })).toBeVisible();

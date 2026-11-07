@@ -1,0 +1,307 @@
+---
+title: SMART MANAGER ERP — Whole-Project Architecture and Operating Model
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#eef2ff'
+    primaryTextColor: '#172554'
+    primaryBorderColor: '#4f46e5'
+    lineColor: '#64748b'
+    secondaryColor: '#ecfdf5'
+    tertiaryColor: '#fff7ed'
+---
+flowchart TB
+  %% ============================
+  %% USERS AND ENTRY POINTS
+  %% ============================
+  subgraph USERS["Users and entry points"]
+    OWNER["Owner / Administrator"]
+    STAFF["Managers · Finance · HR · Operations"]
+    FRONTLINE["Tellers · Cashiers · Agents · Officers"]
+    EMPLOYEE["Employees · Self-service users"]
+    CUSTOMER["Customers · Members · Patients · Guests · Students"]
+    BROWSER["Responsive browser application\nmobile · tablet · desktop"]
+    OWNER --> BROWSER
+    STAFF --> BROWSER
+    FRONTLINE --> BROWSER
+    EMPLOYEE --> BROWSER
+    CUSTOMER --> BROWSER
+  end
+
+  %% ============================
+  %% FRONTEND
+  %% ============================
+  subgraph FRONTEND["React 19 + Vite 7 frontend"]
+    AUTH_UI["PublicAuthGateway / enterprise auth\nlogin · recovery · session state"]
+    SHELL["BusinessSphereDashboard\nsidebar · workspace tabs · module routing"]
+    COMMAND["Executive command centers\nKPIs · trends · health · actions · drill-downs"]
+    WORKSPACES["Operational workspaces\nforms · tables · approvals · reports · receipts"]
+    PORTALS["Portals and self-service\nEmployee · customer/member · patient"]
+    UI["Shared UI system\nTailwind 4 · shadcn/Radix · Lucide · Recharts"]
+    BROWSER --> AUTH_UI --> SHELL
+    SHELL --> COMMAND
+    SHELL --> WORKSPACES
+    SHELL --> PORTALS
+    COMMAND --> UI
+    WORKSPACES --> UI
+    PORTALS --> UI
+  end
+
+  %% ============================
+  %% MODULES
+  %% ============================
+  subgraph MODULES["Business modules — all tenant-scoped and role-aware"]
+    subgraph COMMERCIAL["Commercial and growth"]
+      SALES["Sales\nleads · quotes · orders · invoices"]
+      CRM["CRM\ncustomers · pipeline · follow-ups"]
+      MARKETING["Marketing\ncampaigns · audiences · attribution"]
+      ECOM["E-Commerce\ncatalog · orders · customer journey"]
+    end
+
+    subgraph OPERATIONS["Operations and fulfillment"]
+      INVENTORY["Inventory\nitems · stock · low-stock controls"]
+      PROCUREMENT["Procurement\nsuppliers · purchase orders · receiving"]
+      SUPPLY["Supply Chain\ntransfers · logistics · fulfillment"]
+      POS["POS\nsales · returns · credits · cashier controls"]
+      FLEET["Fleet\nvehicles · fuel · maintenance · dispatch"]
+    end
+
+    subgraph FIN["Finance, accounting, tax, and reporting"]
+      FINANCE["Finance\nexpenses · income · cash flow"]
+      REPORTS["Reports\nfinancial · operational · regulatory"]
+      TRA["TRA Portal\nVAT · invoices · Z reports · reconciliations"]
+      INTEGRATIONS["Integration Hub\nprovider health · delivery · sync status"]
+    end
+
+    subgraph PEOPLE["People and work management"]
+      HR["HR and Payroll\nemployees · payroll · leave · benefits"]
+      EMP_PORTAL["Employee Portal\nprofile · leave · payslips · requests"]
+      DOCUMENTS["Documents\nsecure files · metadata · retention"]
+      WORKFLOW["Workflow Studio\napprovals · automations · queues"]
+      COLLAB["Collaboration Hub\nmessages · tasks · shared work"]
+    end
+
+    subgraph COOP["Cooperative and financial inclusion"]
+      BANK["Bank & MFI\ninstitution · KYC · accounts · ledger · loans"]
+      MICRO["Microfinance\nborrowers · savings · PAR · collections"]
+      SACCO["VICOBA / SACCOS\nmembers · shares · groups · dividends"]
+      COMMUNITY["Community Groups\nmeetings · welfare · contributions"]
+    end
+
+    subgraph VERTICALS["Industry verticals"]
+      HEALTH["Healthcare\npatients · appointments · claims"]
+      PHARMACY["Pharmacy\nmedicines · prescriptions · dispensing"]
+      SCHOOL["School\nstudents · fees · attendance · grades"]
+      HOTEL["Hotel / Hospitality\nrooms · reservations · guests"]
+      RESTAURANT["Restaurant / F&B\nmenus · tables · kitchen · service"]
+    end
+
+    subgraph INTELLIGENCE["Support and intelligence"]
+      SUPPORT["Customer Support\ntickets · SLAs · escalation"]
+      AI["AI Assistant\nconfirmed business signals · guided actions"]
+    end
+  end
+
+  SHELL --> MODULES
+  COMMAND --> SALES
+  COMMAND --> FINANCE
+  COMMAND --> BANK
+  COMMAND --> SACCO
+  COMMAND --> AI
+
+  %% ============================
+  %% SERVER/API
+  %% ============================
+  subgraph SERVER["Express 4 + tRPC 11 application layer"]
+    CONTEXT["Request context\nOAuth session · verified profile · company"]
+    PROTECTED["protectedProcedure boundary\nrole checks · input validation"]
+    ROUTER["server/routers.ts\nfeature routers and typed contracts"]
+    SERVICES["Domain services\nBank/MFI · Microfinance · School · Healthcare · POS · TRA · HR"]
+    CALC["Deterministic calculation services\ninterest · payroll · tax · schedules · allocations"]
+    HTTP["Express handlers\nOAuth · storage · scheduled callbacks · webhooks"]
+    AUTH_UI --> CONTEXT
+    SHELL --> CONTEXT
+    WORKSPACES --> ROUTER
+    PORTALS --> ROUTER
+    CONTEXT --> PROTECTED --> ROUTER
+    ROUTER --> SERVICES
+    ROUTER --> CALC
+    ROUTER --> HTTP
+  end
+
+  %% ============================
+  %% SECURITY / GOVERNANCE
+  %% ============================
+  subgraph SECURITY["Security, governance, and trust controls"]
+    TENANT["Tenant isolation\ncompany_id boundary · current workspace"]
+    RLS["Supabase RLS and policies\nrow-level authorization"]
+    ROLES["Granular roles and permissions\nadmin · manager · officer · teller · employee"]
+    MAKER["Maker-checker controls\napproval separation · immutable decisions"]
+    IDEMPOTENCY["Idempotency and concurrency\nkeys · row locks · version checks"]
+    AUDIT["Audit trails\nactor · action · module · timestamp · details"]
+    FRAUD["AML / fraud controls\nrisk flags · alerts · review states"]
+    PROTECTED --> TENANT
+    PROTECTED --> ROLES
+    SERVICES --> MAKER
+    SERVICES --> IDEMPOTENCY
+    SERVICES --> FRAUD
+    TENANT --> RLS
+    MAKER --> AUDIT
+    IDEMPOTENCY --> AUDIT
+    FRAUD --> AUDIT
+  end
+
+  %% ============================
+  %% DATA LAYER
+  %% ============================
+  subgraph DATA["Persistent data layer"]
+    SUPA["Supabase PostgreSQL\nproduction tenant data"]
+    TABLES["Business tables\ncustomers · sales · stock · finance · HR · verticals"]
+    LEDGER["Financial tables and GL\njournal batches · debit/credit lines · balances"]
+    FILES["File metadata and storage references\nKYC · documents · receipts · exports"]
+    SCHEDULE_DATA["Schedule and delivery metadata\nHeartbeat task UIDs · reports · alerts"]
+    RLS --> SUPA
+    SUPA --> TABLES
+    SUPA --> LEDGER
+    SUPA --> FILES
+    SUPA --> SCHEDULE_DATA
+  end
+
+  SERVICES --> SUPA
+  CALC --> SERVICES
+  AUDIT --> SUPA
+  RLS --> SERVICES
+
+  %% ============================
+  %% SHARED FINANCIAL FLOWS
+  %% ============================
+  subgraph FINCONTROL["Shared financial control plane"]
+    POSTING["Double-entry posting\nbalanced journals · source references"]
+    RECON["Reconciliation\nledger · bank · cash · inventory · POS"]
+    SCHED["Schedules and standing orders\nrepayment runs · payroll · reminders"]
+    RECEIPTS["Receipts and statements\ntransaction evidence · member/customer views"]
+    POSTING --> LEDGER
+    RECON --> LEDGER
+    SCHED --> POSTING
+    POSTING --> RECEIPTS
+  end
+
+  BANK --> POSTING
+  MICRO --> POSTING
+  SACCO --> POSTING
+  COMMUNITY --> POSTING
+  SALES --> POSTING
+  POS --> POSTING
+  PROCUREMENT --> POSTING
+  FINANCE --> POSTING
+  HR --> POSTING
+  TRA --> RECON
+  INTEGRATIONS --> RECON
+  POSTING --> FINANCE
+  RECON --> REPORTS
+  REPORTS --> COMMAND
+
+  %% ============================
+  %% MODULE INTEGRATION FLOWS
+  %% ============================
+  SALES --> POS
+  POS --> INVENTORY
+  PROCUREMENT --> INVENTORY
+  INVENTORY --> SUPPLY
+  SUPPLY --> SALES
+  CRM --> SALES
+  MARKETING --> CRM
+  ECOM --> INVENTORY
+  ECOM --> SALES
+  FLEET --> FINANCE
+
+  BANK <-->|"shared verified customer/member identity"| SACCO
+  BANK <-->|"accounts · loans · guarantees · repayments"| MICRO
+  SACCO -->|"shares · savings · dividends · group lending"| BANK
+  COMMUNITY <--> SACCO
+  SACCO -->|"member balances and cooperative postings"| FINANCE
+  BANK -->|"cash, GL, reconciliation, statements"| FINANCE
+
+  HEALTH --> PHARMACY
+  HEALTH --> FINANCE
+  SCHOOL --> FINANCE
+  HOTEL --> RESTAURANT
+  HOTEL --> FINANCE
+  RESTAURANT --> INVENTORY
+  RESTAURANT --> POS
+  HR --> EMP_PORTAL
+  DOCUMENTS --> WORKFLOW
+  WORKFLOW --> COLLAB
+  SUPPORT --> CRM
+  AI --> REPORTS
+  AI --> WORKFLOW
+
+  %% ============================
+  %% INTEGRATIONS AND AUTOMATION
+  %% ============================
+  subgraph EXTERNAL["External services and automation"]
+    OAUTH["Manus OAuth\nlogin · session cookies"]
+    STORAGE["Object storage\nKYC files · documents · exports"]
+    NOTIFY["Notifications\nemail · SMS/push-ready channels"]
+    HEARTBEAT["Heartbeat scheduler\ncron callbacks · daily controls · reminders"]
+    MOBILE["Mobile-money-ready adapters\nprovider · MSISDN · reference · status"]
+    BANKAPI["Bank and payment providers\nreconciliation and settlement"]
+    GITHUB["GitHub repository\nsource control · CI checks"]
+    VERCEL["Deployment platform\nproduction build and hosting"]
+  end
+
+  OAUTH --> CONTEXT
+  FILES --> STORAGE
+  HTTP --> STORAGE
+  HTTP --> NOTIFY
+  SCHED --> HEARTBEAT
+  HEARTBEAT --> HTTP
+  BANK --> MOBILE
+  POS --> MOBILE
+  RECON --> BANKAPI
+  GITHUB --> VERCEL
+  VERCEL --> BROWSER
+
+  %% ============================
+  %% CRITICAL WORKFLOWS
+  %% ============================
+  subgraph FLOWS["Representative end-to-end workflows"]
+    W1["Commercial flow\nlead → quote/order → POS/e-commerce → inventory → payment → GL → report"]
+    W2["Bank/MFI flow\ncustomer/KYC → account → deposit/withdrawal → loan → score → approve → disburse → repay → arrears → reconcile"]
+    W3["SACCOS/VICOBA flow\nregistration → member/KYC → shares/savings → group meeting → loan/guarantee → repayment → dividend → statement"]
+    W4["People flow\nemployee → HR/payroll → leave/request → approval → employee portal → audit"]
+    W5["Vertical flow\npatient/student/guest → service → inventory/POS → payment → finance/reporting"]
+    W6["Compliance flow\ntransaction/event → rule check → AML/TRA/quality alert → maker-checker review → audit/report"]
+  end
+
+  W1 -.-> SALES
+  W2 -.-> BANK
+  W3 -.-> SACCO
+  W4 -.-> HR
+  W5 -.-> HEALTH
+  W5 -.-> SCHOOL
+  W5 -.-> HOTEL
+  W6 -.-> FRAUD
+  W6 -.-> TRA
+
+  %% ============================
+  %% STYLE
+  %% ============================
+  classDef entry fill:#f8fafc,stroke:#334155,stroke-width:1.5px,color:#0f172a;
+  classDef frontend fill:#eef2ff,stroke:#4f46e5,stroke-width:1.5px,color:#172554;
+  classDef module fill:#ecfdf5,stroke:#059669,stroke-width:1.2px,color:#064e3b;
+  classDef server fill:#eff6ff,stroke:#2563eb,stroke-width:1.5px,color:#1e3a8a;
+  classDef security fill:#fef2f2,stroke:#dc2626,stroke-width:1.5px,color:#7f1d1d;
+  classDef data fill:#fff7ed,stroke:#ea580c,stroke-width:1.5px,color:#7c2d12;
+  classDef control fill:#fffbeb,stroke:#d97706,stroke-width:1.5px,color:#78350f;
+  classDef external fill:#f5f3ff,stroke:#7c3aed,stroke-width:1.5px,color:#4c1d95;
+  classDef flow fill:#f0fdfa,stroke:#0f766e,stroke-width:1.5px,color:#134e4a;
+  class OWNER,STAFF,FRONTLINE,EMPLOYEE,CUSTOMER,BROWSER entry;
+  class AUTH_UI,SHELL,COMMAND,WORKSPACES,PORTALS,UI frontend;
+  class SALES,CRM,MARKETING,ECOM,INVENTORY,PROCUREMENT,SUPPLY,POS,FLEET,FINANCE,REPORTS,TRA,INTEGRATIONS,HR,EMP_PORTAL,DOCUMENTS,WORKFLOW,COLLAB,BANK,MICRO,SACCO,COMMUNITY,HEALTH,PHARMACY,SCHOOL,HOTEL,RESTAURANT,SUPPORT,AI module;
+  class CONTEXT,PROTECTED,ROUTER,SERVICES,CALC,HTTP server;
+  class TENANT,RLS,ROLES,MAKER,IDEMPOTENCY,AUDIT,FRAUD security;
+  class SUPA,TABLES,LEDGER,FILES,SCHEDULE_DATA data;
+  class POSTING,RECON,SCHED,RECEIPTS control;
+  class OAUTH,STORAGE,NOTIFY,HEARTBEAT,MOBILE,BANKAPI,GITHUB,VERCEL external;
+  class W1,W2,W3,W4,W5,W6 flow;

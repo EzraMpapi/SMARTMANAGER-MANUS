@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff; color: #334155; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            display: flex;
+            flex-direction: column;
+            padding: 60px 80px 40px; /* keep top padding (60px) but reduce bottom */
+            background-color: #ffffff;
+            position: relative;
+        }
+        .header {
+            margin-bottom: 30px; /* reduced from 50 */
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-align: flex-end;
+        }
+        .slide-title {
+            font-size: 42px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .slide-subtitle {
+            font-size: 20px;
+            color: #10b981;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            align-self: flex-end;
+            margin-bottom: 8px;
+        }
+        .content-area {
+            display: flex;
+            gap: 40px; /* reduced gap */
+            flex: 1;
+        }
+        .left-col {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* reduced gap */
+        }
+        .right-col {
+            flex: 1;
+        }
+        .insight-block {
+            background-color: #f8fafc;
+            border-left: 6px solid #10b981;
+            padding: 18px; /* reduced padding */
+        }
+        .insight-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 8px; /* reduced */
+        }
+        .insight-text {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #475569;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 18px;
+        }
+        .data-table th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: 700;
+            text-align: left;
+            padding: 12px; /* reduced */
+            border-bottom: 2px solid #cbd5e1;
+        }
+        .data-table td {
+            padding: 12px; /* reduced */
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
+        }
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+        .data-table td.num {
+            text-align: right;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .highlight-row {
+            background-color: rgba(16, 185, 129, 0.05);
+        }
+        .footer-note {
+            position: absolute;
+            bottom: 40px;
+            left: 80px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header">
+            <h1 class="slide-title">Audit Methodology & Baseline</h1>
+            <div class="slide-subtitle">Static Analysis vs. Runtime Verification</div>
+        </div>
+
+        <div class="content-area">
+            <div class="left-col">
+                <div class="insight-block">
+                    <h2 class="insight-title">Conservative Static Scanning</h2>
+                    <p class="insight-text">The static scanner evaluates 150 tracked client files. Placeholder and no-handler counts include component definitions, wrappers, validation alerts and generated JSX — a review queue, not proof of runtime defects.</p>
+                </div>
+
+                <div class="insight-block" style="border-left-color: #3b82f6;">
+                    <h2 class="insight-title">The Persistence Contract Principle</h2>
+                    <p class="insight-text">Runtime correctness requires feature-specific persistence contracts. Controls must not write arbitrary generic rows just to appear connected; proper integration needs UX, validation and schema mapping.</p>
+                </div>
+            </div>
+
+            <div class="right-col">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Inventory Measure</th>
+                            <th style="text-align: right;">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Tracked client source files scanned</td>
+                            <td class="num">150</td>
+                        </tr>
+                        <tr>
+                            <td>Button tags found</td>
+                            <td class="num">3,345</td>
+                        </tr>
+                        <tr>
+                            <td>Button-like `onClick` controls</td>
+                            <td class="num">1,780</td>
+                        </tr>
+                        <tr class="highlight-row">
+                            <td>Placeholder-like surrounding copy</td>
+                            <td class="num">583</td>
+                        </tr>
+                        <tr class="highlight-row">
+                            <td>Lacking local handler / submit role</td>
+                            <td class="num">102</td>
+                        </tr>
+                        <tr>
+                            <td>Direct `alert()` context</td>
+                            <td class="num">8</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="footer-note">Source: BUTTON_ACTION_AUDIT_20260824.md</div>
+    </div>
+</body>
+</html>

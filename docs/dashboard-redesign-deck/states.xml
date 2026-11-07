@@ -1,0 +1,34 @@
+<slide id="states">
+  <background color="paper"/>
+  <text id="states-breadcrumb" x="64" y="44" width="460" height="20" font="caption" size="12" color="muted" wrap="false">05  /  STATES & ROLE SAFETY</text>
+  <text id="states-title" x="64" y="76" width="940" height="52" font="heading" size="34" color="ink" wrap="false">The redesign reports uncertainty instead of masking it</text>
+  <text id="states-intro" x="64" y="132" width="1080" height="32" font="body" size="18" color="muted">Existing application controls remain authoritative; the new overview makes their user-facing states explicit and operationally clear.</text>
+  <shape id="loading-card" type="rect" x="64" y="228" width="214" height="258" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="loading-rule" type="rect" x="64" y="228" width="214" height="4" fill="accent"/>
+  <icon id="loading-icon" name="loader-circle" x="90" y="262" width="28" height="28" color="brand"/>
+  <text id="loading-title" x="90" y="316" width="150" height="24" font="body" size="18" color="ink" wrap="false">Loading</text>
+  <text id="loading-body" x="90" y="360" width="152" height="82" font="body" size="16" color="muted" line-height="1.35">Existing company-table hook loading drives skeletons while confirmed content is refreshed.</text>
+  <shape id="error-card" type="rect" x="298" y="228" width="214" height="258" fill="#FFF7F5" stroke="#E7B7AE" stroke-width="1"/>
+  <shape id="error-rule" type="rect" x="298" y="228" width="214" height="4" fill="#B34D3B"/>
+  <icon id="error-icon" name="triangle-alert" x="324" y="262" width="28" height="28" color="#B34D3B"/>
+  <text id="error-title" x="324" y="316" width="150" height="24" font="body" size="18" color="ink" wrap="false">Partial error</text>
+  <text id="error-body" x="324" y="360" width="152" height="82" font="body" size="16" color="muted" line-height="1.35">Confirmed content stays visible where possible; retry requests a secure refresh only.</text>
+  <shape id="empty-card" type="rect" x="532" y="228" width="214" height="258" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="empty-rule" type="rect" x="532" y="228" width="214" height="4" fill="accent"/>
+  <icon id="empty-icon" name="file-text" x="558" y="262" width="28" height="28" color="brand"/>
+  <text id="empty-title" x="558" y="316" width="150" height="24" font="body" size="18" color="ink" wrap="false">No records</text>
+  <text id="empty-body" x="558" y="360" width="152" height="82" font="body" size="16" color="muted" line-height="1.35">The component states that confirmed data is absent and points to an existing workspace.</text>
+  <shape id="offline-card" type="rect" x="766" y="228" width="214" height="258" fill="#FFF9EE" stroke="#DDBF81" stroke-width="1"/>
+  <shape id="offline-rule" type="rect" x="766" y="228" width="214" height="4" fill="accent"/>
+  <icon id="offline-icon" name="wifi-off" x="792" y="262" width="28" height="28" color="accent"/>
+  <text id="offline-title" x="792" y="316" width="150" height="24" font="body" size="18" color="ink" wrap="false">Offline</text>
+  <text id="offline-body" x="792" y="360" width="152" height="82" font="body" size="16" color="muted" line-height="1.35">The existing shell continues to pause permanent writes and require later server confirmation.</text>
+  <shape id="role-card" type="rect" x="1000" y="228" width="216" height="258" fill="brand" stroke="brand" stroke-width="1"/>
+  <shape id="role-rule" type="rect" x="1000" y="228" width="216" height="4" fill="accent"/>
+  <icon id="role-icon" name="shield-check" x="1026" y="262" width="28" height="28" color="accent"/>
+  <text id="role-title" x="1026" y="316" width="150" height="24" font="body" size="18" color="#FFFFFF" wrap="false">Role safety</text>
+  <text id="role-body" x="1026" y="360" width="154" height="82" font="body" size="16" color="#D9E6DF" line-height="1.35">Executive overview is scoped to the existing executive view; other home views stay role-specific.</text>
+  <shape id="states-callout" type="rect" x="64" y="548" width="1152" height="58" fill="#FFFFFF" stroke="hairline" stroke-width="1"/>
+  <text id="states-callout-text" x="88" y="565" width="1104" height="26" font="body" size="18" color="ink" align="center" wrap="false">The dashboard never converts missing, delayed, or unauthorized data into a fabricated operational signal.</text>
+  <text id="states-page" x="1158" y="657" width="58" height="28" font="caption" size="14" color="muted" align="right" wrap="false">06</text>
+</slide>

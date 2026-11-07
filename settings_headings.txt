@@ -1,0 +1,203 @@
+1:function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
+2:  const pendingOwnRoleChange = (roleChangeApprovalsQuery?.data?.approvals || []).find((row) => row.status === "Pending Review" && row.data?.targetUserId === currentUser.id);
+4:  const [profileTab, setProfileTab] = useState("identity");
+6:  const workspaceSettingsQuery = trpc.workspaceSettings.get.useQuery(undefined, { enabled: IS_CONFIGURED });
+7:  const workspaceSettingsMutation = trpc.workspaceSettings.save.useMutation();
+12:  const canManageCompanySettings = ["Organization Owner", "CEO", "Super Administrator"].includes(canonicalRoleId(currentUser.role));
+15:    { enabled: Boolean(company?.id) && canManageCompanySettings },
+18:  const currentRole = roleDefinitionFor(currentUser.role);
+26:    if (!workspaceSettingsQuery.data || !IS_CONFIGURED) return;
+27:    const serverCompany = workspaceSettingsQuery.data.company || {};
+28:    const profileData = workspaceSettingsQuery.data.profileData || {};
+31:      id: serverCompany.id || company.id, name: serverCompany.name || company.name, industry: serverCompany.category || company.industry || "general",
+32:      country: serverCompany.country || company.country, currency: serverCompany.currency || company.currency,
+33:      taxRate: Number(serverCompany.tax_rate ?? company.taxRate ?? 0), timezone: serverCompany.timezone || company.timezone, businessScale: serverCompany.business_scale || company.businessScale,
+34:      receiptWidth: serverCompany.receipt_width || company.receiptWidth, receiptFooter: serverCompany.receipt_footer || "", receiptShowLogo: serverCompany.receipt_show_logo !== false,
+35:      logo: serverCompany.logo || null, brandColor: serverCompany.brand_primary_color || "#0B5D3B", brandAccentColor: serverCompany.brand_accent_color || "#16A34A",
+36:      tin: serverCompany.tin || "", phone: serverCompany.phone || "", email: serverCompany.email || "", address: serverCompany.address || "", city: serverCompany.city || "", website: serverCompany.website || "",
+38:    setCompany(confirmed);
+41:  }, [workspaceSettingsQuery.data]);
+61:  async function saveProfile() {
+65:        const saved = await workspaceSettingsMutation.mutateAsync({
+76:        const serverCompany = saved.company || {};
+77:        const confirmedDraft = { ...draft, ...(saved.profileData || {}), name: serverCompany.name || draft.name, industry: serverCompany.category || draft.industry, country: serverCompany.country || draft.country, currency: serverCompany.currency || draft.currency, taxRate: Number(serverCompany.tax_rate ?? draft.taxRate), timezone: serverCompany.timezone || draft.timezone, businessScale: serverCompany.business_scale || draft.businessScale, receiptWidth: serverCompany.receipt_width || draft.receiptWidth, receiptFooter: serverCompany.receipt_footer || "", receiptShowLogo: serverCompany.receipt_show_logo !== false, logo: serverCompany.logo || null, brandColor: serverCompany.brand_primary_color || draft.brandColor, brandAccentColor: serverCompany.brand_accent_color || draft.brandAccentColor, tin: serverCompany.tin || "", phone: serverCompany.phone || "", email: serverCompany.email || "", address: serverCompany.address || "", city: serverCompany.city || "", website: serverCompany.website || "" };
+79:        setCompany(confirmedDraft);
+83:        window.__smartManagerCompany = confirmedDraft;
+87:          notify("Company settings were saved, but the industry audit event could not be persisted. Review the audit log after retrying this change.", "error");
+94:      setCompany(draft);
+97:    notify("Company profile saved ✓");
+103:        <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Settings</h1>
+104:        <p className="text-[13px] text-slate-500 mt-1">Company profile, module entitlements, and connection status</p>
+107:      <section className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm" role="status" aria-live="polite">
+110:            <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${!IS_CONFIGURED ? "bg-slate-400" : workspaceSettingsQuery.isLoading ? "bg-amber-400 animate-pulse" : workspaceSettingsQuery.isError ? "bg-red-500" : workspaceSettingsQuery.data ? "bg-emerald-500" : "bg-slate-400"}`} aria-hidden="true" />
+114:                {!IS_CONFIGURED ? "Demo mode: protected workspace settings are not connected." : workspaceSettingsQuery.isLoading ? "Loading confirmed settings from the protected workspace service…" : workspaceSettingsQuery.isError ? "The protected workspace settings service could not be reached." : workspaceSettingsQuery.data ? "Server-confirmed workspace settings are loaded for this session." : "No confirmed settings response is available yet."}
+118:          {IS_CONFIGURED && workspaceSettingsQuery.isError && (
+119:            <button type="button" onClick={() => workspaceSettingsQuery.refetch()} disabled={workspaceSettingsQuery.isFetching} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-[11.5px] font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:cursor-wait disabled:opacity-50">
+120:              <RefreshCw size={12} className={workspaceSettingsQuery.isFetching ? "animate-spin" : ""} />
+121:              {workspaceSettingsQuery.isFetching ? "Retrying…" : "Retry connection"}
+125:      </section>
+130:          { enabled: Boolean(company?.id) && canManageCompanySettings }
+132:        const saveMarketGov = trpc.marketIntelligence.saveGovernanceSettings.useMutation({
+183:          <section className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-4" aria-label="Market provider governance and alerts">
+192:            {canManageCompanySettings ? (
+281:                      <option value={15}>15 seconds (High frequency)</option>
+282:                      <option value={30}>30 seconds</option>
+283:                      <option value={60}>60 seconds (Standard)</option>
+284:                      <option value={120}>2 minutes</option>
+285:                      <option value={300}>5 minutes</option>
+286:                      <option value={900}>15 minutes</option>
+287:                      <option value={3600}>1 hour</option>
+300:                      <option value={800}>800 ms (Sensitive)</option>
+301:                      <option value={1500}>1,500 ms (Recommended)</option>
+302:                      <option value={3000}>3,000 ms (Relaxed)</option>
+303:                      <option value={5000}>5,000 ms (High tolerance)</option>
+314:                      <option value={5}>5 minutes</option>
+315:                      <option value={15}>15 minutes (Recommended)</option>
+316:                      <option value={60}>1 hour</option>
+317:                      <option value={360}>6 hours</option>
+318:                      <option value={1440}>24 hours</option>
+346:                  <button
+360:                      <h4 className="text-[13px] font-bold text-slate-900">Provider Uptime History & Incident Resolution</h4>
+364:                      <button
+377:                      <button
+440:          </section>
+444:      {/* Role — demo switcher */}
+445:      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+447:          <h2 className="text-[14.5px] font-semibold text-[#111827]">Your role</h2>
+448:          {pendingOwnRoleChange && <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[10.5px] font-bold text-amber-800"><Clock3 size={12} /> Role change pending</span>}
+461:                  <button
+466:                      currentRole.id === r.id ? "border-[#16A34A] bg-[#16A34A]/8 text-[#111827]" : "border-slate-200 text-slate-500 hover:bg-slate-50"
+477:          <p className="text-[12.5px] text-slate-600 leading-relaxed mb-2">{currentRole.description}</p>
+480:              {canManageCompanySettings ? "Settings administrator" : "Read-only Settings access"}
+482:            <span className="text-[10.5px] text-slate-400">{currentRole.allowedModules.length} of {MODULES.length} modules visible</span>
+483:            {currentRole.primaryModules.length > 0 && currentRole.primaryModules.length < currentRole.allowedModules.length && (
+484:              <span className="text-[10.5px] text-slate-400">· primary work in {currentRole.primaryModules.length}</span>
+487:          {currentRole.primaryModules.length > 0 && currentRole.primaryModules.length < currentRole.allowedModules.length && (
+489:              Company-wide visibility, department-scoped ownership — real enterprise practice: broad oversight, focused accountability. Honest limitation: this build's write permission is still one global switch per role (section 29), not a per-module lock — a Finance Manager technically *could* edit HR after navigating there, the same declared scope boundary as every other permission check in this system. Primary modules describe intended ownership, not yet an enforced wall around it.
+493:      </section>
+496:      <VatAnomalySettingsPanel companyId={company.id} canManage={canManageCompanySettings} />
+497:      <PushDeliveryHistoryPanel companyId={company.id} canManage={canManageCompanySettings} />
+498:      <RoleChangeApprovalPanel currentUser={currentUser} />
+500:      <AccountPasskeyManager session={accountSession} isAdministrator={PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role))} />
+501:      {canManageCompanySettings && <section className="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm" aria-labelledby="tenant-security-branding-title">
+504:            <div className="flex items-center gap-2"><ShieldCheck size={17} className="text-emerald-700" /><h2 id="tenant-security-branding-title" className="text-[14px] font-semibold text-slate-900">Tenant security & auth branding</h2></div>
+510:          <div className="flex items-start justify-between gap-4"><div><p className="text-[12px] font-bold text-amber-950">Administrative inactivity timeout</p><p className="mt-1 text-[11px] leading-5 text-amber-900/75">Administrators receive the existing two-minute warning before the selected limit is reached. Choose between 5 and 120 minutes.</p></div><span className="rounded-xl bg-white px-3 py-1.5 font-mono text-[15px] font-bold tabular-nums text-amber-800 shadow-sm">{Number(draft.idleTimeoutMinutes) || 30} min</span></div>
+525:              {draft.signatureLogo && <button type="button" onClick={() => setField("signatureLogo", null)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10.5px] font-semibold text-slate-600 transition hover:border-rose-200 hover:text-rose-700">Remove</button>}
+537:            <button type="button" onClick={() => workflowWebhookTestMutation.mutate()} disabled={workflowWebhookTestMutation.isPending || !draft.collaborationWorkflowWebhookUrl || !draft.collaborationWorkflowWebhookEnabled} className="self-end rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-[11px] font-bold text-violet-800 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-45">{workflowWebhookTestMutation.isPending ? "Testing…" : "Test connection"}</button>
+543:          {[{ key: "loginBackgroundImage", id: "login-background-upload", label: "Enterprise login background", description: "Shown behind the preserved login experience.", empty: "Use a quiet image with clear contrast for the sign-in card." }, { key: "onboardingBackgroundImage", id: "onboarding-background-upload", label: "Onboarding split-screen background", description: "Shown on Create Company and Join Company surfaces.", empty: "Use a confident workspace image that supports onboarding copy." }].map((item) => <div key={item.key} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5"><div className="flex items-start justify-between gap-3"><div><p className="text-[12px] font-bold text-slate-900">{item.label}</p><p className="mt-1 text-[10.5px] leading-4 text-slate-500">{item.description}</p></div><ImageIcon size={16} className="text-emerald-700" /></div><div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white"><div className="h-28 w-full" style={{ backgroundImage: draft[item.key] ? `linear-gradient(120deg, rgba(7,28,21,.62), rgba(7,28,21,.22)), url(\"${draft[item.key]}\")` : "linear-gradient(135deg,#0b2d22,#16a34a)", backgroundSize: "cover", backgroundPosition: "center" }}><div className="flex h-full items-end p-3"><span className="rounded-lg bg-black/45 px-2 py-1 text-[10px] font-semibold text-white">{draft[item.key] ? "Custom background active" : item.empty}</span></div></div></div><div className="mt-3 flex flex-wrap gap-2"><label htmlFor={item.id} className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-[10.5px] font-bold text-white transition hover:bg-slate-700"><Upload size={12} /> {draft[item.key] ? "Replace image" : "Upload image"}</label><input id={item.id} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (!file) return; if (file.size > 5 * 1024 * 1024) { notify("Background images must be under 5 MB.", "error"); return; } const reader = new FileReader(); reader.onload = () => setField(item.key, String(reader.result || "")); reader.onerror = () => notify("The selected background image could not be read.", "error"); reader.readAsDataURL(file); }} />{draft[item.key] && <button type="button" onClick={() => setField(item.key, null)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10.5px] font-semibold text-slate-600 transition hover:border-rose-200 hover:text-rose-700">Remove</button>}</div></div>)}
+545:        <p className="mt-4 text-[10.5px] leading-4 text-slate-400">Click <strong className="font-semibold text-slate-600">Save Company Profile</strong> below to persist these settings. Images are validated, stored under the current tenant, and never sent to the browser as raw upload bytes after save.</p>
+546:      </section>}
+547:      {PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role)) && <QuarterlySecurityReviewChecklist companyName={company.name} companyId={company.id} userId={currentUser.id} />}
+549:      {!canManageCompanySettings && (
+550:        <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm">
+554:            hint={`You are viewing as ${currentUser.role}. Company profile settings require an Organization Owner, CEO, Super Administrator, or System Administrator. Your active access remains unchanged.`}
+556:        </section>
+559:      {canManageCompanySettings && (
+562:          <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+593:                <button onClick={()=>setField("coverPhoto",null)}
+629:            {/* Profile completion bar */}
+643:                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Profile Completeness</p>
+658:            {/* Profile tabs */}
+676:                        <button key={t.id} onClick={()=>setProfileTab(t.id)}
+691:                            <FormField label="Company Name" required>
+701:                            <FormField label="Company Description">
+708:                              {ORGANIZATION_INDUSTRY_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+713:                            <select className={inputClass} value={draft.businessType||"Private Limited Company"} onChange={e=>setField("businessType",e.target.value)}>
+714:                              {["Sole Proprietorship","Partnership","Private Limited Company","Public Limited Company","Non-Profit Organisation","Co-operative Society","Trust","Government Entity","Other"].map(t=><option key={t}>{t}</option>)}
+722:                              <option value="small">Small Business (1–49 staff)</option>
+723:                              <option value="medium">Medium Business (50–249 staff)</option>
+724:                              <option value="large">Large Business (250+ staff)</option>
+739:                              {["TZS","KES","UGX","USD","EUR","GBP","ZAR","NGN"].map(curr=><option key={curr}>{curr}</option>)}
+748:                              {COMPANY_TIMEZONES.map(tz=><option key={tz} value={tz}>{tz.replace(/_/g," ")}</option>)}
+760:                          <p className="text-[12.5px] font-bold text-[#111827] mb-2">Company Logo</p>
+789:                                <button onClick={()=>setField("logo",null)} className="text-[11px] text-[#EF4444] hover:underline">Remove logo</button>
+825:                            <button onClick={()=>setField("coverPhoto",null)} className="mt-1.5 text-[11px] text-[#EF4444] hover:underline">Remove cover photo</button>
+835:                              <button key={col} onClick={()=>setField("brandColor",col)}
+853:                              <p className="text-white text-[13px] font-bold">{draft.name||"Company Name"}</p>
+886:                          <p className="text-[12.5px] font-bold text-[#111827] mb-3">Receipt Settings</p>
+890:                                {["58mm","80mm","A4"].map(w=><option key={w}>{w}</option>)}
+895:                                <option value="true">Yes — show logo</option>
+896:                                <option value="false">No — text only</option>
+962:                              <option value="">— Select Bank —</option>
+963:                              {["CRDB Bank","NMB Bank","NBC Bank","Equity Bank","Stanbic Bank","Standard Chartered","Absa Bank","DTB Bank","Exim Bank","Bank of Africa","I&M Bank","Access Bank","Azania Bank","Other"].map(b=><option key={b}>{b}</option>)}
+980:                              {["TZS","KES","UGX","USD","EUR","GBP"].map(curr=><option key={curr}>{curr}</option>)}
+1070:                      <button type="button" onClick={saveProfile}
+1071:                        disabled={!dirty || workspaceSettingsMutation.isPending}
+1072:                        className={`flex items-center gap-2 text-[13px] font-bold text-white px-5 py-2.5 rounded-xl transition-all ${dirty && !workspaceSettingsMutation.isPending?"bg-[#16A34A] hover:bg-[#15803D] shadow-sm":"bg-slate-200 cursor-not-allowed"}`}>
+1073:                        <Save size={14}/> {workspaceSettingsMutation.isPending ? "Saving…" : "Save Profile"}
+1076:                        <button onClick={()=>setDraft(company)} className="text-[12.5px] font-medium text-slate-500 hover:text-slate-700">
+1080:                      {!dirty && !workspaceSettingsMutation.isPending && <p className="text-[12px] text-[#16A34A] font-semibold">✓ Profile is up to date</p>}
+1086:          </section>
+1089:          <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+1091:              <h2 className="text-[14.5px] font-bold text-[#111827]">Company Profile Card</h2>
+1113:                  <h3 className="text-[17px] font-black text-[#111827]">{draft.name||"Your Company Name"}</h3>
+1181:          </section>
+1189:          <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+1192:                <h2 className="text-[14.5px] font-semibold text-[#111827]">Dark Mode</h2>
+1193:                <p className="text-[12.5px] text-slate-500 mt-1">Real, not cosmetic — but honestly scoped to the sidebar and top navigation only. Rewriting every module colors across this entire application would risk a half-correct result, some screens right and others silently broken, which would be worse than not having this at all. Module content stays light-themed for now.</p>
+1204:                  <button key={v} onClick={() => onSetTextSize(v)} className={`text-[11.5px] font-medium px-2.5 py-1.5 rounded-md ${textSize === v ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>{l}</button>
+1215:          </section>
+1219:          <MarketplaceSection enabledModules={enabledModules} onToggleModule={onToggleModule} canManage={canManage} />
+1221:          <SecurityDashboard currentUser={currentUser} />
+1225:          {/* Module entitlements */}
+1226:          <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+1227:            <h2 className="text-[14.5px] font-semibold text-[#111827] mb-1">Modules</h2>
+1236:                const on = enabledModules.has(m.id);
+1250:                <ToggleSwitch on={on} disabled={isCore || moduleSettingPending} onChange={() => onToggleModule(m.id)} label={`${on ? "Disable" : "Enable"} ${m.label} module`} />
+1255:          </section>
+1260:      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+1261:        <h2 className="text-[14.5px] font-semibold text-[#111827] mb-1">Data connection</h2>
+1283:                  Signup creates your company and your account together, no manual database step needed.
+1289:      </section>
+1291:      {/* ── Team Management ──────────────────────────────────────────── */}
+1292:      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+1293:        <h2 className="text-[14.5px] font-semibold text-[#111827] mb-1">Team Members</h2>
+1295:        <TeamManagement currentUser={currentUser} canManage={canManage} />
+1296:      </section>
+1299:      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+1300:        <h2 className="text-[14.5px] font-semibold text-[#111827] mb-3">System Information</h2>
+1304:            ["Modules", "33 live modules"],
+1305:            ["Database", IS_CONFIGURED ? "Supabase (Live)" : "Demo Mode"],
+1314:      </section>
+1317:      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+1319:          <h2 className="text-[14.5px] font-semibold text-[#111827] mb-1 flex items-center gap-2">
+1327:      </section>
+1330:      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+1332:          <h2 className="text-[14.5px] font-semibold text-[#111827] mb-1 flex items-center gap-2">
+1340:      </section>
+1346:function TeamManagement({ currentUser, canManage }) {
+1347:  const [showInvite, setShowInvite] = useState(false);
+1348:  const [inviteForm, setInviteForm] = useState({ name:"", email:"", role:"Sales Representative" });
+1368:  async function sendInvite() {
+1372:      setInviteForm({ name:"", email:"", role:"Sales Representative" });
+1373:      setShowInvite(false);
+1379:  async function resendInvite(invitationId) {
+1387:  async function revokeInvite(invitationId) {
+1402:        {canManage && <button onClick={()=>setShowInvite(v=>!v)} className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white px-4 py-2 rounded-xl bg-[#16A34A]"><UserPlus size={13}/>Invite Member</button>}
+1407:      {showInvite && (
+1409:          <p className="text-[13.5px] font-semibold text-[#111827]">Invite Team Member</p>
+1412:            <FormField label="Full Name *"><input className={inputClass} value={inviteForm.name} onChange={e=>setInviteForm({...inviteForm,name:e.target.value})} placeholder="Full name"/></FormField>
+1413:            <FormField label="Email *"><input className={inputClass} value={inviteForm.email} onChange={e=>setInviteForm({...inviteForm,email:e.target.value})} placeholder="email@company.co.tz"/></FormField>
+1414:            <FormField label="Role"><select className={inputClass} value={inviteForm.role} onChange={e=>setInviteForm({...inviteForm,role:e.target.value})}>{ROLE_OPTIONS.filter(r=>r!=="Super Administrator").map(r=><option key={r}>{r}</option>)}</select></FormField>
+1417:            <button onClick={sendInvite} disabled={createInvitation.isPending} className="text-[12.5px] font-semibold text-white px-5 py-2.5 rounded-xl bg-[#16A34A] disabled:opacity-50">{createInvitation.isPending ? "Sending…" : "Send Invite"}</button>
+1418:            <button onClick={()=>setShowInvite(false)} className="text-[12.5px] text-slate-500 px-4 py-2.5">Cancel</button>
+1425:        {invitationQuery.isError && <p role="alert" className="py-4 text-[12px] text-red-600">Team invitations could not be loaded. Refresh and try again.</p>}
+1443:                {canManage && ["pending", "delivery_failed", "expired"].includes(invitation.status) && <button onClick={()=>resendInvite(invitation.id)} disabled={resendInvitation.isPending} className="text-[11px] text-slate-500 hover:text-slate-700 px-2 py-1 rounded-lg border border-slate-200 hover:border-slate-300 disabled:opacity-50">Resend</button>}
+1444:                {canManage && ["pending", "delivery_failed", "expired"].includes(invitation.status) && <button onClick={()=>revokeInvite(invitation.id)} disabled={revokeInvitation.isPending} className="text-[11px] text-red-500 hover:text-red-700 px-2 py-1 rounded-lg border border-red-100 hover:border-red-200 disabled:opacity-50">Revoke</button>}
+1460:  const auditLog = useCompanyTable("audit_log", [], {
+1499:    <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+1502:          <h2 className="text-[14.5px] font-semibold text-[#111827]">Tenant Activity Audit</h2>
+1505:        <div className="flex flex-wrap gap-2"><button type="button" onClick={exportEvidence} disabled={auditLog.loading} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11.5px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"><Download size={12} /> Export evidence</button><button type="button" onClick={() => auditLog.reload()} disabled={auditLog.refreshing} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11.5px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"><RefreshCw size={12} className={auditLog.refreshing ? "animate-spin" : ""} /> Refresh</button></div>
+1508:        Confirmed activity for your workspace, read directly from the server. The database derives workspace scope from the authenticated session; this screen never supplies a company identifier.
+1515:          {modules.map((module) => <option key={module} value={module}>{module === "all" ? "All modules" : module}</option>)}
+1518:          <option value="all">All time</option><option value="today">Last 24 hours</option><option value="week">Last 7 days</option><option value="month">Last 30 days</option>
+1546:    </section>
+1550:function RoleChangeApprovalPanel({ currentUser }) {
+1551:  const [requestedRole, setRequestedRole] = useState("");
+1553:  const approvals = trpc.listRoleChangeApprovals.useQuery(undefined, { retry: false });
+1554:  const requestMutation = trpc.requestRoleChangeApproval.useMutation({ onSuccess: () => { setRequestedRole(""); setReason(""); approvals.refetch(); notify("Role change submitted for independent review. Your active access has not changed."); } });
+1555:  const decideMutation = trpc.decideRoleChangeApproval.useMutation({ onSuccess: () => { approvals.refetch(); notify("Role-change decision recorded. Approved access updates only after the server confirms it."); } });
+1556:  const canDecide = PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role));
+1564:  return <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-[14.5px] font-semibold text-[#111827]">Role change approval</h2><p className="mt-1 max-w-2xl text-[12.5px] leading-5 text-slate-500">Role changes are requested from the authenticated workspace account and must be decided by an independent authorized administrator. Self-approval is blocked.</p></div><span className="w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[10.5px] font-bold text-slate-700">Server-reviewed</span></div><div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]"><select value={requestedRole} onChange={(event) => setRequestedRole(event.target.value)} className="rounded-lg border border-slate-200 px-2 py-2 text-[12px]"><option value="">Request a role…</option>{ROLES.filter((role) => role.id !== currentUser.role).map((role) => <option key={role.id} value={role.id}>{role.id}</option>)}</select><input value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} className={inputClass} placeholder="Reason for the requested role (optional)" /><button type="button" disabled={!requestedRole || requestMutation.isPending} onClick={() => requestMutation.mutate({ requestedRole, reason: reason || undefined })} className="rounded-lg bg-slate-900 px-3 py-2 text-[11.5px] font-semibold text-white disabled:opacity-50">{requestMutation.isPending ? "Submitting…" : "Request review"}</button></div>{requestMutation.error && <p role="alert" className="mt-2 text-[11.5px] text-red-700">{requestMutation.error.message}</p>}<div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">{approvals.isLoading ? <p className="p-4 text-center text-[12px] text-slate-400">Loading server-backed role requests…</p> : rows.length === 0 ? <p className="p-4 text-center text-[12px] text-slate-400">No role-change requests are awaiting or have recent decisions.</p> : rows.map((row) => { const data = row.data || {}; const pending = row.status === "Pending Review"; const ownRequest = data.targetUserId === currentUser.id; return <div key={row.id} className="flex flex-col gap-2 p-3.5 sm:flex-row sm:items-center"><div className="min-w-0 flex-1"><p className="text-[12px] font-semibold text-slate-800">{data.currentRole || "Current role"} → {data.requestedRole || "Requested role"}</p><p className="mt-0.5 text-[10.5px] text-slate-500">{row.notes || "No reason supplied."}{row.createdAt ? ` · ${new Date(row.createdAt).toLocaleDateString()}` : ""}</p></div><span className={`w-fit rounded-full px-2 py-1 text-[10px] font-bold ${pending ? "bg-amber-100 text-amber-800" : row.status === "Approved" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>{row.status}</span>{canDecide && pending && !ownRequest && <div className="flex gap-2"><button type="button" disabled={decideMutation.isPending} onClick={() => decideMutation.mutate({ approvalId: row.id, decision: "approve" })} className="rounded-lg bg-emerald-700 px-2.5 py-1.5 text-[10.5px] font-semibold text-white disabled:opacity-50">Approve</button><button type="button" disabled={decideMutation.isPending} onClick={() => decideMutation.mutate({ approvalId: row.id, decision: "reject" })} className="rounded-lg border border-red-100 px-2.5 py-1.5 text-[10.5px] font-semibold text-red-700 disabled:opacity-50">Reject</button></div>}<div className="flex items-center gap-1.5"><button type="button" onClick={() => markReadMutation.mutate({ notificationId: row.id })} className="rounded-md border border-slate-200 px-2 py-1 text-[10px] font-medium text-slate-600 hover:bg-slate-50">Mark Read</button><button type="button" onClick={() => dismissMutation.mutate({ notificationId: row.id })} className="rounded-md border border-slate-200 px-2 py-1 text-[10px] font-medium text-slate-500 hover:bg-slate-50">Dismiss</button></div></div>; })}</div></section>;
+1570:  const passkeyNotificationMutation = trpc.passkeySecurity.notifyRegistered.useMutation();
+1621:        await recordConfirmedTenantAudit("Passkey enrolled", "Security", session?.fullName || session?.email || "Account user", result?.friendly_name || "A confirmed passkey was added.");
