@@ -64,10 +64,10 @@ describe("authenticated profile-menu click behavior", () => {
     expect(screen.queryByRole("dialog", { name: "Account identity center" })).toBeNull();
   });
 
-  it("keeps the top-header profile trigger square and professional", () => {
-    expect(profileMenuSource).toContain("dashboard-topbar-profile-trigger group relative z-40 flex h-11 min-h-11 min-w-11 w-auto cursor-pointer items-center gap-2 rounded-none");
-    expect(dashboardStyles).toContain(".dashboard-topbar-profile-slot > div > button.dashboard-topbar-profile-trigger");
-    expect(dashboardStyles).toContain("border-radius: 0;");
+  it("keeps the top-header profile trigger borderless and professional", () => {
+    expect(profileMenuSource).toContain("dashboard-topbar-profile-trigger group relative z-40 flex h-11 min-h-11 min-w-11 w-auto cursor-pointer items-center gap-2 rounded-full border-0 bg-transparent");
+    expect(dashboardStyles).toContain(".dashboard-topbar[data-shell-color-custom=\"true\"] .dashboard-topbar-profile-trigger");
+    expect(dashboardStyles).toContain("border: 0 !important;");
   });
 
   it("keeps the topbar avatar free of a stray upload overlay while retaining menu photo upload", () => {
