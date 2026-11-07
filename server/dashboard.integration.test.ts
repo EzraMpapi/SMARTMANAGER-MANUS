@@ -82,7 +82,8 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="shrink-0"');
     expect(appSource).toContain('<BrandLogo variant="compact" priority');
     expect(indexHtmlSource).toContain('rel="icon" type="image/png" sizes="32x32" href="/brand/smart-manager-logo-32.png"');
-    expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');
+    expect(indexHtmlSource).toContain('<title>Smart Manager | Connected Business Management for Tanzania</title>');
+    expect(indexHtmlSource).toContain('applicationCategory":"BusinessApplication"');
   });
 
   it("replaces local team seeds with server-backed invitations whose company and authorization come from the verified profile", () => {

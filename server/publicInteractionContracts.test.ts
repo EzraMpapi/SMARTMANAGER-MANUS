@@ -22,6 +22,17 @@ describe("public and dashboard interaction contracts", () => {
     expect(homeSource).toContain('Passkey sign-in is not configured for this workspace.');
   });
 
+  it("exposes a conversion-focused sales journey without inventing customer proof", () => {
+    expect(homeSource).toContain('id="workflow"');
+    expect(homeSource).toContain("From the first sale to a paid invoice.");
+    expect(homeSource).toContain("into a traceable invoice");
+    expect(homeSource).toContain('id="industries"');
+    expect(homeSource).toContain('id="pricing"');
+    expect(homeSource).toContain("Request a live walkthrough");
+    expect(homeSource).toContain("Final pricing depends on workspace size");
+    expect(homeSource).not.toContain("Trusted by 10,000");
+  });
+
   it("keeps dashboard action controls connected to real navigation, command, or confirmation paths", () => {
     expect(dashboardSource).toContain('onNavigate(module.id)');
     expect(dashboardSource).toContain('setPaletteOpen(true)');

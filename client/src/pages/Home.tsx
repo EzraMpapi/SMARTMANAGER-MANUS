@@ -18,6 +18,12 @@ import {
   Moon,
   Globe,
   Fingerprint,
+  Building2,
+  GraduationCap,
+  Pill,
+  Stethoscope,
+  Landmark,
+  PlayCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "../contexts/ThemeContext";
@@ -36,6 +42,27 @@ const capabilities = [
   { title: "People & HR", description: "Coordinate employee records, attendance, leave, and performance from the same workspace.", icon: HeartPulse, tone: "sm-public-icon-tile sm-public-icon-tile--emerald bg-[#16A34A]/10 text-[#16A34A]" },
   { title: "Manufacturing", description: "Link work orders, materials, and production steps with the business data around them.", icon: Factory, tone: "sm-public-icon-tile sm-public-icon-tile--gold bg-[#C9A96E]/10 text-[#C9A96E]" },
   { title: "Support & Operations", description: "Give teams practical workflows for service, documents, and business controls.", icon: Headphones, tone: "sm-public-icon-tile sm-public-icon-tile--emerald bg-[#16A34A]/10 text-[#16A34A]" },
+];
+
+const useCases = [
+  { title: "Growing businesses", description: "Keep sales, invoices, expenses, inventory, and teams in one operating rhythm.", icon: Building2 },
+  { title: "Pharmacies", description: "Coordinate medicines, batches, expiry visibility, purchasing, dispensing, and sales.", icon: Pill },
+  { title: "Schools", description: "Bring admissions, attendance, fees, academic operations, and parent workflows together.", icon: GraduationCap },
+  { title: "Clinics", description: "Organize appointments, patient records, vitals, billing, and care-team workflows.", icon: Stethoscope },
+  { title: "Microfinance teams", description: "Track borrowers, collections, repayment schedules, savings, and portfolio signals.", icon: Landmark },
+];
+
+const workflowSteps = [
+  ["01", "Capture the opportunity", "Manage a customer, quotation, or sales order with a clear owner and line items."],
+  ["02", "Convert to an invoice", "Turn an accepted quotation or sales order into a traceable invoice without retyping the work."],
+  ["03", "Record and follow payment", "Track paid, partial, unpaid, and overdue balances from the same workspace."],
+  ["04", "See what needs attention", "Use connected dashboards and date-specific reports to act before small issues become expensive."],
+];
+
+const pricingPlans = [
+  { name: "Starter", audience: "For solo operators and small teams", emphasis: "Start with the essentials", features: ["Sales and invoicing", "Expenses and cash visibility", "Secure workspace access"] },
+  { name: "Growth", audience: "For teams ready to operate in one system", emphasis: "Build the connected business", features: ["Everything in Starter", "Inventory and people workflows", "Executive dashboards and reports"] },
+  { name: "Industry", audience: "For pharmacies, schools, clinics, and microfinance", emphasis: "Configure the workflows you depend on", features: ["Specialized industry module", "Role-aware team operations", "Guided setup and onboarding"] },
 ];
 
 const PUBLIC_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
@@ -74,6 +101,9 @@ export default function Home() {
         <div className="flex items-center gap-4">
           <nav className="sm-public-nav hidden items-center gap-8 text-[13px] font-medium text-[#94A3B8] md:flex" aria-label="Main navigation">
             <a href="#capabilities" className="transition-colors hover:text-[#C9A96E]">{t("capabilities")}</a>
+            <a href="#workflow" className="transition-colors hover:text-[#C9A96E]">How it works</a>
+            <a href="#industries" className="transition-colors hover:text-[#C9A96E]">Industries</a>
+            <a href="#pricing" className="transition-colors hover:text-[#C9A96E]">Plans</a>
             <a href="#why-smart-manager" className="transition-colors hover:text-[#C9A96E]">{t("whyUs")}</a>
             <a href="#launch" className="transition-colors hover:text-[#C9A96E]">{t("launch")}</a>
             <button type="button" onClick={() => setFeedbackOpen(true)} className="transition-colors hover:text-[#C9A96E]">Feedback</button>
@@ -219,6 +249,70 @@ export default function Home() {
                 </article>
               );
             })}
+          </div>
+        </section>
+
+        {/* Sales workflow proof */}
+        <section id="workflow" className="border-y border-white/5 bg-[#0B1120] py-24">
+          <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+            <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+              <div className="max-w-xl">
+                <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#16A34A]">A workflow people can understand</p>
+                <h2 className="mt-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">From the first sale to a paid invoice.</h2>
+                <p className="mt-6 text-[16px] leading-8 text-[#94A3B8]">Show prospects exactly where Smart Manager saves time: one connected path from customer activity to revenue visibility, with the records and ownership needed to follow up.</p>
+                <button type="button" onClick={() => setFeedbackOpen(true)} className="mt-8 inline-flex items-center gap-2 rounded-xl border border-[#16A34A]/30 bg-[#16A34A]/10 px-5 py-3 text-[13px] font-bold text-[#D1FAE5] transition-colors hover:bg-[#16A34A]/20"><PlayCircle size={16} /> Request a live walkthrough</button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {workflowSteps.map(([number, title, description]) => (
+                  <article key={number} className="rounded-2xl border border-white/8 bg-[#131C31] p-5 transition-transform hover:-translate-y-1">
+                    <span className="font-mono text-[12px] font-bold text-[#C9A96E]">{number}</span>
+                    <h3 className="mt-5 text-[16px] font-bold text-white font-heading">{title}</h3>
+                    <p className="mt-2 text-[13px] leading-6 text-[#94A3B8]">{description}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Industry fit */}
+        <section id="industries" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10">
+          <div className="max-w-2xl">
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#C9A96E]">Built around real operating teams</p>
+            <h2 className="mt-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">Start broad. Configure for the business you run.</h2>
+            <p className="mt-6 text-[16px] leading-8 text-[#94A3B8]">Use the core workspace first, then add the industry workflows that match your team. No disconnected demo pages—just a route from the public promise into the product.</p>
+          </div>
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {useCases.map(({ title, description, icon: Icon }) => (
+              <article key={title} className="rounded-2xl border border-white/6 bg-[#131C31] p-5 transition-all hover:-translate-y-1 hover:border-[#C9A96E]/30">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#C9A96E]/10 text-[#C9A96E]"><Icon size={20} /></span>
+                <h3 className="mt-5 text-[15px] font-bold text-white font-heading">{title}</h3>
+                <p className="mt-2 text-[12.5px] leading-5 text-[#94A3B8]">{description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section id="pricing" className="border-y border-white/5 bg-[#131C31]/35 py-24">
+          <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+            <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+              <div className="max-w-2xl"><p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#16A34A]">Simple path to paid adoption</p><h2 className="mt-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">Choose the level of connectedness you need.</h2><p className="mt-5 text-[15px] leading-7 text-[#94A3B8]">Start with a guided conversation so your plan reflects your team size, modules, and onboarding needs. Pricing can evolve with the value you activate.</p></div>
+              <button type="button" onClick={() => setFeedbackOpen(true)} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#C9A96E] px-5 py-3 text-[13px] font-bold text-[#0B1120] shadow-lg transition-colors hover:bg-[#D4B87F]"><MessageSquarePlus size={15} /> Talk about your plan</button>
+            </div>
+            <div className="mt-12 grid gap-5 lg:grid-cols-3">
+              {pricingPlans.map((plan, index) => (
+                <article key={plan.name} className={`relative rounded-2xl border p-6 ${index === 1 ? "border-[#C9A96E]/50 bg-[#C9A96E]/[0.08] shadow-[0_0_36px_rgba(201,169,110,.08)]" : "border-white/8 bg-[#131C31]"}`}>
+                  {index === 1 && <span className="absolute right-5 top-5 rounded-full bg-[#C9A96E] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider text-[#0B1120]">Most popular</span>}
+                  <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#C9A96E]">{plan.name}</p>
+                  <h3 className="mt-5 text-2xl font-extrabold text-white font-heading">{plan.emphasis}</h3>
+                  <p className="mt-2 min-h-10 text-[13px] text-[#94A3B8]">{plan.audience}</p>
+                  <ul className="mt-6 space-y-3 border-t border-white/8 pt-5">{plan.features.map((feature) => <li key={feature} className="flex items-start gap-2 text-[13px] text-[#CBD5E1]"><Check size={15} className="mt-0.5 shrink-0 text-[#16A34A]" />{feature}</li>)}</ul>
+                  <button type="button" onClick={() => setFeedbackOpen(true)} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-[12px] font-bold text-white transition-colors hover:bg-white/10">Discuss {plan.name} <ArrowRight size={14} /></button>
+                </article>
+              ))}
+            </div>
+            <p className="mt-6 text-center text-[11px] text-[#64748B]">Final pricing depends on workspace size, enabled modules, implementation, and support requirements. No pricing claim is hidden behind the product demo.</p>
           </div>
         </section>
 
