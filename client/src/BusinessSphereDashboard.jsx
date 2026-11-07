@@ -10533,21 +10533,25 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
     setTimeout(() => win.focus(), 200);
   }
 
-  async function convertQuoteToInvoice(quote) {
+  async function convertDocumentToInvoice(source) {
     const dueD = new Date(TODAY); dueD.setDate(dueD.getDate()+30);
+    const isOrder = source.kind === "orders";
+    const sourceLabel = isOrder ? "sales order" : "quotation";
+    const sourceTable = isOrder ? "sales_orders" : "sales_quotations";
     const newInv = {
       id: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
-      customer: quote.customer, date: TODAY_STR,
+      customer: source.customer, date: TODAY_STR,
       dueDate: dueD.toISOString().slice(0,10),
-      items: quote.items ? JSON.parse(JSON.stringify(quote.items)) : [],
+      items: source.items ? JSON.parse(JSON.stringify(source.items)) : [],
       status: "Unpaid", amountPaid: 0, payments: [],
-      quotationRef: quote.id,
-      owner: quote.owner || currentUser.name, kind: "invoices",
+      quotationRef: isOrder ? undefined : source.id,
+      orderRef: isOrder ? source.id : undefined,
+      owner: source.owner || currentUser.name, kind: "invoices",
     };
 
     if (requiresConfirmedPersistence()) {
-      if (!quote.dbId) {
-        notify("This quotation is not linked to a confirmed server record. Refresh Sales before converting it.", "error");
+      if (!source.dbId) {
+        notify(`This ${sourceLabel} is not linked to a confirmed server record. Refresh Sales before converting it.`, "error");
         return false;
       }
       let invoiceHeader = null;
@@ -10559,6 +10563,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
           due_date: newInv.dueDate,
           status: newInv.status,
           amount_paid: 0,
+          ...(isOrder ? { order_id: source.dbId } : {}),
         }).single().run();
         if (!invoiceHeader?.id) throw buildConfirmedMutationError({ table: "sales_invoices", method: "POST", status: 200 });
         if (newInv.items.length) {
@@ -10571,25 +10576,31 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
             sort_order: index,
           }))).run();
         }
-        await sb("sales_quotations").eq("id", quote.dbId).update({ status: "Converted" }).single().run();
+        await sb(sourceTable).eq("id", source.dbId).update({ status: "Converted" }).single().run();
       } catch (error) {
         if (invoiceHeader?.id) {
           try { await sb("sales_invoices").eq("id", invoiceHeader.id).delete().single().run(); } catch (_cleanupError) { /* Live reload below is the truthful source of record state. */ }
         }
         await Promise.all([invoices.reload?.(), quotations.reload?.()].filter(Boolean));
-        notify(persistenceFailureMessage("Converting the quotation", error), "error");
+        notify(persistenceFailureMessage(`Converting the ${sourceLabel}`, error), "error");
         return false;
       }
       invoices.setRows((prev) => [{ ...newInv, dbId: invoiceHeader.id }, ...prev]);
-      quotations.setRows((prev) => prev.map((document) => (document.id === quote.id ? { ...document, status: "Converted" } : document)));
+      const sourceHook = isOrder ? orders : quotations;
+      sourceHook.setRows((prev) => prev.map((document) => (document.id === source.id ? { ...document, status: "Converted" } : document)));
     } else {
       invoices.setRows((prev) => [newInv, ...prev]);
-      quotations.setRows((prev) => prev.map((document) => (document.id === quote.id ? { ...document, status: "Converted" } : document)));
+      const sourceHook = isOrder ? orders : quotations;
+      sourceHook.setRows((prev) => prev.map((document) => (document.id === source.id ? { ...document, status: "Converted" } : document)));
     }
 
-    notify("Invoice " + newInv.id + " created from " + quote.id);
-    logAudit("Quote to Invoice", "Sales", currentUser.name, quote.id + " to " + newInv.id);
+    notify("Invoice " + newInv.id + " created from " + source.id);
+    logAudit(`${isOrder ? "Sales Order" : "Quote"} to Invoice`, "Sales", currentUser.name, source.id + " to " + newInv.id);
     return true;
+  }
+
+  async function convertQuoteToInvoice(quote) {
+    return convertDocumentToInvoice({ ...quote, kind: "quotations" });
   }
 
   async function addDocument(form) {
@@ -10967,7 +10978,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
           onAdvance={(id, next) => advanceDocument(selected.kind, id, next)}
           onDelete={(id) => deleteDocument(selected.kind, id)}
           onPrint={printInvoice}
-          onConvertToInvoice={convertQuoteToInvoice}
+          onConvertToInvoice={convertDocumentToInvoice}
           onRecordPayment={async (id, payment) => {
             const patch = await recordPayment(invoices, id, payment, `${currentUser.name} (${currentUser.role})`);
             if (patch) setSelected((s) => (s && s.id === id ? { ...s, ...patch } : s));
@@ -11334,10 +11345,10 @@ ${co.name||"BusinessSphere"}`);
               </span>
             )}
           </div>
-          {doc.kind === "quotations" && (
+          {(doc.kind === "quotations" || doc.kind === "orders") && (
             <button type="button" disabled={actionSaving} onClick={async () => { const converted = await runDocumentAction(() => onConvertToInvoice?.(doc)); if (converted) onClose(); }}
               className="w-full mt-2 py-2.5 rounded-xl text-[13px] font-bold border-2 border-[#16A34A] text-[#16A34A] hover:bg-[#F0FDF4] transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
-              <ArrowRight size={14}/> {actionSaving ? "Converting…" : "Convert to Invoice"}
+              <ArrowRight size={14}/> {actionSaving ? "Converting…" : `Convert ${doc.kind === "orders" ? "Order" : "Quotation"} to Invoice`}
             </button>
           )}
           {onDelete && <ConfirmDeleteButton label={`Delete ${kindLabel.toLowerCase()}`} onConfirm={() => onDelete(doc.id)} />}

@@ -34,6 +34,16 @@ describe("Sales interaction and persistence contracts", () => {
     expect(salesSource).not.toContain("<button className=\"flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors\">\n              <Printer");
   });
 
+  it("converts confirmed quotations and sales orders into linked invoices", () => {
+    expect(salesSource).toContain("async function convertDocumentToInvoice(source)");
+    expect(salesSource).toContain('const sourceTable = isOrder ? "sales_orders" : "sales_quotations";');
+    expect(salesSource).toContain('...(isOrder ? { order_id: source.dbId } : {})');
+    expect(salesSource).toContain('await sb(sourceTable).eq("id", source.dbId).update({ status: "Converted" })');
+    expect(salesSource).toContain('(doc.kind === "quotations" || doc.kind === "orders")');
+    expect(salesSource).toContain('Convert ${doc.kind === "orders" ? "Order" : "Quotation"} to Invoice');
+    expect(salesSource).toContain('onConvertToInvoice={convertDocumentToInvoice}');
+  });
+
   it("shows authorization and offline denials as recoverable server outcomes without weakening persistence requirements", () => {
     expect(dashboardSource).toContain("was denied by your workspace permissions. The server did not save this change.");
     expect(dashboardSource).toContain("could not be sent because this browser is offline. No server change was made.");
