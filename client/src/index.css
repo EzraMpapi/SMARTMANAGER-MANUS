@@ -4844,3 +4844,120 @@
   background: transparent !important;
   color: currentColor !important;
 }
+
+
+/* Professional icon system: consistent optical sizing, stroke weight, and
+   semantic states across the command header and navigation surfaces. */
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-icon-button,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-notifications,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-reference-control,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-menu-control {
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  color: var(--sm-slate) !important;
+  transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-icon-button > svg,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search > svg,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-notifications > svg,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-reference-control > svg,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-menu-control > svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: currentColor !important;
+  stroke-width: 2.1;
+}
+
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-icon-button:hover,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search:hover,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-notifications:hover,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-reference-control:hover,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-menu-control:hover {
+  color: var(--sm-brand-strong) !important;
+  background: color-mix(in srgb, var(--sm-brand) 7%, transparent) !important;
+  transform: translateY(-1px);
+}
+
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-icon-button:active,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search:active,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-notifications:active,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-reference-control:active,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-menu-control:active {
+  transform: translateY(0) scale(.96);
+}
+
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-nav-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: .65rem;
+  background: color-mix(in srgb, var(--sm-info) 9%, var(--sm-surface)) !important;
+  color: var(--sm-info) !important;
+  box-shadow: none !important;
+  transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-nav-icon > svg {
+  width: 1rem;
+  height: 1rem;
+  color: currentColor !important;
+  stroke-width: 2.05;
+}
+
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-nav-item:hover .dashboard-sidebar-nav-icon,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-nav-item:focus-visible .dashboard-sidebar-nav-icon {
+  background: color-mix(in srgb, var(--sm-brand) 12%, var(--sm-surface)) !important;
+  color: var(--sm-brand) !important;
+  transform: translateY(-1px);
+}
+
+.dashboard-sidebar[data-shell-color-custom="true"] button[aria-current="page"] .dashboard-sidebar-nav-icon {
+  background: var(--sm-brand) !important;
+  color: var(--sm-surface) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sm-brand) 14%, transparent) !important;
+}
+
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-group-toggle > svg,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-footer svg {
+  width: 1rem;
+  height: 1rem;
+  color: currentColor !important;
+  stroke-width: 2.05;
+}
+
+.dashboard-mobile-nav > button {
+  min-height: 3.25rem;
+  color: var(--sm-slate) !important;
+  transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.dashboard-mobile-nav > button > svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  color: currentColor !important;
+  stroke-width: 2.1;
+}
+
+.dashboard-mobile-nav > button:hover,
+.dashboard-mobile-nav > button:focus-visible,
+.dashboard-mobile-nav > button[aria-current="page"] {
+  color: var(--sm-brand) !important;
+  background: color-mix(in srgb, var(--sm-brand) 7%, var(--sm-surface)) !important;
+}
+
+.dashboard-mobile-nav > button[aria-current="page"] > svg {
+  stroke-width: 2.35;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-icon-button,
+  .dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search,
+  .dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-notifications,
+  .dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-reference-control,
+  .dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-menu-control,
+  .dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-nav-icon,
+  .dashboard-mobile-nav > button {
+    transition: none;
+  }
+}
