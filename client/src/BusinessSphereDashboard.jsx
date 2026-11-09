@@ -1917,6 +1917,87 @@ function mapAuditLogRow(r) {
   return { id: r.id, action: r.action, module: r.module, actor: r.actor, details: r.details || "", timestamp: r.created_at };
 }
 
+function OwnerRecordHistory({ currentUser }) {
+  const role = String(currentUser?.role || "").trim().toLowerCase();
+  const canRead = ["owner", "organization owner", "ceo", "super administrator", "system administrator", "auditor"].includes(role);
+  const history = useCompanyTable("record_history", [], {
+    select: "id,operation,table_name,record_id,actor_name,actor_role,old_data,new_data,changed_fields,created_at",
+    order: { col: "created_at", ascending: false },
+  });
+  const [query, setQuery] = useState("");
+  const [operation, setOperation] = useState("All");
+  const rows = rowsOf(history);
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return rows.filter((row) => {
+      if (operation !== "All" && row.operation !== operation) return false;
+      if (!needle) return true;
+      return [row.table_name, row.record_id, row.actor_name, row.actor_role, row.operation, JSON.stringify(row.changed_fields || [])]
+        .some((value) => String(value || "").toLowerCase().includes(needle));
+    }).slice(0, 200);
+  }, [rows, query, operation]);
+
+  if (!canRead) return null;
+
+  const operationStyle = {
+    INSERT: "bg-emerald-50 text-emerald-700",
+    UPDATE: "bg-amber-50 text-amber-700",
+    DELETE: "bg-rose-50 text-rose-700",
+  };
+  const snapshot = (value) => value ? JSON.stringify(value, null, 2) : "No snapshot";
+
+  return (
+    <section className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm" aria-label="Owner record history">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <History size={17} className="text-[#16A34A]" />
+            <h3 className="text-[15px] font-semibold text-[#111827]">Owner Record History</h3>
+          </div>
+          <p className="mt-1 text-[12px] leading-5 text-slate-500">Immutable workspace history. Deleted records remain available here with their last confirmed snapshot.</p>
+        </div>
+        <div className="flex items-center gap-2 text-[10.5px] text-slate-400"><Lock size={13} /> Owner and audit access only</div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <label className="relative min-w-[220px] flex-1">
+          <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search table, record, or actor" aria-label="Search record history" className="h-9 w-full rounded-lg border border-slate-200 pl-9 pr-3 text-[12px] outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100" />
+        </label>
+        <select value={operation} onChange={(event) => setOperation(event.target.value)} aria-label="Filter record history by operation" className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-emerald-400">
+          <option>All</option><option>INSERT</option><option>UPDATE</option><option>DELETE</option>
+        </select>
+        <button type="button" onClick={() => history.reload()} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-[12px] font-semibold text-slate-600 hover:bg-slate-50"><RefreshCw size={13} className={history.refreshing ? "animate-spin" : ""} /> Refresh</button>
+      </div>
+      <div className="overflow-hidden rounded-xl border border-slate-100">
+        {history.loading && <p className="px-4 py-8 text-center text-[12px] text-slate-400">Loading immutable history…</p>}
+        {!history.loading && history.unavailable && <p className="px-4 py-8 text-center text-[12px] text-slate-500">History is not available in this workspace yet.</p>}
+        {!history.loading && !history.unavailable && visible.length === 0 && <p className="px-4 py-8 text-center text-[12px] text-slate-400">No matching record history.</p>}
+        {!history.loading && visible.map((row) => (
+          <div key={row.id} className="border-b border-slate-100 p-3 last:border-0">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${operationStyle[row.operation] || "bg-slate-100 text-slate-600"}`}>{row.operation}</span>
+                <span className="truncate text-[12px] font-semibold text-slate-800">{row.table_name}</span>
+                {row.record_id && <span className="truncate font-mono text-[10px] text-slate-400">{row.record_id}</span>}
+              </div>
+              <time className="shrink-0 text-[10px] text-slate-400" dateTime={row.created_at}>{row.created_at ? new Date(row.created_at).toLocaleString() : "—"}</time>
+            </div>
+            <p className="mt-1 text-[10.5px] text-slate-500">{row.actor_name || "System"}{row.actor_role ? ` · ${row.actor_role}` : ""}{row.changed_fields?.length ? ` · changed: ${row.changed_fields.join(", ")}` : ""}</p>
+            <details className="mt-2 text-[10.5px]">
+              <summary className="cursor-pointer font-semibold text-emerald-700">View retained snapshot</summary>
+              <div className="mt-2 grid gap-2 md:grid-cols-2">
+                {row.old_data && <pre className="max-h-48 overflow-auto rounded-lg bg-slate-950 p-3 text-[10px] leading-4 text-slate-200">{snapshot(row.old_data)}</pre>}
+                {row.new_data && <pre className="max-h-48 overflow-auto rounded-lg bg-slate-950 p-3 text-[10px] leading-4 text-emerald-200">{snapshot(row.new_data)}</pre>}
+              </div>
+            </details>
+          </div>
+        ))}
+      </div>
+      {!history.loading && !history.unavailable && <p className="text-[10.5px] text-slate-400">Showing {visible.length} of {rows.length} retained events. History is tenant-scoped and append-only.</p>}
+    </section>
+  );
+}
+
 function mapScheduledReportRow(r) {
   return {
     id: r.id, dbId: r.id, reportType: r.report_type, frequency: r.frequency, format: r.format,
@@ -2240,6 +2321,7 @@ function ActivityStream({ currentUser }) {
           );
         })}
       </div>
+      <OwnerRecordHistory currentUser={currentUser} />
     </div>
   );
 }
