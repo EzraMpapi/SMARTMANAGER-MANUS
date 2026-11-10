@@ -43070,6 +43070,8 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
         className="dashboard-topbar-notifications relative flex h-10 w-10 items-center justify-center rounded-lg border-0 bg-transparent text-slate-500 shadow-none transition-colors hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
         aria-label={"Notifications" + (unreadCount ? " (" + unreadCount + " unread)" : "")}
         aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-controls="workspace-notification-menu"
       >
         <Bell size={17} strokeWidth={1.75} />
         {unreadCount > 0 && (
@@ -43081,16 +43083,19 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
         <>
           <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
           <div
-            className="absolute right-0 top-full z-40 mt-2 max-h-[calc(100dvh-5.5rem)] w-[min(92vw,360px)] overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-lg"
+            id="workspace-notification-menu"
+            role="dialog"
+            aria-label="Workspace notifications"
+            className="dashboard-notification-menu absolute right-0 top-full z-40 mt-2 max-h-[calc(100dvh-5.5rem)] w-[min(92vw,360px)] overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg"
             style={{ animation: "toastIn .15s ease-out" }}
           >
-            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-[13px] font-semibold text-[#111827]">Notifications</h3>
+            <div className="dashboard-notification-menu-header flex items-center justify-between border-b border-slate-100 px-4 py-3.5">
+              <div className="min-w-0"><p className="text-[9px] font-bold uppercase tracking-[.16em] text-emerald-700">Workspace pulse</p><h3 className="text-[13px] font-semibold text-[#111827]">Notifications</h3></div>
               {unreadCount > 0 && <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700">{unreadCount} unread</span>}
             </div>
-            <div className="max-h-[min(52dvh,360px)] overscroll-contain overflow-y-auto">
+            <div className="dashboard-notification-list max-h-[min(52dvh,360px)] overscroll-contain overflow-y-auto" role="list">
               {alerts.length === 0 ? (
-                <div className="px-4 py-8 text-center">
+                <div className="dashboard-notification-empty px-4 py-8 text-center">
                   <CheckCircle2 size={20} className="text-[#16A34A] mx-auto mb-2" />
                   <p className="text-[12.5px] text-slate-500">All clear — nothing needs attention right now.</p>
                 </div>
@@ -43101,9 +43106,9 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
                     <button
                       key={a.id}
                       onClick={() => { markRead(a.id); onNavigate(a.target); setOpen(false); }}
-                      className={`flex min-h-12 w-full items-start gap-3 border-b border-slate-50 px-3 py-3 text-left transition-colors hover:bg-slate-50/70 sm:px-4 last:border-0 ${readIds.has(a.id) ? "opacity-60" : "bg-rose-50/35"}`}
+                      className={`dashboard-notification-item group flex min-h-12 w-full items-start gap-3 border-b border-slate-50 px-3 py-3 text-left transition-colors hover:bg-slate-50/70 sm:px-4 last:border-0 ${readIds.has(a.id) ? "is-read opacity-60" : "is-unread bg-rose-50/35"}`}
                     >
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${a.color}14` }}>
+                      <div className="dashboard-notification-item-icon grid h-9 w-9 shrink-0 place-items-center rounded-xl" style={{ backgroundColor: `${a.color}14` }}>
                         <Icon size={15} style={{ color: a.color }} />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -43117,10 +43122,10 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
               )}
             </div>
             {/* Daily Briefing quick-open */}
-            <div className="px-3 py-2.5 border-t border-slate-100">
+            <div className="dashboard-notification-menu-footer border-t border-slate-100 px-3 py-3">
               <button
                 onClick={() => { setOpen(false); if(window.__openDailyBrief) window.__openDailyBrief(); }}
-                className="w-full flex items-center justify-center gap-1.5 text-[12px] font-bold text-white py-2 rounded-xl bg-[#0D2214] hover:bg-[#1a3a2a] transition-colors">
+                className="dashboard-notification-brief-button flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#0D2214] py-2.5 text-[11.5px] font-bold text-white shadow-sm transition-colors hover:bg-[#1a3a2a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50">
                 📊 View Today Daily Brief
               </button>
             </div>
