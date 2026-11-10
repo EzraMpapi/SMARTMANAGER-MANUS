@@ -65,6 +65,14 @@ describe("SMART MANAGER UI/UX transformation contract", () => {
     expect(shell).toContain('Recent searches');
   });
 
+  it("keeps dark icon states on the semantic high-contrast token path", () => {
+    expect(css).toContain('.dark .dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-icon-button:hover');
+    expect(css).toContain('color: var(--sm-focus) !important;');
+    expect(css).toContain('.dark .dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-nav-icon');
+    expect(css).toContain('color: var(--sm-info-surface) !important;');
+    expect(css).toContain('.dark .dashboard-mobile-nav > button[aria-current="page"]');
+  });
+
   it("documents the full mandate and its non-negotiable safety boundaries", () => {
     for (const heading of [
       "## Tokens",
