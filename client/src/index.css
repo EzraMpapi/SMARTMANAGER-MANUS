@@ -5194,3 +5194,123 @@
   .sm-profile-content .flex.flex-col-reverse.sm\:flex-row { width: 100%; }
   .sm-profile-content .flex.flex-col-reverse.sm\:flex-row button { width: 100%; }
 }
+
+/* Professional profile layer: identity-led hierarchy with restrained surfaces. */
+.sm-profile-page-heading h1 { color: var(--sm-ink); }
+.sm-profile-page-heading > div:first-child::after {
+  display: block;
+  width: 2.5rem;
+  height: .2rem;
+  margin-top: .7rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sm-brand), var(--sm-emerald));
+  content: "";
+}
+.sm-profile-identity-hero {
+  box-shadow: 0 24px 64px rgba(11, 93, 59, .2), inset 0 1px 0 rgba(255,255,255,.12);
+}
+.sm-profile-identity-hero::after {
+  position: absolute;
+  right: 8%;
+  bottom: 0;
+  left: 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent);
+  content: "";
+  pointer-events: none;
+}
+.sm-profile-hero-orb { transition: transform .45s var(--sm-ease-out), opacity .3s ease; }
+.sm-profile-identity-hero:hover .sm-profile-hero-orb-primary { transform: translate(-8px, 6px) scale(1.04); }
+.sm-profile-identity-hero:hover .sm-profile-hero-orb-secondary { transform: translate(6px, -4px) scale(1.03); }
+.sm-profile-identity-summary > .relative {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .18), 0 0 0 5px rgba(255,255,255,.08);
+}
+.sm-profile-identity-kicker {
+  margin-bottom: .28rem;
+  color: rgba(209, 250, 229, .82);
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.sm-profile-summary-grid { grid-auto-rows: 1fr; }
+.sm-profile-summary-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 5.9rem;
+  border-color: rgba(255,255,255,.18) !important;
+  background: linear-gradient(145deg, rgba(255,255,255,.14), rgba(255,255,255,.06)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+  transition: transform .18s var(--sm-ease-out), background .18s ease, border-color .18s ease;
+}
+.sm-profile-summary-card::after {
+  position: absolute;
+  right: -1rem;
+  bottom: -1.5rem;
+  width: 4rem;
+  height: 4rem;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 999px;
+  content: "";
+}
+.sm-profile-summary-card:hover {
+  border-color: rgba(167,243,208,.42) !important;
+  background: linear-gradient(145deg, rgba(255,255,255,.2), rgba(255,255,255,.08)) !important;
+  transform: translateY(-2px);
+}
+.sm-profile-summary-card-progress .h-1\.5 { box-shadow: 0 0 12px rgba(167,243,208,.42); }
+.sm-profile-signout { box-shadow: 0 8px 18px rgba(0,0,0,.12); }
+.sm-profile-signout:focus-visible,
+.sm-profile-hero-actions button:focus-visible { outline: 2px solid #a7f3d0; outline-offset: 3px; }
+.sm-profile-panel,
+.sm-profile-info-item {
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s var(--sm-ease-out), background-color .18s ease;
+}
+.sm-profile-panel:hover {
+  border-color: rgba(16,185,129,.22);
+  box-shadow: 0 16px 34px rgba(15,23,42,.08);
+}
+.sm-profile-panel-primary { position: relative; overflow: hidden; }
+.sm-profile-panel-primary::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--sm-brand), var(--sm-emerald));
+  content: "";
+}
+.sm-profile-panel-security { background: linear-gradient(145deg, #fff, #f7fcfa) !important; }
+.sm-profile-info-item {
+  border-color: rgba(226,232,240,.8) !important;
+  background: linear-gradient(145deg, rgba(248,250,252,.9), rgba(241,245,249,.55)) !important;
+}
+.sm-profile-info-item:hover {
+  border-color: rgba(110,231,183,.62) !important;
+  background: linear-gradient(145deg, rgba(236,253,245,.9), rgba(248,250,252,.9)) !important;
+  transform: translateY(-1px);
+}
+.sm-profile-info-item > span {
+  border: 1px solid rgba(226,232,240,.85);
+  transition: background-color .18s ease, color .18s ease, transform .18s ease;
+}
+.sm-profile-info-item:hover > span {
+  background: #ecfdf5;
+  color: #047857;
+  transform: scale(1.04);
+}
+.sm-profile-section-heading h2 { color: var(--sm-ink); }
+.sm-profile-section-heading > div > p:first-child { color: var(--sm-brand); }
+@media (max-width: 639px) {
+  .sm-profile-identity-kicker { font-size: .56rem; }
+  .sm-profile-summary-card { min-height: 5.2rem; }
+  .sm-profile-panel-primary::before { right: 1rem; bottom: auto; left: 1rem; width: auto; height: 2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sm-profile-hero-orb,
+  .sm-profile-summary-card,
+  .sm-profile-panel,
+  .sm-profile-info-item,
+  .sm-profile-info-item > span { transition: none !important; }
+}
