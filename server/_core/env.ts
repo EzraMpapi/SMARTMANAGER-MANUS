@@ -9,6 +9,7 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  assistantModel: process.env.SMART_ASSISTANT_MODEL?.trim() || "gpt-5-mini",
   supabaseUrl: firstNonEmptyEnv(process.env.SUPABASE_URL, process.env.VITE_SUPABASE_URL),
   supabaseAnonKey: firstNonEmptyEnv(process.env.SUPABASE_ANON_KEY, process.env.VITE_SUPABASE_ANON_KEY),
   supabaseSecretKey: process.env.SUPABASE_SECRET_KEY ?? "",
