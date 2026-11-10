@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient, type Session } from "@supabase/supabase-js";
 import type { PublicSupabaseConfig } from "./publicSupabaseConfig";
+import { isJwtAccessToken } from "./authSessionStorage";
 
 let client: SupabaseClient | null = null;
 let clientKey = "";
@@ -9,6 +10,20 @@ export function getSupabaseAuthClient(config: PublicSupabaseConfig) {
   if (!config.url || !config.anonKey) return null;
   const nextKey = `${config.url}|${config.anonKey}`;
   if (!client || clientKey !== nextKey) {
+    // A prior build could have persisted a plain or truncated token. Remove
+    // only that invalid local session before Supabase attempts to parse it.
+    // This prevents "Expected 3 parts in JWT; got 1" during getSession().
+    if (typeof window !== "undefined") {
+      try {
+        const raw = window.localStorage.getItem("smart-manager-auth");
+        const stored = raw ? JSON.parse(raw) : null;
+        if (stored?.access_token && !isJwtAccessToken(stored.access_token)) {
+          window.localStorage.removeItem("smart-manager-auth");
+        }
+      } catch {
+        window.localStorage.removeItem("smart-manager-auth");
+      }
+    }
     client = createClient(config.url, config.anonKey, {
       auth: {
         autoRefreshToken: true,

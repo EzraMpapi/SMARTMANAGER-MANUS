@@ -55,6 +55,7 @@ import { buildConnectedWorkspaceCsv, connectedWorkspaceExportFilename } from "./
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { AuthContext, useAuthContext } from "./contexts/AuthContext";
 import { fetchWithSupabaseAuthRecovery, getSupabaseAuthClient, isDefinitiveSupabaseAuthFailure, refreshSupabaseSession } from "./lib/supabaseAuthClient";
+import { isJwtAccessToken } from "./lib/authSessionStorage";
 import { DashboardLayoutAnalytics } from "./components/DashboardLayoutAnalytics"
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
@@ -202,7 +203,11 @@ function authDebug(event, detail = {}) {
 
 function getStoredAccessToken() {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) || window.sessionStorage.getItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+  const token = window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) || window.sessionStorage.getItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+  if (!token || isJwtAccessToken(token)) return token;
+  window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  window.sessionStorage.removeItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+  return null;
 }
 
 function getStoredRefreshToken() {
@@ -269,9 +274,9 @@ async function activeSupabaseAccessToken(fallback = null) {
       // Use the explicit short-lived token or legacy migration token below.
     }
   }
-  if (fallback && fallback !== SUPABASE_ANON_KEY) return fallback;
+  if (isJwtAccessToken(fallback) && fallback !== SUPABASE_ANON_KEY) return fallback;
   const stored = getStoredAccessToken();
-  return stored && stored !== SUPABASE_ANON_KEY ? stored : null;
+  return isJwtAccessToken(stored) && stored !== SUPABASE_ANON_KEY ? stored : null;
 }
 
 async function authHeaders(fallbackToken = null) {

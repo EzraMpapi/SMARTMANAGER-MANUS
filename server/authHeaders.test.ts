@@ -23,12 +23,12 @@ describe("shared bearer-token extraction", () => {
     }));
 
     const context = await createContext({
-      req: { headers: { authorization: "Bearer stale-manus-session", "x-supabase-authorization": "Bearer current-supabase-token" } } as any,
+      req: { headers: { authorization: "Bearer stale-manus-session", "x-supabase-authorization": "Bearer current.supabase-token.signature" } } as any,
       res: {} as any,
     });
 
     expect(context.user?.openId).toBe("sup_supabase-user-priority");
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/auth/v1/user"), expect.objectContaining({ headers: expect.objectContaining({ authorization: "Bearer current-supabase-token" }) }));
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/auth/v1/user"), expect.objectContaining({ headers: expect.objectContaining({ authorization: "Bearer current.supabase-token.signature" }) }));
   });
 
   it("bridges a Supabase custom authorization header into the protected context fallback", async () => {
@@ -38,11 +38,11 @@ describe("shared bearer-token extraction", () => {
     }));
 
     const context = await createContext({
-      req: { headers: { "x-supabase-authorization": "Bearer custom-header-token" } } as any,
+      req: { headers: { "x-supabase-authorization": "Bearer custom.header-token.signature" } } as any,
       res: {} as any,
     });
 
     expect(context.user?.openId).toBe("sup_supabase-user-custom-header");
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/auth/v1/user"), expect.objectContaining({ headers: expect.objectContaining({ authorization: "Bearer custom-header-token" }) }));
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/auth/v1/user"), expect.objectContaining({ headers: expect.objectContaining({ authorization: "Bearer custom.header-token.signature" }) }));
   });
 });
