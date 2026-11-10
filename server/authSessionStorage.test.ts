@@ -27,12 +27,12 @@ describe("stored SMART MANAGER Supabase session access", () => {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: {
-        localStorage: storage({ bs_access_token: "persistent-access" }),
-        sessionStorage: storage({ bs_session_access_token: "session-access" }),
+        localStorage: storage({ bs_access_token: "persistent.header.signature" }),
+        sessionStorage: storage({ bs_session_access_token: "session.header.signature" }),
       },
     });
 
-    expect(readStoredAccessToken()).toBe("persistent-access");
+    expect(readStoredAccessToken()).toBe("persistent.header.signature");
   });
 
   it("returns a session-scoped access token even when no refresh token is available", () => {
@@ -40,11 +40,11 @@ describe("stored SMART MANAGER Supabase session access", () => {
       configurable: true,
       value: {
         localStorage: storage(),
-        sessionStorage: storage({ bs_session_access_token: "session-access" }),
+        sessionStorage: storage({ bs_session_access_token: "session.header.signature" }),
       },
     });
 
-    expect(readStoredAccessToken()).toBe("session-access");
+    expect(readStoredAccessToken()).toBe("session.header.signature");
     expect(readStoredAuthSession()).toBeNull();
   });
 });

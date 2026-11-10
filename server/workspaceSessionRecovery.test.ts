@@ -24,18 +24,18 @@ describe("workspace session recovery", () => {
   it("refreshes a recoverably expired access token once before retrying the tenant RPC", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(response(401, { message: "JWT expired" }))
-      .mockResolvedValueOnce(response(200, { access_token: "fresh-access", refresh_token: "fresh-refresh" }))
+      .mockResolvedValueOnce(response(200, { access_token: "fresh.header.signature", refresh_token: "fresh-refresh" }))
       .mockResolvedValueOnce(response(200, { id: "tenant-1", name: "Kilimanjaro Traders" }));
     vi.stubGlobal("fetch", fetchMock);
     vi.stubGlobal("window", { localStorage: storage({ bs_refresh_token: "refresh-token" }), sessionStorage: storage(), dispatchEvent: vi.fn() });
 
-    const result = await callWorkspaceRpcWithSessionRefresh("join_company_with_code", { p_join_code: "JOIN01" }, "expired-access");
+    const result = await callWorkspaceRpcWithSessionRefresh("join_company_with_code", { p_join_code: "JOIN01" }, "expired.header.signature");
 
     expect(result.data).toMatchObject({ id: "tenant-1" });
-    expect(result.accessToken).toBe("fresh-access");
+    expect(result.accessToken).toBe("fresh.header.signature");
     expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe("Bearer expired-access");
-    expect(fetchMock.mock.calls[2][1].headers.Authorization).toBe("Bearer fresh-access");
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe("Bearer expired.header.signature");
+    expect(fetchMock.mock.calls[2][1].headers.Authorization).toBe("Bearer fresh.header.signature");
   });
 
   it("does not classify tenant authorization and business-rule errors as expired sessions", () => {
@@ -71,7 +71,7 @@ describe("workspace session recovery", () => {
     vi.stubGlobal("fetch", fetchMock);
     vi.stubGlobal("window", { localStorage: storage({ bs_refresh_token: "invalid-refresh" }), sessionStorage: storage(), dispatchEvent: vi.fn() });
 
-    await expect(callWorkspaceRpcWithSessionRefresh("join_company_with_code", {}, "expired-access"))
+    await expect(callWorkspaceRpcWithSessionRefresh("join_company_with_code", {}, "expired.header.signature"))
       .rejects.toMatchObject({ code: "SESSION_REFRESH_FAILED" });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
