@@ -39176,6 +39176,85 @@ const AI_PERSONAS = [
   },
 ];
 
+// One-click prompts for the recurring questions owners ask most often. These
+// remain prompts (not direct mutations): the assistant gets the live scoped
+// snapshot, explains its evidence, and any proposed business action still
+// follows the existing approval workflow.
+const AI_QUICK_ACTIONS = [
+  {
+    id: "executive-brief",
+    label: "Executive brief",
+    description: "A fast health check with priorities",
+    icon: Gauge,
+    color: "#16A34A",
+    scopes: ["finance", "sales", "inventory", "hr"],
+    prompt: "Give me a concise executive briefing: current business health, three evidence-backed risks, three opportunities, and the most important actions for the next 7 days. Use the live snapshot only.",
+  },
+  {
+    id: "cash-collections",
+    label: "Cash & collections",
+    description: "Find receivables that need attention",
+    icon: WalletCards,
+    color: "#2563EB",
+    scopes: ["finance"],
+    prompt: "Review cash position and receivables. Rank the invoices or collection issues that need attention first, explain the evidence and amounts, and suggest a practical follow-up plan. Do not invent payment dates.",
+  },
+  {
+    id: "expense-watch",
+    label: "Expense watch",
+    description: "Spot unusual or avoidable spend",
+    icon: ReceiptText,
+    color: "#F59E0B",
+    scopes: ["finance"],
+    prompt: "Review the supplied expenses for unusual, concentrated, duplicate-looking, or avoidable spending patterns. Separate confirmed observations from questions to investigate and recommend three controls.",
+  },
+  {
+    id: "reorder-plan",
+    label: "Reorder plan",
+    description: "Prioritize low stock and cost",
+    icon: Package,
+    color: "#7C3AED",
+    scopes: ["inventory", "suppliers"],
+    prompt: "Build a prioritized reorder plan from the live inventory snapshot. List items below reorder level, estimated replenishment cost using supplied unit costs, urgency, and supplier lead-time considerations. Never invent stock or supplier data.",
+  },
+  {
+    id: "pipeline-coach",
+    label: "Pipeline coach",
+    description: "Choose the next best sales moves",
+    icon: TrendingUp,
+    color: "#EA580C",
+    scopes: ["sales"],
+    prompt: "Analyze the current sales pipeline by stage and value. Identify the highest-leverage opportunities, missing follow-up evidence, and draft three specific next-step messages for the most important open deals.",
+  },
+  {
+    id: "workforce-pulse",
+    label: "Workforce pulse",
+    description: "Summarize people and leave signals",
+    icon: Users,
+    color: "#0891B2",
+    scopes: ["hr"],
+    prompt: "Summarize workforce health from the supplied employee and leave data: payroll context, pending leave patterns, staffing risks, and three manager actions. Keep employee-sensitive conclusions grounded and respectful.",
+  },
+  {
+    id: "supplier-review",
+    label: "Supplier review",
+    description: "Compare lead times and risk",
+    icon: ClipboardCheck,
+    color: "#475569",
+    scopes: ["suppliers", "inventory"],
+    prompt: "Review suppliers for lead-time, availability, and purchasing risk using only the supplied data. Recommend which supplier relationships need follow-up and what evidence should be collected next.",
+  },
+  {
+    id: "90-day-outlook",
+    label: "90-day outlook",
+    description: "Turn current signals into a plan",
+    icon: CalendarCheck,
+    color: "#DB2777",
+    scopes: ["finance", "sales", "inventory"],
+    prompt: "Create a grounded 90-day outlook using the current finance, sales, and inventory snapshot. Include base-case signals, downside risks, leading indicators to monitor weekly, and a short action plan.",
+  },
+];
+
 // Tool contract exposed to the model. Deliberately scoped to shared tables
 // the assistant already reads — no tool touches data it can't see. Each
 // persona above only offers the subset relevant to its role.
@@ -39430,6 +39509,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
   const speechSupported = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   const tools = AI_TOOLS_ALL.filter((t) => persona.tools.includes(t.name));
+  const quickActions = AI_QUICK_ACTIONS.filter((action) => action.scopes.some((scope) => persona.scope.includes(scope))).slice(0, 6);
   const assistantMutation = trpc.ai.assist.useMutation();
   const requestApprovalMutation = trpc.ai.requestActionApproval.useMutation();
   const decideApprovalMutation = trpc.ai.decideActionApproval.useMutation();
@@ -39856,6 +39936,38 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
             {anomalyMutation.isPending ? "Analyzing signals…" : "Check cash & stock risks"}
           </button>
         </div>
+        {quickActions.length > 0 && (
+          <div className="mt-2.5 border-t border-slate-200/70 pt-2.5">
+            <div className="mb-1.5 flex items-center gap-1.5">
+              <Sparkles size={12} className="text-[#16A34A]" />
+              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Specialized tools</span>
+              <span className="text-[10px] text-slate-400">· grounded in live data</span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <button
+                    key={action.id}
+                    type="button"
+                    onClick={() => send(action.prompt)}
+                    disabled={busy}
+                    title={action.prompt}
+                    className="group flex min-w-0 items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-2.5 py-2 text-left transition-colors hover:border-[#16A34A]/40 hover:bg-[#16A34A]/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md" style={{ backgroundColor: `${action.color}14`, color: action.color }}>
+                      <Icon size={14} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[11px] font-semibold text-slate-700 group-hover:text-[#111827]">{action.label}</span>
+                      <span className="block truncate text-[10px] text-slate-400">{action.description}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
       {assistantError && !busy && <div role="alert" className="mx-3 mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-[12px] text-rose-800"><span>{assistantError.message}</span><button type="button" onClick={() => send(assistantError.question)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 py-1.5 font-semibold text-rose-800 transition hover:bg-rose-100"><RotateCcw size={13}/>Try again</button></div>}
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
