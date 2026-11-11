@@ -11,7 +11,7 @@ export const ENV = {
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   assistantModel: process.env.SMART_ASSISTANT_MODEL?.trim() || "gpt-5-mini",
   supabaseUrl: firstNonEmptyEnv(process.env.SUPABASE_URL, process.env.VITE_SUPABASE_URL),
-  supabaseAnonKey: firstNonEmptyEnv(process.env.SUPABASE_ANON_KEY, process.env.VITE_SUPABASE_ANON_KEY),
+  supabaseAnonKey: firstNonEmptyEnv(process.env.SUPABASE_ANON_KEY, process.env.SUPABASE_PUBLISHABLE_KEY, process.env.VITE_SUPABASE_ANON_KEY),
   supabaseSecretKey: process.env.SUPABASE_SECRET_KEY ?? "",
   supabaseServiceKey: firstNonEmptyEnv(process.env.SUPABASE_SECRET_KEY, process.env.SUPABASE_SERVICE_ROLE_KEY),
   supabaseStorageBucket: process.env.SUPABASE_STORAGE_BUCKET?.trim() || "smart-manager",

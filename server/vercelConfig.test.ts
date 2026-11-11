@@ -16,7 +16,7 @@ describe("Vercel static deployment configuration", () => {
 
     const viteConfig = fs.readFileSync(path.resolve(process.cwd(), "vite.config.ts"), "utf8");
     expect(viteConfig).toContain('process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL');
-    expect(viteConfig).toContain('process.env.VITE_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY');
+    expect(viteConfig).toContain('process.env.VITE_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY');
     expect(viteConfig).not.toContain('SUPABASE_SECRET_KEY": JSON.stringify');
   });
 
