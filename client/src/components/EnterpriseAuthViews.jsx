@@ -28,6 +28,10 @@ const copy = {
     oauthEmail: "Use email instead",
     passkey: "Sign in with a passkey",
     passkeyBusy: "Waiting for your passkey…",
+    invalidEmail: "Enter a valid work email address.",
+    missingPassword: "Enter your password to continue.",
+    capsLock: "Caps Lock is on.",
+    secureHint: "Your session is protected with tenant-aware access controls.",
     recovery: {
       title: "Recover access",
       copy: "Enter your work email and we’ll send a secure password reset link.",
@@ -81,6 +85,10 @@ const copy = {
     oauthEmail: "Tumia barua pepe badala yake",
     passkey: "Ingia kwa passkey",
     passkeyBusy: "Inasubiri passkey yako…",
+    invalidEmail: "Ingiza barua pepe halali ya kazi.",
+    missingPassword: "Ingiza nenosiri lako ili kuendelea.",
+    capsLock: "Caps Lock imewashwa.",
+    secureHint: "Session yako imelindwa kwa udhibiti salama wa kampuni.",
     recovery: {
       title: "Rejesha upatikanaji",
       copy: "Ingiza barua pepe ya kazi na tutakutumia kiungo salama cha kubadilisha nenosiri.",
@@ -181,15 +189,67 @@ export function PasswordStrengthMeter({ password }) {
 }
 
 export function EnterpriseLoginView({ onSignIn, onSignup, onForgot, onOAuth, onPasskey, onClearOAuthError, oauthProvider = "google", toMessage, configured, initialError = null, terminalDiagnostic = null }) {
-  const { lang } = useLanguage(); const ui = copy[lang] || copy.en;
-  const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [rememberMe, setRememberMe] = useState(true); const [showPassword, setShowPassword] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState(null);
+  const { lang } = useLanguage();
+  const ui = copy[lang] || copy.en;
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
   useEffect(() => { if (initialError) setError(initialError); }, [initialError]);
-  async function submit(event) { event.preventDefault(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || !password) { setError(lang === "sw" ? "Ingiza barua pepe ya kazi na nenosiri lako kuendelea." : "Enter your work email and password to continue."); return; } setBusy(true); setError(null); try { await onSignIn(email.trim(), password, rememberMe); } catch (signInError) { setError(toMessage(signInError)); } finally { setBusy(false); } }
+
+  async function submit(event) {
+    event.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setError(ui.invalidEmail);
+      return;
+    }
+    if (!password) {
+      setError(ui.missingPassword);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await onSignIn(email.trim(), password, rememberMe);
+    } catch (signInError) {
+      setError(toMessage(signInError));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const providerRecovery = ui.oauthRecovery[oauthProvider] || ui.oauthRecovery.google;
   function useEmailInstead() { setError(null); onClearOAuthError?.(); }
   function retryProvider() { setError(null); onClearOAuthError?.(); setBusy(true); onOAuth(oauthProvider); }
-  async function signInWithPasskey() { if (!onPasskey) return; setBusy(true); setError(null); try { await onPasskey(rememberMe); } catch (passkeyError) { setError(toMessage(passkeyError)); } finally { setBusy(false); } }
-  return <EnterpriseAuthShell title={ui.welcome} subtitle={ui.welcomeCopy} asideTitle="Your operations, in command." asideCopy="Bring finance, sales, people, inventory, and insight into a workspace designed for accountable execution."><form onSubmit={submit} className="space-y-4">{error && <AuthNotice>{error}</AuthNotice>}{terminalDiagnostic && <AuthNotice><span>Previous session ended securely. Sign in again to continue.</span><span className="mt-1 block text-[10px] font-bold uppercase tracking-[.12em]">Diagnostic: {terminalDiagnostic}</span></AuthNotice>}{initialError && <section aria-labelledby="oauth-recovery-title" className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3.5 shadow-sm"><div className="flex gap-2.5"><span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800"><RefreshCw size={16} aria-hidden="true" /></span><div><h3 id="oauth-recovery-title" className="text-[12.5px] font-bold text-amber-950">{providerRecovery.title}</h3><p className="mt-1 text-[11.5px] leading-5 text-amber-900/80">{providerRecovery.copy}</p></div></div><div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"><button type="button" onClick={retryProvider} disabled={busy || !configured} className="rounded-xl bg-amber-800 px-3 py-2 text-[11.5px] font-semibold text-white transition hover:bg-amber-900 disabled:cursor-not-allowed disabled:opacity-50">{providerRecovery.retry}</button><button type="button" onClick={useEmailInstead} className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-[11.5px] font-semibold text-amber-950 transition hover:bg-amber-100/60">{ui.oauthEmail}</button></div></section>}<AuthInput label={ui.email} icon={<UserRound size={19} aria-hidden="true" />}><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder={ui.emailPlaceholder} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none placeholder:text-slate-400" /></AuthInput><AuthInput label={ui.password} icon={<LockKeyhole size={19} aria-hidden="true" />}><input type={showPassword ? "text" : "password"} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={ui.passwordPlaceholder} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none placeholder:text-slate-400" /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-emerald-700">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></AuthInput><div className="flex items-center justify-between gap-3"><label className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-slate-600"><input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />{ui.remember}</label><button type="button" onClick={onForgot} className="text-[12px] font-semibold text-emerald-700 transition hover:text-emerald-900 hover:underline">{ui.forgot}</button></div><button type="submit" disabled={busy} className="relative w-full rounded-2xl bg-gradient-to-r from-[#008a45] to-[#00a651] py-3.5 text-[14px] font-bold text-white shadow-[0_12px_25px_rgba(0,138,69,.24)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_28px_rgba(0,138,69,.3)] active:translate-y-0 active:scale-[.985] disabled:cursor-not-allowed disabled:opacity-50">{busy ? ui.signingIn : ui.signIn}</button>{configured && onPasskey && <button type="button" onClick={signInWithPasskey} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/60 py-3 text-[13px] font-semibold text-emerald-800 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 active:scale-[.985] disabled:cursor-not-allowed disabled:opacity-50"><Fingerprint size={16} aria-hidden="true" />{busy ? ui.passkeyBusy : ui.passkey}</button>}{configured && <><div className="flex items-center gap-3 py-1 text-[10px] font-semibold uppercase tracking-[.14em] text-slate-400"><span className="h-px flex-1 bg-slate-200" />{ui.divider}<span className="h-px flex-1 bg-slate-200" /></div><div className="grid grid-cols-3 gap-2"><button type="button" disabled={busy} onClick={() => onOAuth("google")} className="rounded-xl border border-slate-200 py-2.5 text-[11px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 disabled:opacity-50">Google</button><button type="button" disabled={busy} onClick={() => onOAuth("azure")} className="rounded-xl border border-slate-200 py-2.5 text-[11px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 disabled:opacity-50">Microsoft</button><button type="button" disabled={busy} onClick={() => onOAuth("apple")} className="rounded-xl border border-slate-200 py-2.5 text-[11px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 disabled:opacity-50">Apple</button></div><p className="text-center text-[10.5px] leading-5 text-slate-400">{lang === "sw" ? "Tumia njia ileile uliyotumia kuunda akaunti yako." : "Use the same provider you used when your workspace account was created."}</p></>}<p className="pt-1 text-center text-[12.5px] text-slate-500">{ui.newAccount} <button type="button" onClick={onSignup} className="font-semibold text-emerald-700 hover:underline">{ui.create}</button></p></form></EnterpriseAuthShell>;
+  function updateCapsLock(event) { setCapsLockOn(Boolean(event.getModifierState?.("CapsLock"))); }
+  async function signInWithPasskey() {
+    if (!onPasskey) return;
+    setBusy(true);
+    setError(null);
+    try { await onPasskey(rememberMe); } catch (passkeyError) { setError(toMessage(passkeyError)); } finally { setBusy(false); }
+  }
+
+  return <EnterpriseAuthShell title={ui.welcome} subtitle={ui.welcomeCopy} asideTitle="Your operations, in command." asideCopy="Bring finance, sales, people, inventory, and insight into a workspace designed for accountable execution.">
+    <form onSubmit={submit} className="space-y-4" noValidate aria-busy={busy}>
+      <p className="flex items-center gap-2 rounded-xl bg-emerald-50/70 px-3 py-2 text-[11px] leading-5 text-emerald-800"><ShieldCheck size={15} aria-hidden="true" />{ui.secureHint}</p>
+      {error && <AuthNotice>{error}</AuthNotice>}
+      {terminalDiagnostic && <AuthNotice><span>Previous session ended securely. Sign in again to continue.</span><span className="mt-1 block text-[10px] font-bold uppercase tracking-[.12em]">Diagnostic: {terminalDiagnostic}</span></AuthNotice>}
+      {initialError && <section aria-labelledby="oauth-recovery-title" className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3.5 shadow-sm"><div className="flex gap-2.5"><span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800"><RefreshCw size={16} aria-hidden="true" /></span><div><h3 id="oauth-recovery-title" className="text-[12.5px] font-bold text-amber-950">{providerRecovery.title}</h3><p className="mt-1 text-[11.5px] leading-5 text-amber-900/80">{providerRecovery.copy}</p></div></div><div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"><button type="button" onClick={retryProvider} disabled={busy || !configured} className="rounded-xl bg-amber-800 px-3 py-2 text-[11.5px] font-semibold text-white transition hover:bg-amber-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">{providerRecovery.retry}</button><button type="button" onClick={useEmailInstead} className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-[11.5px] font-semibold text-amber-950 transition hover:bg-amber-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2">{ui.oauthEmail}</button></div></section>}
+      <AuthInput label={ui.email} icon={<Mail size={19} aria-hidden="true" />}><input id="smart-manager-login-email" name="email" type="email" inputMode="email" autoComplete="username" autoCapitalize="none" spellCheck={false} required value={email} onChange={(event) => setEmail(event.target.value)} placeholder={ui.emailPlaceholder} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-emerald-500/30" /></AuthInput>
+      <AuthInput label={ui.password} icon={<LockKeyhole size={19} aria-hidden="true" />}><input id="smart-manager-login-password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} onKeyDown={updateCapsLock} onKeyUp={updateCapsLock} onBlur={() => setCapsLockOn(false)} placeholder={ui.passwordPlaceholder} aria-describedby={capsLockOn ? "login-caps-lock" : undefined} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-emerald-500/30" /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1">{showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}</button></AuthInput>
+      {capsLockOn && <p id="login-caps-lock" role="status" className="-mt-2 flex items-center gap-1.5 text-[11px] font-medium text-amber-700"><AlertCircle size={13} aria-hidden="true" />{ui.capsLock}</p>}
+      <div className="flex items-center justify-between gap-3"><label className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-slate-600"><input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />{ui.remember}</label><button type="button" onClick={onForgot} className="rounded-md text-[12px] font-semibold text-emerald-700 transition hover:text-emerald-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{ui.forgot}</button></div>
+      <button type="submit" disabled={busy} className="relative flex min-h-[50px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#008a45] to-[#00a651] py-3.5 text-[14px] font-bold text-white shadow-[0_12px_25px_rgba(0,138,69,.24)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_28px_rgba(0,138,69,.3)] active:translate-y-0 active:scale-[.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60" aria-label={busy ? ui.signingIn : ui.signIn}>{busy && <RefreshCw size={16} className="mr-2 animate-spin" aria-hidden="true" />}{busy ? ui.signingIn : ui.signIn}</button>
+      {configured && onPasskey && <button type="button" onClick={signInWithPasskey} disabled={busy} className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/60 py-3 text-[13px] font-semibold text-emerald-800 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 active:scale-[.985] disabled:cursor-not-allowed disabled:opacity-50"><Fingerprint size={16} aria-hidden="true" />{busy ? ui.passkeyBusy : ui.passkey}</button>}
+      {configured && <><div className="flex items-center gap-3 py-1 text-[10px] font-semibold uppercase tracking-[.14em] text-slate-400"><span className="h-px flex-1 bg-slate-200" />{ui.divider}<span className="h-px flex-1 bg-slate-200" /></div><div className="grid grid-cols-3 gap-2"><button type="button" disabled={busy} onClick={() => onOAuth("google")} className="rounded-xl border border-slate-200 py-2.5 text-[11px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 disabled:opacity-50">Google</button><button type="button" disabled={busy} onClick={() => onOAuth("azure")} className="rounded-xl border border-slate-200 py-2.5 text-[11px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 disabled:opacity-50">Microsoft</button><button type="button" disabled={busy} onClick={() => onOAuth("apple")} className="rounded-xl border border-slate-200 py-2.5 text-[11px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 disabled:opacity-50">Apple</button></div><p className="text-center text-[10.5px] leading-5 text-slate-400">{lang === "sw" ? "Tumia njia ileile uliyotumia kuunda akaunti yako." : "Use the same provider you used when your workspace account was created."}</p></>}
+      <p className="pt-1 text-center text-[12.5px] text-slate-500">{ui.newAccount} <button type="button" onClick={onSignup} className="rounded-md font-semibold text-emerald-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{ui.create}</button></p>
+    </form>
+  </EnterpriseAuthShell>;
 }
 
 export function PasswordRecoveryView({ onBack, onRequest, toMessage }) {
