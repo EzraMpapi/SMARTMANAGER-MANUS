@@ -14,7 +14,7 @@ import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 const PROJECT_ROOT = import.meta.dirname;
 const PUBLIC_SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
-const PUBLIC_SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY ?? "";
+const PUBLIC_SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
 const PUBLIC_ANALYTICS_ENDPOINT = (process.env.VITE_ANALYTICS_ENDPOINT ?? "").replace(/\/$/, "");
 const PUBLIC_ANALYTICS_WEBSITE_ID = process.env.VITE_ANALYTICS_WEBSITE_ID ?? "";
 const LOG_DIR = path.join(PROJECT_ROOT, ".manus-logs");

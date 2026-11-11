@@ -12,7 +12,6 @@ export function getBuildPublicSupabaseConfig(): PublicSupabaseConfig {
 
 export async function loadPublicSupabaseConfig(): Promise<PublicSupabaseConfig> {
   const buildConfig = getBuildPublicSupabaseConfig();
-  if (buildConfig.url && buildConfig.anonKey) return buildConfig;
 
   try {
     const response = await fetch("/api/config/public", {

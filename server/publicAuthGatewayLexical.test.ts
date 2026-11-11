@@ -24,5 +24,8 @@ describe("PublicAuthGateway Lexical Initialization Safety", () => {
     expect(gatewaySource).not.toContain("getBuildPublicSupabaseConfig");
     expect(publicConfigSource).toContain("/api/config/public");
     expect(publicConfigSource).not.toContain("SUPABASE_SECRET_KEY");
+    expect(publicConfigSource).toContain("const buildConfig = getBuildPublicSupabaseConfig();");
+    expect(publicConfigSource).toContain("return url && anonKey ? { url, anonKey } : buildConfig;");
+    expect(publicConfigSource).toContain("catch {\n    return buildConfig;");
   });
 });

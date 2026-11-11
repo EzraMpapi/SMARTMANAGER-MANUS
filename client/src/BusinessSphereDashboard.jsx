@@ -39878,7 +39878,14 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       setMessages(convo);
       await persistTurn(question, responseData.result);
     } catch (e) {
-      const message = "The Business Consultant could not be reached. Please try again.";
+      const providerMessage = typeof e?.message === "string" ? e.message : "";
+      const message = providerMessage.includes("temporarily unavailable")
+        ? providerMessage
+        : providerMessage.includes("too many requests")
+          ? "The AI Assistant is busy. Please wait a minute and try again."
+          : providerMessage.includes("shorten or rephrase")
+            ? providerMessage
+            : "The AI Assistant could not respond right now. Please try again.";
       notify(message, "error");
       setAssistantError({ message, question });
       setMessages(messages);

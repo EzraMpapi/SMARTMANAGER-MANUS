@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { invokeMock } = vi.hoisted(() => ({ invokeMock: vi.fn() }));
+const { invokeMock, listModelsMock } = vi.hoisted(() => ({ invokeMock: vi.fn(), listModelsMock: vi.fn() }));
 
-vi.mock("./_core/llm", () => ({ invokeLLM: invokeMock }));
+vi.mock("./_core/llm", () => ({ invokeLLM: invokeMock, listLLMModels: listModelsMock }));
 
 import { runSmartAssistant } from "./smartAssistant";
 
@@ -23,6 +23,8 @@ function providerResponse(content: string) {
 }
 
 afterEach(() => vi.clearAllMocks());
+
+listModelsMock.mockResolvedValue({ data: [{ id: "gpt-5-mini", object: "model", created: 0, owned_by: "manus" }] });
 
 describe("runSmartAssistant", () => {
   it("sends bounded server-side context and returns structured suggestions, actions, and usage", async () => {
