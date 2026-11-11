@@ -28,6 +28,30 @@ const copy = {
     oauthEmail: "Use email instead",
     passkey: "Sign in with a passkey",
     passkeyBusy: "Waiting for your passkey…",
+    recovery: {
+      title: "Recover access",
+      copy: "Enter your work email and we’ll send a secure password reset link.",
+      emailPlaceholder: "you@company.com",
+      send: "Send reset link",
+      sending: "Sending secure link…",
+      back: "Back to sign in",
+      sentTitle: "Check your inbox",
+      sentCopy: "If the address is associated with a password-based workspace account, a secure reset link is on its way.",
+      sentNotice: "For security, this confirmation is the same whether or not the address is registered. Check your inbox and spam folder for a Smart Manager recovery link.",
+      validEmail: "Enter a valid work email address.",
+      resetTitle: "Choose a new password",
+      resetCopy: "Create a strong password to protect your business workspace.",
+      resetCompleteTitle: "Password updated",
+      resetCompleteCopy: "Your password has been changed securely. Sign in with your new credentials.",
+      resetComplete: "Your password has been updated successfully.",
+      resetLinkError: "This reset link is invalid or has expired. Request a new one to continue.",
+      passwordError: "Use a password that meets all the requirements below.",
+      matchError: "The password confirmation does not match.",
+      update: "Update password",
+      updating: "Updating password…",
+      newPassword: "New password",
+      confirmPassword: "Confirm new password",
+    },
     moduleFocus: "Module focus",
     industries: { general: "Universal business", retail: "Retail & wholesale", manufacturing: "Manufacturing", services: "Professional services", healthcare: "Healthcare", education: "Education", hospitality: "Hospitality" },
     oauthRecovery: {
@@ -57,6 +81,30 @@ const copy = {
     oauthEmail: "Tumia barua pepe badala yake",
     passkey: "Ingia kwa passkey",
     passkeyBusy: "Inasubiri passkey yako…",
+    recovery: {
+      title: "Rejesha upatikanaji",
+      copy: "Ingiza barua pepe ya kazi na tutakutumia kiungo salama cha kubadilisha nenosiri.",
+      emailPlaceholder: "wewe@kampuni.co.tz",
+      send: "Tuma kiungo cha kubadilisha nenosiri",
+      sending: "Inatuma kiungo salama…",
+      back: "Rudi kuingia",
+      sentTitle: "Kagua kikasha chako",
+      sentCopy: "Ikiwa anwani hii imeunganishwa na akaunti ya nenosiri, kiungo salama cha kubadilisha nenosiri kimetumwa.",
+      sentNotice: "Kwa usalama, ujumbe huu ni uleule bila kujali kama anwani imesajiliwa. Kagua kikasha na folda ya barua taka kwa kiungo cha Smart Manager.",
+      validEmail: "Ingiza barua pepe halali ya kazi.",
+      resetTitle: "Chagua nenosiri jipya",
+      resetCopy: "Unda nenosiri imara kulinda eneo lako la kazi.",
+      resetCompleteTitle: "Nenosiri limebadilishwa",
+      resetCompleteCopy: "Nenosiri lako limebadilishwa kwa usalama. Ingia kwa kutumia nenosiri lako jipya.",
+      resetComplete: "Nenosiri lako limebadilishwa kwa mafanikio.",
+      resetLinkError: "Kiungo hiki si sahihi au muda wake umeisha. Omba kiungo kipya ili kuendelea.",
+      passwordError: "Tumia nenosiri linalokidhi mahitaji yote hapa chini.",
+      matchError: "Uthibitisho wa nenosiri haulingani.",
+      update: "Badilisha nenosiri",
+      updating: "Inabadilisha nenosiri…",
+      newPassword: "Nenosiri jipya",
+      confirmPassword: "Thibitisha nenosiri jipya",
+    },
     moduleFocus: "Mwelekeo wa moduli",
     industries: { general: "Biashara ya jumla", retail: "Rejareja na jumla", manufacturing: "Uzalishaji", services: "Huduma za kitaalamu", healthcare: "Afya", education: "Elimu", hospitality: "Ukarimu" },
     oauthRecovery: {
@@ -123,7 +171,7 @@ export function EnterpriseAuthShell({ title, subtitle, children, asideTitle = "Y
 
 export function AuthNotice({ type = "error", children }) {
   const success = type === "success";
-  return <div role={success ? "status" : "alert"} className={`mb-5 flex items-start gap-2.5 rounded-2xl border px-3.5 py-3 text-[12.5px] leading-5 ${success ? "border-emerald-100 bg-emerald-50 text-emerald-800" : "border-red-100 bg-red-50 text-red-800"}`}><span className="mt-0.5 shrink-0">{success ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}</span><span>{children}</span></div>;
+  return <div role={success ? "status" : "alert"} aria-live={success ? "polite" : "assertive"} className={`mb-5 flex items-start gap-2.5 rounded-2xl border px-3.5 py-3 text-[12.5px] leading-5 ${success ? "border-emerald-100 bg-emerald-50 text-emerald-800" : "border-red-100 bg-red-50 text-red-800"}`}><span className="mt-0.5 shrink-0">{success ? <CheckCircle2 size={15} aria-hidden="true" /> : <AlertCircle size={15} aria-hidden="true" />}</span><span>{children}</span></div>;
 }
 
 export function PasswordStrengthMeter({ password }) {
@@ -145,16 +193,18 @@ export function EnterpriseLoginView({ onSignIn, onSignup, onForgot, onOAuth, onP
 }
 
 export function PasswordRecoveryView({ onBack, onRequest, toMessage }) {
+  const { lang } = useLanguage(); const ui = (copy[lang] || copy.en).recovery;
   const [email, setEmail] = useState(""); const [busy, setBusy] = useState(false); const [error, setError] = useState(null); const [sent, setSent] = useState(false);
-  async function submit(event) { event.preventDefault(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Enter a valid work email address."); return; } setBusy(true); setError(null); try { await onRequest(email.trim()); setSent(true); } catch (requestError) { setError(toMessage(requestError)); } finally { setBusy(false); } }
-  return <EnterpriseAuthShell title={sent ? "Check your inbox" : "Recover access"} subtitle={sent ? "If the address is associated with a password-based workspace account, a secure reset link is on its way." : "Enter your work email and we’ll send a secure password reset link."} asideTitle="Access is recoverable." asideCopy="Password recovery is private by design. We never disclose whether a particular email address has an account." motion>{sent ? <div className="space-y-4"><AuthNotice type="success">For security, this confirmation is the same whether or not the address is registered. Check your inbox and spam folder for a Smart Manager recovery link.</AuthNotice><button type="button" onClick={onBack} className="w-full rounded-2xl border border-slate-200 py-3 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50">Back to sign in</button></div> : <form onSubmit={submit} className="space-y-5">{error && <AuthNotice>{error}</AuthNotice>}<AuthInput label="Work email" icon={<Mail size={19} aria-hidden="true" />}><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none placeholder:text-slate-400" /></AuthInput><button type="submit" disabled={busy} className="w-full rounded-2xl bg-[#008a45] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#006f37] disabled:opacity-50">{busy ? "Sending secure link…" : "Send reset link"}</button><button type="button" onClick={onBack} className="mx-auto block text-[12.5px] font-semibold text-slate-500 hover:text-slate-800">Back to sign in</button></form>}</EnterpriseAuthShell>;
+  async function submit(event) { event.preventDefault(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError(ui.validEmail); return; } setBusy(true); setError(null); try { await onRequest(email.trim().toLowerCase()); setSent(true); } catch (requestError) { setError(toMessage(requestError)); } finally { setBusy(false); } }
+  return <EnterpriseAuthShell title={sent ? "Check your inbox" : "Recover access"} subtitle={sent ? "If the address is associated with a password-based workspace account, a secure reset link is on its way." : "Enter your work email and we’ll send a secure password reset link."} asideTitle="Access is recoverable." asideCopy="Password recovery is private by design. We never disclose whether a particular email address has an account." motion>{sent ? <div className="space-y-4"><AuthNotice type="success">For security, this confirmation is the same whether or not the address is registered. Check your inbox and spam folder for a Smart Manager recovery link.</AuthNotice><button type="button" onClick={onBack} className="w-full rounded-2xl border border-slate-200 py-3 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50">Back to sign in</button></div> : <form onSubmit={submit} className="space-y-5">{error && <AuthNotice>{error}</AuthNotice>}<AuthInput label="Work email" icon={<Mail size={19} aria-hidden="true" />}><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder={ui.emailPlaceholder} autoCapitalize="none" spellCheck={false} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none placeholder:text-slate-400" /></AuthInput><button type="submit" disabled={busy} className="w-full rounded-2xl bg-[#008a45] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#006f37] disabled:opacity-50">{busy ? "Sending secure link…" : "Send reset link"}</button><button type="button" onClick={onBack} className="mx-auto block text-[12.5px] font-semibold text-slate-500 hover:text-slate-800">Back to sign in</button></form>}</EnterpriseAuthShell>;
 }
 
 export const ForgotPasswordView = PasswordRecoveryView;
 
 export function ResetPasswordView({ recoveryToken, onBack, onUpdate, toMessage }) {
+  const { lang } = useLanguage(); const ui = (copy[lang] || copy.en).recovery;
   const [password, setPassword] = useState(""); const [confirmPassword, setConfirmPassword] = useState(""); const [showPassword, setShowPassword] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState(null); const [complete, setComplete] = useState(false);
-  async function submit(event) { event.preventDefault(); if (!isEnterprisePassword(password)) { setError("Use a password that meets all the requirements below."); return; } if (password !== confirmPassword) { setError("The password confirmation does not match."); return; } setBusy(true); setError(null); try { await onUpdate(recoveryToken, password); setComplete(true); } catch (updateError) { setError(updateError?.code === "RECOVERY_SESSION_MISSING" ? "This reset link is invalid or has expired. Request a new one to continue." : toMessage(updateError)); } finally { setBusy(false); } }
+  async function submit(event) { event.preventDefault(); if (!isEnterprisePassword(password)) { setError(ui.passwordError); return; } if (password !== confirmPassword) { setError(ui.matchError); return; } setBusy(true); setError(null); try { await onUpdate(recoveryToken, password); setComplete(true); } catch (updateError) { setError(updateError?.code === "RECOVERY_SESSION_MISSING" ? ui.resetLinkError : toMessage(updateError)); } finally { setBusy(false); } }
   return <EnterpriseAuthShell title={complete ? "Password updated" : "Choose a new password"} subtitle={complete ? "Your password has been changed securely. Sign in with your new credentials." : "Create a strong password to protect your business workspace."} asideTitle="Security starts here." asideCopy="A valid recovery session is required before Smart Manager can update a password." motion>{complete ? <div className="space-y-4"><AuthNotice type="success">Your password has been updated successfully.</AuthNotice><button type="button" onClick={onBack} className="w-full rounded-2xl bg-[#008a45] py-3.5 text-[13.5px] font-semibold text-white">Continue to sign in</button></div> : <form onSubmit={submit} className="space-y-4">{error && <AuthNotice>{error}</AuthNotice>}<AuthInput label="New password" icon={<LockKeyhole size={19} aria-hidden="true" />}><input type={showPassword ? "text" : "password"} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none" /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"} className="grid h-9 w-9 place-items-center text-slate-400">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></AuthInput><AuthInput label="Confirm new password" icon={<LockKeyhole size={19} aria-hidden="true" />}><input type={showPassword ? "text" : "password"} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none" /></AuthInput><PasswordStrengthMeter password={password} /><button type="submit" disabled={busy} className="w-full rounded-2xl bg-[#008a45] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#006f37] disabled:opacity-50">{busy ? "Updating password…" : "Update password"}</button><button type="button" onClick={onBack} className="mx-auto block text-[12.5px] font-semibold text-slate-500 hover:text-slate-800">Back to sign in</button></form>}</EnterpriseAuthShell>;
 }
 
