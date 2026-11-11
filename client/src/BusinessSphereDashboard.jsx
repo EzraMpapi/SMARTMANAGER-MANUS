@@ -44467,6 +44467,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [onboardingPlans, setOnboardingPlans] = useState([]);
   const [onboardingPlanError, setOnboardingPlanError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
@@ -44527,6 +44528,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     setOnboardingPlans([]);
     setOnboardingPlanError("");
     setShowPassword(false);
+    setShowConfirmPassword(false);
     setTermsAccepted(false);
   }
 
@@ -44766,7 +44768,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                 <FormField label="Full name" required><div className="relative"><User size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" autoComplete="name" /></div></FormField>
                 <FormField label="Email address" required><div className="relative"><Mail size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} type="email" value={account.email} onChange={(e) => setAccountField("email", e.target.value)} placeholder="you@company.tz" autoComplete="email" /></div></FormField>
                 <div className="grid gap-3 sm:grid-cols-2"><FormField label="Phone number"><div className="relative"><Phone size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={account.phone} onChange={(e) => setAccountField("phone", e.target.value)} placeholder="700 123 456" autoComplete="tel" /></div></FormField><FormField label="Password" required><div className="relative"><Lock size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9 pr-10`} type={showPassword ? "text" : "password"} value={account.password} onChange={(e) => setAccountField("password", e.target.value)} placeholder="Create a password" autoComplete="new-password" /><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}</button></div></FormField></div>
-                <FormField label="Confirm password" required><input className={inputClass} type="password" value={account.confirmPassword} onChange={(e) => setAccountField("confirmPassword", e.target.value)} placeholder="Repeat password" autoComplete="new-password" /></FormField>
+                <FormField label="Confirm password" required><div className="relative"><input className={`${inputClass} pr-10`} type={showConfirmPassword ? "text" : "password"} value={account.confirmPassword} onChange={(e) => setAccountField("confirmPassword", e.target.value)} placeholder="Repeat password" autoComplete="new-password" /><button type="button" onClick={() => setShowConfirmPassword((current) => !current)} className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" aria-label={showConfirmPassword ? "Hide confirmation password" : "Show confirmation password"}>{showConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}</button></div></FormField>
                 {account.password && <p className="text-[11px] text-slate-500">Use at least 8 characters with uppercase, lowercase, number, and symbol.</p>}
                 {account.password && account.confirmPassword && account.password !== account.confirmPassword && <p className="flex items-center gap-1 text-[11.5px] text-red-500"><AlertCircle size={12} /> Passwords do not match.</p>}
                 <label className="flex items-start gap-2 pt-1 text-[11px] text-slate-500"><input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} aria-describedby="signup-terms-help" className="mt-0.5 accent-[#16A34A]" /><span>I agree to the Terms of Service and Privacy Policy.</span></label>
