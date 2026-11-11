@@ -11,6 +11,12 @@ type SupabaseUserResponse = {
   app_metadata?: { provider?: string };
 };
 
+function isJwtAccessToken(value: unknown): value is string {
+  if (typeof value !== "string" || !value.trim()) return false;
+  const parts = value.trim().split(".");
+  return parts.length === 3 && parts.every((part) => part.length > 0);
+}
+
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
@@ -20,7 +26,7 @@ export type TrpcContext = {
 async function authenticateSupabaseToken(token: string): Promise<User | null> {
   const supabaseUrl = ENV.supabaseUrl;
   const supabaseAnonKey = ENV.supabaseAnonKey;
-  if (!supabaseUrl || !supabaseAnonKey || token === supabaseAnonKey) return null;
+  if (!supabaseUrl || !supabaseAnonKey || token === supabaseAnonKey || !isJwtAccessToken(token)) return null;
 
   try {
     const response = await fetch(`${supabaseUrl}/auth/v1/user`, {

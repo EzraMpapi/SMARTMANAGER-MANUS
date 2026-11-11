@@ -57,7 +57,7 @@ describe("application bootstrap recovery", () => {
 
     expect(source).toContain("const firstNonEmptyEnv");
     expect(source).toContain("process.env.SUPABASE_URL, process.env.VITE_SUPABASE_URL");
-    expect(source).toContain("process.env.SUPABASE_ANON_KEY, process.env.VITE_SUPABASE_ANON_KEY");
+    expect(source).toContain("process.env.SUPABASE_ANON_KEY, process.env.SUPABASE_PUBLISHABLE_KEY, process.env.VITE_SUPABASE_ANON_KEY");
     expect(source).toContain("supabaseSecretKey: process.env.SUPABASE_SECRET_KEY ?? \"\"");
   });
 

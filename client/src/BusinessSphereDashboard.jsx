@@ -56,6 +56,7 @@ import { buildOwnerRecordHistoryCsv, buildOwnerRecordHistoryPrintHtml, ownerReco
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { AuthContext, useAuthContext } from "./contexts/AuthContext";
 import { fetchWithSupabaseAuthRecovery, getSupabaseAuthClient, isDefinitiveSupabaseAuthFailure, refreshSupabaseSession } from "./lib/supabaseAuthClient";
+import { isJwtAccessToken } from "./lib/authSessionStorage";
 import { DashboardLayoutAnalytics } from "./components/DashboardLayoutAnalytics"
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
@@ -203,7 +204,11 @@ function authDebug(event, detail = {}) {
 
 function getStoredAccessToken() {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) || window.sessionStorage.getItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+  const token = window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) || window.sessionStorage.getItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+  if (!token || isJwtAccessToken(token)) return token;
+  window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  window.sessionStorage.removeItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+  return null;
 }
 
 function getStoredRefreshToken() {
@@ -270,9 +275,9 @@ async function activeSupabaseAccessToken(fallback = null) {
       // Use the explicit short-lived token or legacy migration token below.
     }
   }
-  if (fallback && fallback !== SUPABASE_ANON_KEY) return fallback;
+  if (isJwtAccessToken(fallback) && fallback !== SUPABASE_ANON_KEY) return fallback;
   const stored = getStoredAccessToken();
-  return stored && stored !== SUPABASE_ANON_KEY ? stored : null;
+  return isJwtAccessToken(stored) && stored !== SUPABASE_ANON_KEY ? stored : null;
 }
 
 async function authHeaders(fallbackToken = null) {
@@ -39195,6 +39200,85 @@ const AI_PERSONAS = [
   },
 ];
 
+// One-click prompts for the recurring questions owners ask most often. These
+// remain prompts (not direct mutations): the assistant gets the live scoped
+// snapshot, explains its evidence, and any proposed business action still
+// follows the existing approval workflow.
+const AI_QUICK_ACTIONS = [
+  {
+    id: "executive-brief",
+    label: "Executive brief",
+    description: "A fast health check with priorities",
+    icon: Gauge,
+    color: "#16A34A",
+    scopes: ["finance", "sales", "inventory", "hr"],
+    prompt: "Give me a concise executive briefing: current business health, three evidence-backed risks, three opportunities, and the most important actions for the next 7 days. Use the live snapshot only.",
+  },
+  {
+    id: "cash-collections",
+    label: "Cash & collections",
+    description: "Find receivables that need attention",
+    icon: WalletCards,
+    color: "#2563EB",
+    scopes: ["finance"],
+    prompt: "Review cash position and receivables. Rank the invoices or collection issues that need attention first, explain the evidence and amounts, and suggest a practical follow-up plan. Do not invent payment dates.",
+  },
+  {
+    id: "expense-watch",
+    label: "Expense watch",
+    description: "Spot unusual or avoidable spend",
+    icon: ReceiptText,
+    color: "#F59E0B",
+    scopes: ["finance"],
+    prompt: "Review the supplied expenses for unusual, concentrated, duplicate-looking, or avoidable spending patterns. Separate confirmed observations from questions to investigate and recommend three controls.",
+  },
+  {
+    id: "reorder-plan",
+    label: "Reorder plan",
+    description: "Prioritize low stock and cost",
+    icon: Package,
+    color: "#7C3AED",
+    scopes: ["inventory", "suppliers"],
+    prompt: "Build a prioritized reorder plan from the live inventory snapshot. List items below reorder level, estimated replenishment cost using supplied unit costs, urgency, and supplier lead-time considerations. Never invent stock or supplier data.",
+  },
+  {
+    id: "pipeline-coach",
+    label: "Pipeline coach",
+    description: "Choose the next best sales moves",
+    icon: TrendingUp,
+    color: "#EA580C",
+    scopes: ["sales"],
+    prompt: "Analyze the current sales pipeline by stage and value. Identify the highest-leverage opportunities, missing follow-up evidence, and draft three specific next-step messages for the most important open deals.",
+  },
+  {
+    id: "workforce-pulse",
+    label: "Workforce pulse",
+    description: "Summarize people and leave signals",
+    icon: Users,
+    color: "#0891B2",
+    scopes: ["hr"],
+    prompt: "Summarize workforce health from the supplied employee and leave data: payroll context, pending leave patterns, staffing risks, and three manager actions. Keep employee-sensitive conclusions grounded and respectful.",
+  },
+  {
+    id: "supplier-review",
+    label: "Supplier review",
+    description: "Compare lead times and risk",
+    icon: ClipboardCheck,
+    color: "#475569",
+    scopes: ["suppliers", "inventory"],
+    prompt: "Review suppliers for lead-time, availability, and purchasing risk using only the supplied data. Recommend which supplier relationships need follow-up and what evidence should be collected next.",
+  },
+  {
+    id: "90-day-outlook",
+    label: "90-day outlook",
+    description: "Turn current signals into a plan",
+    icon: CalendarCheck,
+    color: "#DB2777",
+    scopes: ["finance", "sales", "inventory"],
+    prompt: "Create a grounded 90-day outlook using the current finance, sales, and inventory snapshot. Include base-case signals, downside risks, leading indicators to monitor weekly, and a short action plan.",
+  },
+];
+
 // Tool contract exposed to the model. Deliberately scoped to shared tables
 // the assistant already reads — no tool touches data it can't see. Each
 // persona above only offers the subset relevant to its role.
@@ -39449,6 +39533,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
   const speechSupported = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   const tools = AI_TOOLS_ALL.filter((t) => persona.tools.includes(t.name));
+  const quickActions = AI_QUICK_ACTIONS.filter((action) => action.scopes.some((scope) => persona.scope.includes(scope))).slice(0, 6);
   const assistantMutation = trpc.ai.assist.useMutation();
   const requestApprovalMutation = trpc.ai.requestActionApproval.useMutation();
   const decideApprovalMutation = trpc.ai.decideActionApproval.useMutation();
@@ -39817,7 +39902,14 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       setMessages(convo);
       await persistTurn(question, responseData.result);
     } catch (e) {
-      const message = "The Business Consultant could not be reached. Please try again.";
+      const providerMessage = typeof e?.message === "string" ? e.message : "";
+      const message = providerMessage.includes("temporarily unavailable")
+        ? providerMessage
+        : providerMessage.includes("too many requests")
+          ? "The AI Assistant is busy. Please wait a minute and try again."
+          : providerMessage.includes("shorten or rephrase")
+            ? providerMessage
+            : "The AI Assistant could not respond right now. Please try again.";
       notify(message, "error");
       setAssistantError({ message, question });
       setMessages(messages);
@@ -39875,6 +39967,38 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
             {anomalyMutation.isPending ? "Analyzing signals…" : "Check cash & stock risks"}
           </button>
         </div>
+        {quickActions.length > 0 && (
+          <div className="mt-2.5 border-t border-slate-200/70 pt-2.5">
+            <div className="mb-1.5 flex items-center gap-1.5">
+              <Sparkles size={12} className="text-[#16A34A]" />
+              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Specialized tools</span>
+              <span className="text-[10px] text-slate-400">· grounded in live data</span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <button
+                    key={action.id}
+                    type="button"
+                    onClick={() => send(action.prompt)}
+                    disabled={busy}
+                    title={action.prompt}
+                    className="group flex min-w-0 items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-2.5 py-2 text-left transition-colors hover:border-[#16A34A]/40 hover:bg-[#16A34A]/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md" style={{ backgroundColor: `${action.color}14`, color: action.color }}>
+                      <Icon size={14} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[11px] font-semibold text-slate-700 group-hover:text-[#111827]">{action.label}</span>
+                      <span className="block truncate text-[10px] text-slate-400">{action.description}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
       {assistantError && !busy && <div role="alert" className="mx-3 mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-[12px] text-rose-800"><span>{assistantError.message}</span><button type="button" onClick={() => send(assistantError.question)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 py-1.5 font-semibold text-rose-800 transition hover:bg-rose-100"><RotateCcw size={13}/>Try again</button></div>}
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
@@ -42977,6 +43101,8 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
         className="dashboard-topbar-notifications relative flex h-10 w-10 items-center justify-center rounded-lg border-0 bg-transparent text-slate-500 shadow-none transition-colors hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
         aria-label={"Notifications" + (unreadCount ? " (" + unreadCount + " unread)" : "")}
         aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-controls="workspace-notification-menu"
       >
         <Bell size={17} strokeWidth={1.75} />
         {unreadCount > 0 && (
@@ -42988,16 +43114,19 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
         <>
           <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
           <div
-            className="absolute right-0 top-full z-40 mt-2 max-h-[calc(100dvh-5.5rem)] w-[min(92vw,360px)] overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-lg"
+            id="workspace-notification-menu"
+            role="dialog"
+            aria-label="Workspace notifications"
+            className="dashboard-notification-menu absolute right-0 top-full z-40 mt-2 max-h-[calc(100dvh-5.5rem)] w-[min(92vw,360px)] overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg"
             style={{ animation: "toastIn .15s ease-out" }}
           >
-            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-[13px] font-semibold text-[#111827]">Notifications</h3>
+            <div className="dashboard-notification-menu-header flex items-center justify-between border-b border-slate-100 px-4 py-3.5">
+              <div className="min-w-0"><p className="text-[9px] font-bold uppercase tracking-[.16em] text-emerald-700">Workspace pulse</p><h3 className="text-[13px] font-semibold text-[#111827]">Notifications</h3></div>
               {unreadCount > 0 && <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700">{unreadCount} unread</span>}
             </div>
-            <div className="max-h-[min(52dvh,360px)] overscroll-contain overflow-y-auto">
+            <div className="dashboard-notification-list max-h-[min(52dvh,360px)] overscroll-contain overflow-y-auto" role="list">
               {alerts.length === 0 ? (
-                <div className="px-4 py-8 text-center">
+                <div className="dashboard-notification-empty px-4 py-8 text-center">
                   <CheckCircle2 size={20} className="text-[#16A34A] mx-auto mb-2" />
                   <p className="text-[12.5px] text-slate-500">All clear — nothing needs attention right now.</p>
                 </div>
@@ -43008,9 +43137,9 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
                     <button
                       key={a.id}
                       onClick={() => { markRead(a.id); onNavigate(a.target); setOpen(false); }}
-                      className={`flex min-h-12 w-full items-start gap-3 border-b border-slate-50 px-3 py-3 text-left transition-colors hover:bg-slate-50/70 sm:px-4 last:border-0 ${readIds.has(a.id) ? "opacity-60" : "bg-rose-50/35"}`}
+                      className={`dashboard-notification-item group flex min-h-12 w-full items-start gap-3 border-b border-slate-50 px-3 py-3 text-left transition-colors hover:bg-slate-50/70 sm:px-4 last:border-0 ${readIds.has(a.id) ? "is-read opacity-60" : "is-unread bg-rose-50/35"}`}
                     >
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${a.color}14` }}>
+                      <div className="dashboard-notification-item-icon grid h-9 w-9 shrink-0 place-items-center rounded-xl" style={{ backgroundColor: `${a.color}14` }}>
                         <Icon size={15} style={{ color: a.color }} />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -43024,10 +43153,10 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
               )}
             </div>
             {/* Daily Briefing quick-open */}
-            <div className="px-3 py-2.5 border-t border-slate-100">
+            <div className="dashboard-notification-menu-footer border-t border-slate-100 px-3 py-3">
               <button
                 onClick={() => { setOpen(false); if(window.__openDailyBrief) window.__openDailyBrief(); }}
-                className="w-full flex items-center justify-center gap-1.5 text-[12px] font-bold text-white py-2 rounded-xl bg-[#0D2214] hover:bg-[#1a3a2a] transition-colors">
+                className="dashboard-notification-brief-button flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#0D2214] py-2.5 text-[11.5px] font-bold text-white shadow-sm transition-colors hover:bg-[#1a3a2a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50">
                 📊 View Today Daily Brief
               </button>
             </div>
