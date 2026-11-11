@@ -52,6 +52,7 @@ import { FreeTrialBanner } from "./components/FreeTrialBanner";
 import { SHELL_COLOR_PRESETS, useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { resolveConnectedWorkspaceSnapshot } from "./lib/connectedWorkspaceSnapshot";
 import { buildConnectedWorkspaceCsv, connectedWorkspaceExportFilename } from "./lib/connectedWorkspaceExport";
+import { buildOwnerRecordHistoryCsv, buildOwnerRecordHistoryPrintHtml, ownerRecordHistoryExportFilename } from "./lib/ownerRecordHistoryExport";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { AuthContext, useAuthContext } from "./contexts/AuthContext";
 import { fetchWithSupabaseAuthRecovery, getSupabaseAuthClient, isDefinitiveSupabaseAuthFailure, refreshSupabaseSession } from "./lib/supabaseAuthClient";
@@ -1927,15 +1928,16 @@ function OwnerRecordHistory({ currentUser }) {
   const [query, setQuery] = useState("");
   const [operation, setOperation] = useState("All");
   const rows = rowsOf(history);
-  const visible = useMemo(() => {
+  const filteredRows = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return rows.filter((row) => {
       if (operation !== "All" && row.operation !== operation) return false;
       if (!needle) return true;
       return [row.table_name, row.record_id, row.actor_name, row.actor_role, row.operation, JSON.stringify(row.changed_fields || [])]
         .some((value) => String(value || "").toLowerCase().includes(needle));
-    }).slice(0, 200);
+    });
   }, [rows, query, operation]);
+  const visible = filteredRows.slice(0, 200);
 
   if (!canRead) return null;
 
@@ -1945,6 +1947,26 @@ function OwnerRecordHistory({ currentUser }) {
     DELETE: "bg-rose-50 text-rose-700",
   };
   const snapshot = (value) => value ? JSON.stringify(value, null, 2) : "No snapshot";
+  const downloadCsv = () => {
+    const blob = new Blob([buildOwnerRecordHistoryCsv(filteredRows)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = ownerRecordHistoryExportFilename();
+    anchor.click();
+    URL.revokeObjectURL(url);
+    notify(`Downloaded ${filteredRows.length} owner history record${filteredRows.length === 1 ? "" : "s"} as CSV.`, "success");
+  };
+  const printPdf = () => {
+    const popup = window.open("", "_blank", "noopener,noreferrer");
+    if (!popup) {
+      notify("Allow pop-ups to generate the PDF report.", "error");
+      return;
+    }
+    popup.document.open();
+    popup.document.write(buildOwnerRecordHistoryPrintHtml(filteredRows));
+    popup.document.close();
+  };
 
   return (
     <section className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm" aria-label="Owner record history">
@@ -1967,6 +1989,8 @@ function OwnerRecordHistory({ currentUser }) {
           <option>All</option><option>INSERT</option><option>UPDATE</option><option>DELETE</option>
         </select>
         <button type="button" onClick={() => history.reload()} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-[12px] font-semibold text-slate-600 hover:bg-slate-50"><RefreshCw size={13} className={history.refreshing ? "animate-spin" : ""} /> Refresh</button>
+        <button type="button" onClick={downloadCsv} disabled={!filteredRows.length} aria-label="Export owner history as CSV" className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-[12px] font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"><Download size={13} /> CSV</button>
+        <button type="button" onClick={printPdf} disabled={!filteredRows.length} aria-label="Export owner history as PDF" className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-[12px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"><Printer size={13} /> PDF</button>
       </div>
       <div className="overflow-hidden rounded-xl border border-slate-100">
         {history.loading && <p className="px-4 py-8 text-center text-[12px] text-slate-400">Loading immutable history…</p>}
