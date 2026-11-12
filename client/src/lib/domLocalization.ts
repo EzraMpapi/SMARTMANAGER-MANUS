@@ -5190,14 +5190,41 @@ function translateValue(value: string): string {
   const phrase = PHRASES[canonical.trim()];
   return `${leading}${phrase?.[activeLanguage] || canonical}${trailing}`;
 }
+
+function renderPhrase(source: string, template: string): string {
+  const leading = template.match(/^\s*/)?.[0] || "";
+  const trailing = template.match(/\s*$/)?.[0] || "";
+  return `${leading}${PHRASES[source]?.[activeLanguage] || source}${trailing}`;
+}
+
+function isRenderedFrom(source: string, rendered: string): boolean {
+  const phrase = PHRASES[source];
+  if (!phrase) return false;
+  const trimmed = rendered.trim();
+  return trimmed === source || Object.values(phrase).includes(trimmed);
+}
+
 function visit(root: Node) {
   if (root.nodeType === Node.TEXT_NODE) {
     const text = root as Text;
-    if (!originals.has(text))
-      originals.set(text, canonicalValue(text.nodeValue || ""));
-    const original = originals.get(text) || "";
-    const translated = translateValue(original);
-    if (text.nodeValue !== translated) text.nodeValue = translated;
+    const current = text.nodeValue || "";
+    const trimmed = current.trim();
+    const cached = originals.get(text);
+    // Only text this bridge knows as a phrase is ours to translate. Everything
+    // else belongs to React and must be left untouched, otherwise in-place
+    // updates are reverted to whatever value was first seen here.
+    const source = cached && isRenderedFrom(cached, current)
+      ? cached
+      : PHRASES[trimmed]
+        ? trimmed
+        : null;
+    if (!source) {
+      if (cached) originals.delete(text);
+      return;
+    }
+    originals.set(text, source);
+    const translated = renderPhrase(source, current);
+    if (current !== translated) text.nodeValue = translated;
     return;
   }
   if (root.nodeType !== Node.ELEMENT_NODE) return;
