@@ -1,131 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { AlertCircle, CheckCircle2, ChevronDown, Eye, EyeOff, Fingerprint, Globe2, LockKeyhole, Mail, RefreshCw, ShieldCheck, UserRound } from "lucide-react";
+import { AlertCircle, CheckCircle2, ChevronDown, Eye, EyeOff, Fingerprint, Globe2, LockKeyhole, Mail, RefreshCw, ShieldCheck } from "lucide-react";
 import { PASSWORD_REQUIREMENT_LABELS, getPasswordChecks, isEnterprisePassword, passwordStrength } from "../lib/authOnboarding";
-import { useLanguage } from "../contexts/LanguageContext";
+import { useLanguage, useLanguageOptional } from "../contexts/LanguageContext";
+import { AUTH_SHELL_STATS, authUiFor } from "../lib/authTranslations";
+import { INDUSTRY_LABELS } from "../lib/signupTranslations";
 import { readRememberedOrganizationIndustryFocus } from "../lib/organizationIndustryFocus";
 import { BrandLogo } from "./BrandLogo";
 import { LoginModuleEcosystem } from "./LoginModuleEcosystem";
 
-const copy = {
-  en: {
-    workspace: "Smart Manager workspace",
-    secure: "Secure business workspace",
-    madeIn: "Made in Tanzania",
-    protected: "Protected by secure authentication and tenant-aware access controls.",
-    welcome: "Welcome back",
-    welcomeCopy: "Sign in to continue to your secure Smart Manager workspace.",
-    email: "Work email",
-    emailPlaceholder: "you@company.com",
-    password: "Password",
-    passwordPlaceholder: "Enter your password",
-    remember: "Remember me",
-    forgot: "Forgot password?",
-    signIn: "Sign in securely",
-    signingIn: "Signing you in…",
-    divider: "or continue with",
-    newAccount: "New to Smart Manager?",
-    create: "Create your workspace",
-    oauthEmail: "Use email instead",
-    passkey: "Sign in with a passkey",
-    passkeyBusy: "Waiting for your passkey…",
-    invalidEmail: "Enter a valid work email address.",
-    missingPassword: "Enter your password to continue.",
-    credentialsRequired: "Enter your work email and password to continue.",
-    capsLock: "Caps Lock is on.",
-    secureHint: "Your session is protected with tenant-aware access controls.",
-    help: "Trouble signing in? Contact your workspace administrator.",
-    recovery: {
-      title: "Recover access",
-      copy: "Enter your work email and we’ll send a secure password reset link.",
-      emailPlaceholder: "you@company.com",
-      send: "Send reset link",
-      sending: "Sending secure link…",
-      back: "Back to sign in",
-      sentTitle: "Check your inbox",
-      sentCopy: "If the address is associated with a password-based workspace account, a secure reset link is on its way.",
-      sentNotice: "For security, this confirmation is the same whether or not the address is registered. Check your inbox and spam folder for a Smart Manager recovery link.",
-      validEmail: "Enter a valid work email address.",
-      resetTitle: "Choose a new password",
-      resetCopy: "Create a strong password to protect your business workspace.",
-      resetCompleteTitle: "Password updated",
-      resetCompleteCopy: "Your password has been changed securely. Sign in with your new credentials.",
-      resetComplete: "Your password has been updated successfully.",
-      resetLinkError: "This reset link is invalid or has expired. Request a new one to continue.",
-      passwordError: "Use a password that meets all the requirements below.",
-      matchError: "The password confirmation does not match.",
-      update: "Update password",
-      updating: "Updating password…",
-      newPassword: "New password",
-      confirmPassword: "Confirm new password",
-    },
-    moduleFocus: "Module focus",
-    industries: { general: "Universal business", retail: "Retail & wholesale", manufacturing: "Manufacturing", services: "Professional services", healthcare: "Healthcare", education: "Education", hospitality: "Hospitality" },
-    oauthRecovery: {
-      google: { title: "Google sign-in was not completed", copy: "Try Google again, or use your work email and password instead. Your workspace and account data are unchanged.", retry: "Try Google again" },
-      azure: { title: "Microsoft sign-in was not completed", copy: "Try Microsoft again, or use your work email and password instead. Your workspace and account data are unchanged.", retry: "Try Microsoft again" },
-      apple: { title: "Apple sign-in was not completed", copy: "Try Apple again, or use your work email and password instead. Your workspace and account data are unchanged.", retry: "Try Apple again" },
-    },
-  },
-  sw: {
-    workspace: "Eneo la kazi la Smart Manager",
-    secure: "Eneo salama la biashara",
-    madeIn: "Imetengenezwa Tanzania",
-    protected: "Imelindwa kwa uthibitishaji salama na udhibiti wa upatikanaji wa kila kampuni.",
-    welcome: "Karibu tena",
-    welcomeCopy: "Ingia kuendelea kwenye eneo lako salama la Smart Manager.",
-    email: "Barua pepe ya kazi",
-    emailPlaceholder: "wewe@kampuni.co.tz",
-    password: "Nenosiri",
-    passwordPlaceholder: "Ingiza nenosiri lako",
-    remember: "Kumbuka mimi",
-    forgot: "Umesahau nenosiri?",
-    signIn: "Ingia kwa usalama",
-    signingIn: "Inaingia…",
-    divider: "au endelea na",
-    newAccount: "Huna akaunti ya Smart Manager?",
-    create: "Unda eneo lako la kazi",
-    oauthEmail: "Tumia barua pepe badala yake",
-    passkey: "Ingia kwa passkey",
-    passkeyBusy: "Inasubiri passkey yako…",
-    invalidEmail: "Ingiza barua pepe halali ya kazi.",
-    missingPassword: "Ingiza nenosiri lako ili kuendelea.",
-    credentialsRequired: "Ingiza barua pepe ya kazi na nenosiri lako kuendelea.",
-    capsLock: "Caps Lock imewashwa.",
-    secureHint: "Session yako imelindwa kwa udhibiti salama wa kampuni.",
-    help: "Una tatizo kuingia? Wasiliana na msimamizi wa eneo lako la kazi.",
-    recovery: {
-      title: "Rejesha upatikanaji",
-      copy: "Ingiza barua pepe ya kazi na tutakutumia kiungo salama cha kubadilisha nenosiri.",
-      emailPlaceholder: "wewe@kampuni.co.tz",
-      send: "Tuma kiungo cha kubadilisha nenosiri",
-      sending: "Inatuma kiungo salama…",
-      back: "Rudi kuingia",
-      sentTitle: "Kagua kikasha chako",
-      sentCopy: "Ikiwa anwani hii imeunganishwa na akaunti ya nenosiri, kiungo salama cha kubadilisha nenosiri kimetumwa.",
-      sentNotice: "Kwa usalama, ujumbe huu ni uleule bila kujali kama anwani imesajiliwa. Kagua kikasha na folda ya barua taka kwa kiungo cha Smart Manager.",
-      validEmail: "Ingiza barua pepe halali ya kazi.",
-      resetTitle: "Chagua nenosiri jipya",
-      resetCopy: "Unda nenosiri imara kulinda eneo lako la kazi.",
-      resetCompleteTitle: "Nenosiri limebadilishwa",
-      resetCompleteCopy: "Nenosiri lako limebadilishwa kwa usalama. Ingia kwa kutumia nenosiri lako jipya.",
-      resetComplete: "Nenosiri lako limebadilishwa kwa mafanikio.",
-      resetLinkError: "Kiungo hiki si sahihi au muda wake umeisha. Omba kiungo kipya ili kuendelea.",
-      passwordError: "Tumia nenosiri linalokidhi mahitaji yote hapa chini.",
-      matchError: "Uthibitisho wa nenosiri haulingani.",
-      update: "Badilisha nenosiri",
-      updating: "Inabadilisha nenosiri…",
-      newPassword: "Nenosiri jipya",
-      confirmPassword: "Thibitisha nenosiri jipya",
-    },
-    moduleFocus: "Mwelekeo wa moduli",
-    industries: { general: "Biashara ya jumla", retail: "Rejareja na jumla", manufacturing: "Uzalishaji", services: "Huduma za kitaalamu", healthcare: "Afya", education: "Elimu", hospitality: "Ukarimu" },
-    oauthRecovery: {
-      google: { title: "Kuingia kwa Google hakukukamilika", copy: "Jaribu Google tena, au tumia barua pepe ya kazi na nenosiri lako. Eneo lako la kazi na taarifa za akaunti havijabadilika.", retry: "Jaribu Google tena" },
-      azure: { title: "Kuingia kwa Microsoft hakukukamilika", copy: "Jaribu Microsoft tena, au tumia barua pepe ya kazi na nenosiri lako. Eneo lako la kazi na taarifa za akaunti havijabadilika.", retry: "Jaribu Microsoft tena" },
-      apple: { title: "Kuingia kwa Apple hakukukamilika", copy: "Jaribu Apple tena, au tumia barua pepe ya kazi na nenosiri lako. Eneo lako la kazi na taarifa za akaunti havijabadilika.", retry: "Jaribu Apple tena" },
-    },
-  },
-};
+const OAUTH_PROVIDER_NAMES = { google: "Google", azure: "Microsoft", apple: "Apple" };
+
 
 function TanzaniaMark() {
   return <span aria-hidden="true" className="relative h-5 w-5 shrink-0 overflow-hidden rounded-full shadow-sm" style={{ background: "linear-gradient(135deg,#00A651 0 42%,#FCD116 42% 47%,#101828 47% 56%,#1F75FE 56% 100%)" }} />;
@@ -154,14 +38,18 @@ export function writeAuthBranding(branding) {
   window.localStorage.setItem("bs_auth_branding", JSON.stringify(safe));
 }
 
-export function EnterpriseAuthShell({ title, subtitle, children, asideTitle = "Your business, in command.", asideCopy = "Bring finance, sales, people, inventory, and insight together in one secure workspace.", motion = false, authSurface = "login" }) {
-  const { lang, setLang, languageOptions } = useLanguage();
-  const ui = copy[lang] || copy.en;
+export function EnterpriseAuthShell({ title, subtitle, children, asideTitle, asideCopy, motion = false, authSurface = "login" }) {
+  const { lang, setLang, languageOptions, t } = useLanguage();
+  const ui = authUiFor(lang);
+  const industryLabels = INDUSTRY_LABELS[lang] || INDUSTRY_LABELS.en;
+  const shellStats = AUTH_SHELL_STATS[lang] || AUTH_SHELL_STATS.en;
   const [industry, setIndustry] = useState(readRememberedOrganizationIndustryFocus);
   const [authBranding] = useState(readAuthBranding);
   const backgroundImage = authSurface === "onboarding" ? authBranding.onboardingBackgroundImage : authBranding.loginBackgroundImage;
   const sceneStyle = { fontFamily: "'Inter', system-ui, sans-serif", ...(backgroundImage ? { backgroundImage: `linear-gradient(120deg, rgba(247,251,248,.97), rgba(247,251,248,.88)), url("${backgroundImage}")`, backgroundPosition: "center", backgroundSize: "cover" } : {}) };
   const asideStyle = backgroundImage ? { backgroundImage: `linear-gradient(145deg, rgba(255,255,255,.96), rgba(240,253,244,.9)), url("${backgroundImage}")`, backgroundPosition: "center", backgroundSize: "cover" } : undefined;
+  const resolvedAsideTitle = asideTitle || ui.aside.login.title;
+  const resolvedAsideCopy = asideCopy || ui.aside.login.copy;
 
   return <div className={`sm-auth-scene min-h-screen overflow-x-hidden bg-[#f7fbf8] text-slate-950 ${motion ? "auth-screen-motion" : ""}`} style={sceneStyle}>
     <div className="mx-auto flex min-h-screen max-w-[1680px]">
@@ -169,13 +57,13 @@ export function EnterpriseAuthShell({ title, subtitle, children, asideTitle = "Y
         <div className="absolute inset-0 opacity-60" style={{ backgroundImage: "radial-gradient(circle at 18% 22%, rgba(16,185,129,.14), transparent 27%), radial-gradient(circle at 92% 78%, rgba(59,130,246,.1), transparent 27%), linear-gradient(rgba(15,23,42,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,.035) 1px, transparent 1px)", backgroundSize: "auto,auto,54px 54px,54px 54px" }} />
         <LoginModuleEcosystem variant="desktop" industry={industry} />
         <div className="relative z-10"><BrandLogo variant="full" priority className="w-[min(25rem,95%)] rounded-[1.7rem]" /></div>
-        <div className="relative z-10 max-w-[31rem] pb-14"><p className="mb-5 text-[11px] font-bold uppercase tracking-[.19em] text-emerald-700">{ui.secure}</p><h1 className="max-w-[11ch] text-[48px] font-bold leading-[1.03] tracking-[-.05em] text-slate-950" style={{ fontFamily: "'Poppins', sans-serif" }}>{asideTitle}</h1><p className="mt-6 max-w-md text-[15px] leading-7 text-slate-600">{asideCopy}</p><label className="mt-7 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 shadow-sm"><span className="text-slate-500">{ui.moduleFocus}</span><select value={industry} onChange={(event) => setIndustry(event.target.value)} className="max-w-40 bg-transparent text-slate-800 outline-none"><option value="general">{ui.industries.general}</option><option value="retail">{ui.industries.retail}</option><option value="manufacturing">{ui.industries.manufacturing}</option><option value="services">{ui.industries.services}</option><option value="healthcare">{ui.industries.healthcare}</option><option value="education">{ui.industries.education}</option><option value="hospitality">{ui.industries.hospitality}</option></select></label><div className="mt-10 grid grid-cols-3 gap-3 border-t border-slate-200 pt-6">{[["Security", "Tenant-aware"], ["Control", "Role-based"], ["Ready", "Modular ERP"]].map(([label, value]) => <div key={label}><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</p><p className="mt-1 text-[12px] font-semibold text-slate-800">{value}</p></div>)}</div></div>
-        <p className="relative z-10 text-[11px] text-slate-400">© {new Date().getFullYear()} Smart Manager · Enterprise Business Ecosystem</p>
+        <div className="relative z-10 max-w-[31rem] pb-14"><p className="mb-5 text-[11px] font-bold uppercase tracking-[.19em] text-emerald-700">{ui.shell.secure}</p><h1 className="max-w-[11ch] text-[48px] font-bold leading-[1.03] tracking-[-.05em] text-slate-950" style={{ fontFamily: "'Poppins', sans-serif" }}>{resolvedAsideTitle}</h1><p className="mt-6 max-w-md text-[15px] leading-7 text-slate-600">{resolvedAsideCopy}</p><label className="mt-7 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 shadow-sm"><span className="text-slate-500">{ui.shell.moduleFocus}</span><select value={industry} onChange={(event) => setIndustry(event.target.value)} className="max-w-40 bg-transparent text-slate-800 outline-none"><option value="general">{industryLabels.general}</option><option value="retail">{industryLabels.retail}</option><option value="manufacturing">{industryLabels.manufacturing}</option><option value="services">{industryLabels.services}</option><option value="healthcare">{industryLabels.healthcare}</option><option value="education">{industryLabels.education}</option><option value="hospitality">{industryLabels.hospitality}</option></select></label><div className="mt-10 grid grid-cols-3 gap-3 border-t border-slate-200 pt-6">{shellStats.map(([label, value]) => <div key={label}><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</p><p className="mt-1 text-[12px] font-semibold text-slate-800">{value}</p></div>)}</div></div>
+        <p className="relative z-10 text-[11px] text-slate-400">© {new Date().getFullYear()} Smart Manager · {ui.shell.ecosystem}</p>
       </aside>
       <main className="relative flex flex-1 items-center justify-center px-4 py-7 sm:px-8 sm:py-10 lg:px-14"><LoginModuleEcosystem variant="mobile" industry={industry} /><section className="relative z-10 w-full max-w-[470px]">
-        <header className="sm-auth-mobile-brand mb-7 flex flex-col items-center text-center lg:hidden"><BrandLogo variant="full" priority className="w-[min(22rem,92vw)] rounded-[1.5rem] shadow-[0_16px_38px_rgba(0,120,73,.14)]" /><p className="sr-only">Simamia Biashara Yako. Popote, Wakati Wote.</p><div className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-emerald-800"><TanzaniaMark />{ui.secure}</div></header>
-        <div className={`sm-auth-card rounded-[28px] border border-emerald-950/8 bg-white/95 p-5 shadow-[0_24px_60px_rgba(19,58,42,.11)] backdrop-blur sm:p-8 ${motion ? "auth-card-enter" : ""}`}><div className="mb-7"><p className="mb-2 text-[10px] font-bold uppercase tracking-[.18em] text-emerald-700">{ui.workspace}</p><h2 className="text-[27px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins', sans-serif" }}>{title}</h2><p className="mt-2 text-[13.5px] leading-6 text-slate-500">{subtitle}</p></div>{children}</div>
-        <footer className="mt-5 flex flex-col items-center gap-3 text-center"><p className="flex items-center gap-2 text-[11px] leading-5 text-slate-500"><TanzaniaMark />{ui.madeIn} · {ui.protected}</p><label className="sm-language-control inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-[11px] font-semibold text-slate-600 shadow-sm" title={ui.language}><Globe2 size={14} aria-hidden="true" /><span className="sr-only">Language</span><span className="sm-language-code" aria-hidden="true">{lang.toUpperCase()}</span><select aria-label={ui.language} value={lang} onChange={(event) => setLang(event.target.value)} className="sm-language-select appearance-none bg-transparent pr-1 outline-none">{languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}</select><ChevronDown size={13} aria-hidden="true" /></label></footer>
+        <header className="sm-auth-mobile-brand mb-7 flex flex-col items-center text-center lg:hidden"><BrandLogo variant="full" priority className="w-[min(22rem,92vw)] rounded-[1.5rem] shadow-[0_16px_38px_rgba(0,120,73,.14)]" /><p className="sr-only">Simamia Biashara Yako. Popote, Wakati Wote.</p><div className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-emerald-800"><TanzaniaMark />{ui.shell.secure}</div></header>
+        <div className={`sm-auth-card rounded-[28px] border border-emerald-950/8 bg-white/95 p-5 shadow-[0_24px_60px_rgba(19,58,42,.11)] backdrop-blur sm:p-8 ${motion ? "auth-card-enter" : ""}`}><div className="mb-7"><p className="mb-2 text-[10px] font-bold uppercase tracking-[.18em] text-emerald-700">{ui.login.workspace}</p><h2 className="text-[27px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins', sans-serif" }}>{title}</h2><p className="mt-2 text-[13.5px] leading-6 text-slate-500">{subtitle}</p></div>{children}</div>
+        <footer className="mt-5 flex flex-col items-center gap-3 text-center"><p className="flex items-center gap-2 text-[11px] leading-5 text-slate-500"><TanzaniaMark />{ui.shell.madeIn} · {ui.shell.protected}</p><label className="sm-language-control inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-[11px] font-semibold text-slate-600 shadow-sm" title={t("language")}><Globe2 size={14} aria-hidden="true" /><span className="sr-only">{t("language")}</span><span className="sm-language-code" aria-hidden="true">{lang.toUpperCase()}</span><select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value)} className="sm-language-select appearance-none bg-transparent pr-1 outline-none">{languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}</select><ChevronDown size={13} aria-hidden="true" /></label></footer>
       </section></main>
     </div>
   </div>;
@@ -187,9 +75,11 @@ export function AuthNotice({ type = "error", children }) {
 }
 
 export function PasswordStrengthMeter({ password }) {
-  const checks = getPasswordChecks(password); const strength = passwordStrength(password); const labels = ["Very weak", "Weak", "Fair", "Good", "Strong"];
+  const { lang } = useLanguageOptional();
+  const strengthUi = authUiFor(lang).strength;
+  const checks = getPasswordChecks(password); const strength = passwordStrength(password); const labels = strengthUi.levels;
   if (!password) return null;
-  return <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3"><div className="flex items-center justify-between"><p className="text-[11px] font-semibold text-slate-600">Password strength</p><p className={`text-[11px] font-semibold ${strength >= 4 ? "text-emerald-700" : "text-amber-700"}`}>{labels[Math.max(0, strength - 1)]}</p></div><div className="mt-2 grid grid-cols-5 gap-1">{Array.from({ length: 5 }, (_, index) => <span key={index} className={`h-1 rounded-full ${index < strength ? (strength >= 4 ? "bg-emerald-500" : "bg-amber-400") : "bg-slate-200"}`} />)}</div><div className="mt-3 grid gap-1.5 sm:grid-cols-2">{PASSWORD_REQUIREMENT_LABELS.map(([key, label]) => <p key={key} className={`flex items-center gap-1.5 text-[10.5px] ${checks[key] ? "text-emerald-700" : "text-slate-400"}`}><CheckCircle2 size={12} />{label}</p>)}</div></div>;
+  return <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3"><div className="flex items-center justify-between"><p className="text-[11px] font-semibold text-slate-600">{strengthUi.title}</p><p className={`text-[11px] font-semibold ${strength >= 4 ? "text-emerald-700" : "text-amber-700"}`}>{labels[Math.max(0, strength - 1)]}</p></div><div className="mt-2 grid grid-cols-5 gap-1">{Array.from({ length: 5 }, (_, index) => <span key={index} className={`h-1 rounded-full ${index < strength ? (strength >= 4 ? "bg-emerald-500" : "bg-amber-400") : "bg-slate-200"}`} />)}</div><div className="mt-3 grid gap-1.5 sm:grid-cols-2">{PASSWORD_REQUIREMENT_LABELS.map(([key], index) => <p key={key} className={`flex items-center gap-1.5 text-[10.5px] ${checks[key] ? "text-emerald-700" : "text-slate-400"}`}><CheckCircle2 size={12} />{strengthUi.requirements[index]}</p>)}</div></div>;
 }
 
 function GoogleGlyph({ size = 16 }) {
@@ -216,7 +106,9 @@ function AppleGlyph({ size = 16 }) {
 
 export function EnterpriseLoginView({ onSignIn, onSignup, onForgot, onOAuth, onPasskey, onClearOAuthError, oauthProvider = "google", toMessage, configured, initialError = null, terminalDiagnostic = null }) {
   const { lang } = useLanguage();
-  const ui = copy[lang] || copy.en;
+  const loginUi = authUiFor(lang);
+  const ui = loginUi.login;
+  const providerName = OAUTH_PROVIDER_NAMES[oauthProvider] || OAUTH_PROVIDER_NAMES.google;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
@@ -225,7 +117,7 @@ export function EnterpriseLoginView({ onSignIn, onSignup, onForgot, onOAuth, onP
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => { if (initialError) setError(initialError); }, [initialError]);
+  useEffect(() => { setError(null); }, [lang]);
 
   async function submit(event) {
     event.preventDefault();
@@ -253,7 +145,7 @@ export function EnterpriseLoginView({ onSignIn, onSignup, onForgot, onOAuth, onP
     }
   }
 
-  const providerRecovery = ui.oauthRecovery[oauthProvider] || ui.oauthRecovery.google;
+  const providerRecovery = { title: ui.oauthFailed(providerName), copy: ui.oauthFailedCopy(providerName), retry: ui.retryProvider(providerName) };
   function useEmailInstead() { setError(null); onClearOAuthError?.(); }
   function retryProvider() { setError(null); onClearOAuthError?.(); setBusy(true); onOAuth(oauthProvider); }
   function updateCapsLock(event) { setCapsLockOn(Boolean(event.getModifierState?.("CapsLock"))); }
@@ -264,19 +156,19 @@ export function EnterpriseLoginView({ onSignIn, onSignup, onForgot, onOAuth, onP
     try { await onPasskey(rememberMe); } catch (passkeyError) { setError(toMessage(passkeyError)); } finally { setBusy(false); }
   }
 
-  return <EnterpriseAuthShell title={ui.welcome} subtitle={ui.welcomeCopy} asideTitle="Your operations, in command." asideCopy="Bring finance, sales, people, inventory, and insight into a workspace designed for accountable execution.">
+  return <EnterpriseAuthShell title={ui.welcome} subtitle={ui.welcomeCopy}>
     <form onSubmit={submit} className="space-y-4" noValidate aria-busy={busy}>
       <p className="flex items-center gap-2 rounded-xl bg-emerald-50/70 px-3 py-2 text-[11px] leading-5 text-emerald-800"><ShieldCheck size={15} aria-hidden="true" />{ui.secureHint}</p>
       {error && <AuthNotice>{error}</AuthNotice>}
-      {terminalDiagnostic && <AuthNotice><span>Previous session ended securely. Sign in again to continue.</span><span className="mt-1 block text-[10px] font-bold uppercase tracking-[.12em]">Diagnostic: {terminalDiagnostic}</span></AuthNotice>}
+      {terminalDiagnostic && <AuthNotice><span>{ui.terminalNotice}</span><span className="mt-1 block text-[10px] font-bold uppercase tracking-[.12em]">{ui.diagnostic}: {terminalDiagnostic}</span></AuthNotice>}
       {initialError && <section aria-labelledby="oauth-recovery-title" className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3.5 shadow-sm"><div className="flex gap-2.5"><span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800"><RefreshCw size={16} aria-hidden="true" /></span><div><h3 id="oauth-recovery-title" className="text-[12.5px] font-bold text-amber-950">{providerRecovery.title}</h3><p className="mt-1 text-[11.5px] leading-5 text-amber-900/80">{providerRecovery.copy}</p></div></div><div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"><button type="button" onClick={retryProvider} disabled={busy || !configured} className="rounded-xl bg-amber-800 px-3 py-2 text-[11.5px] font-semibold text-white transition hover:bg-amber-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">{providerRecovery.retry}</button><button type="button" onClick={useEmailInstead} className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-[11.5px] font-semibold text-amber-950 transition hover:bg-amber-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2">{ui.oauthEmail}</button></div></section>}
       <AuthInput label={ui.email} icon={<Mail size={19} aria-hidden="true" />}><input id="smart-manager-login-email" name="email" type="email" inputMode="email" autoComplete="username" autoCapitalize="none" spellCheck={false} required value={email} onChange={(event) => setEmail(event.target.value)} placeholder={ui.emailPlaceholder} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-emerald-500/30" /></AuthInput>
-      <AuthInput label={ui.password} icon={<LockKeyhole size={19} aria-hidden="true" />}><input id="smart-manager-login-password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} onKeyDown={updateCapsLock} onKeyUp={updateCapsLock} onBlur={() => setCapsLockOn(false)} placeholder={ui.passwordPlaceholder} aria-describedby={capsLockOn ? "login-caps-lock" : undefined} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-emerald-500/30" /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1">{showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}</button></AuthInput>
+      <AuthInput label={ui.password} icon={<LockKeyhole size={19} aria-hidden="true" />}><input id="smart-manager-login-password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} onKeyDown={updateCapsLock} onKeyUp={updateCapsLock} onBlur={() => setCapsLockOn(false)} placeholder={ui.passwordPlaceholder} aria-describedby={capsLockOn ? "login-caps-lock" : undefined} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-emerald-500/30" /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? ui.hidePassword : ui.showPassword} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1">{showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}</button></AuthInput>
       {capsLockOn && <p id="login-caps-lock" role="status" className="-mt-2 flex items-center gap-1.5 text-[11px] font-medium text-amber-700"><AlertCircle size={13} aria-hidden="true" />{ui.capsLock}</p>}
       <div className="flex items-center justify-between gap-3"><label className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-slate-600"><input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />{ui.remember}</label><button type="button" onClick={onForgot} className="rounded-md text-[12px] font-semibold text-emerald-700 transition hover:text-emerald-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{ui.forgot}</button></div>
       <button type="submit" disabled={busy} className="relative flex min-h-[50px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#008a45] to-[#00a651] py-3.5 text-[14px] font-bold text-white shadow-[0_12px_25px_rgba(0,138,69,.24)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_28px_rgba(0,138,69,.3)] active:translate-y-0 active:scale-[.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60" aria-label={busy ? ui.signingIn : ui.signIn}>{busy && <RefreshCw size={16} className="mr-2 animate-spin" aria-hidden="true" />}{busy ? ui.signingIn : ui.signIn}</button>
       {configured && onPasskey && <button type="button" onClick={signInWithPasskey} disabled={busy} className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/60 py-3 text-[13px] font-semibold text-emerald-800 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 active:scale-[.985] disabled:cursor-not-allowed disabled:opacity-50"><Fingerprint size={16} aria-hidden="true" />{busy ? ui.passkeyBusy : ui.passkey}</button>}
-      {configured && <><div className="flex items-center gap-3 py-1 text-[10px] font-semibold uppercase tracking-[.14em] text-slate-400"><span className="h-px flex-1 bg-slate-200" />{ui.divider}<span className="h-px flex-1 bg-slate-200" /></div><div className="grid grid-cols-3 gap-2"><button type="button" disabled={busy} onClick={() => onOAuth("google")} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 disabled:opacity-50"><GoogleGlyph />Google</button><button type="button" disabled={busy} onClick={() => onOAuth("azure")} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 disabled:opacity-50"><MicrosoftGlyph />Microsoft</button><button type="button" disabled={busy} onClick={() => onOAuth("apple")} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 disabled:opacity-50"><AppleGlyph />Apple</button></div><p className="text-center text-[10.5px] leading-5 text-slate-400">{lang === "sw" ? "Tumia njia ileile uliyotumia kuunda akaunti yako." : "Use the same provider you used when your workspace account was created."}</p></>}
+      {configured && <><div className="flex items-center gap-3 py-1 text-[10px] font-semibold uppercase tracking-[.14em] text-slate-400"><span className="h-px flex-1 bg-slate-200" />{ui.divider}<span className="h-px flex-1 bg-slate-200" /></div><div className="grid grid-cols-3 gap-2"><button type="button" disabled={busy} onClick={() => onOAuth("google")} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 disabled:opacity-50"><GoogleGlyph />Google</button><button type="button" disabled={busy} onClick={() => onOAuth("azure")} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 disabled:opacity-50"><MicrosoftGlyph />Microsoft</button><button type="button" disabled={busy} onClick={() => onOAuth("apple")} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 disabled:opacity-50"><AppleGlyph />Apple</button></div><p className="text-center text-[10.5px] leading-5 text-slate-400">{ui.oauthNote}</p></>}
       <p className="pt-1 text-center text-[12.5px] text-slate-500">{ui.newAccount} <button type="button" onClick={onSignup} className="rounded-md font-semibold text-emerald-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{ui.create}</button></p>
       <p className="text-center text-[11px] leading-5 text-slate-400">{ui.help}</p>
     </form>
@@ -284,26 +176,30 @@ export function EnterpriseLoginView({ onSignIn, onSignup, onForgot, onOAuth, onP
 }
 
 export function PasswordRecoveryView({ onBack, onRequest, toMessage }) {
-  const { lang } = useLanguage(); const authCopy = copy[lang] || copy.en; const ui = authCopy.recovery;
+  const { lang } = useLanguage(); const authUi = authUiFor(lang); const ui = authUi.recovery;
   const [email, setEmail] = useState(""); const [busy, setBusy] = useState(false); const [error, setError] = useState(null); const [sent, setSent] = useState(false);
+  useEffect(() => { setError(null); }, [lang]);
   async function submit(event) { event.preventDefault(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError(ui.validEmail); return; } setBusy(true); setError(null); try { await onRequest(email.trim().toLowerCase()); setSent(true); } catch (requestError) { setError(toMessage(requestError)); } finally { setBusy(false); } }
-  return <EnterpriseAuthShell title={sent ? ui.sentTitle : ui.title} subtitle={sent ? ui.sentCopy : ui.copy} asideTitle="Access is recoverable." asideCopy="Password recovery is private by design. We never disclose whether a particular email address has an account." motion>{sent ? <div className="space-y-4"><AuthNotice type="success">{ui.sentNotice}</AuthNotice><button type="button" onClick={onBack} className="min-h-[46px] w-full rounded-2xl border border-slate-200 py-3 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{ui.back}</button></div> : <form onSubmit={submit} className="space-y-5" noValidate aria-busy={busy}>{error && <AuthNotice>{error}</AuthNotice>}<AuthInput label={authCopy.email} icon={<Mail size={19} aria-hidden="true" />}><input id="smart-manager-recovery-email" name="email" type="email" inputMode="email" autoComplete="username" autoFocus value={email} onChange={(event) => setEmail(event.target.value)} placeholder={ui.emailPlaceholder} autoCapitalize="none" spellCheck={false} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-emerald-500/30" /></AuthInput><button type="submit" disabled={busy} className="min-h-[50px] w-full rounded-2xl bg-[#008a45] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#006f37] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">{busy ? ui.sending : ui.send}</button><button type="button" onClick={onBack} className="mx-auto block rounded-md text-[12.5px] font-semibold text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{ui.back}</button></form>}</EnterpriseAuthShell>;
+  return <EnterpriseAuthShell title={sent ? ui.sentTitle : ui.title} subtitle={sent ? ui.sentCopy : ui.copy} asideTitle={authUi.aside.recovery.title} asideCopy={authUi.aside.recovery.copy} motion>{sent ? <div className="space-y-4"><AuthNotice type="success">{ui.sentNotice}</AuthNotice><button type="button" onClick={onBack} className="min-h-[46px] w-full rounded-2xl border border-slate-200 py-3 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{ui.back}</button></div> : <form onSubmit={submit} className="space-y-5" noValidate aria-busy={busy}>{error && <AuthNotice>{error}</AuthNotice>}<AuthInput label={authUi.login.email} icon={<Mail size={19} aria-hidden="true" />}><input id="smart-manager-recovery-email" name="email" type="email" inputMode="email" autoComplete="username" autoFocus value={email} onChange={(event) => setEmail(event.target.value)} placeholder={ui.emailPlaceholder} autoCapitalize="none" spellCheck={false} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-emerald-500/30" /></AuthInput><button type="submit" disabled={busy} className="min-h-[50px] w-full rounded-2xl bg-[#008a45] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#006f37] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">{busy ? ui.sending : ui.send}</button><button type="button" onClick={onBack} className="mx-auto block rounded-md text-[12.5px] font-semibold text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{ui.back}</button></form>}</EnterpriseAuthShell>;
 }
 
 export const ForgotPasswordView = PasswordRecoveryView;
 
 export function ResetPasswordView({ recoveryToken, onBack, onUpdate, toMessage }) {
-  const { lang } = useLanguage(); const ui = (copy[lang] || copy.en).recovery;
+  const { lang } = useLanguage(); const authUi = authUiFor(lang); const ui = authUi.recovery;
   const [password, setPassword] = useState(""); const [confirmPassword, setConfirmPassword] = useState(""); const [showPassword, setShowPassword] = useState(false); const [showConfirmPassword, setShowConfirmPassword] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState(null); const [complete, setComplete] = useState(false);
+  useEffect(() => { setError(null); }, [lang]);
   async function submit(event) { event.preventDefault(); if (!isEnterprisePassword(password)) { setError(ui.passwordError); return; } if (password !== confirmPassword) { setError(ui.matchError); return; } setBusy(true); setError(null); try { await onUpdate(recoveryToken, password); setComplete(true); } catch (updateError) { setError(updateError?.code === "RECOVERY_SESSION_MISSING" ? ui.resetLinkError : toMessage(updateError)); } finally { setBusy(false); } }
-  return <EnterpriseAuthShell title={complete ? ui.resetCompleteTitle : ui.resetTitle} subtitle={complete ? ui.resetCompleteCopy : ui.resetCopy} asideTitle="Security starts here." asideCopy="A valid recovery session is required before Smart Manager can update a password." motion>{complete ? <div className="space-y-4"><AuthNotice type="success">{ui.resetComplete}</AuthNotice><button type="button" onClick={onBack} className="min-h-[50px] w-full rounded-2xl bg-[#008a45] py-3.5 text-[13.5px] font-semibold text-white transition hover:bg-[#006f37] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2">Continue to sign in</button></div> : <form onSubmit={submit} className="space-y-4" noValidate aria-busy={busy}>{error && <AuthNotice>{error}</AuthNotice>}<AuthInput label={ui.newPassword} icon={<LockKeyhole size={19} aria-hidden="true" />}><input id="smart-manager-reset-password" name="new-password" type={showPassword ? "text" : "password"} autoComplete="new-password" autoFocus value={password} onChange={(event) => setPassword(event.target.value)} spellCheck={false} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">{showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}</button></AuthInput><AuthInput label={ui.confirmPassword} icon={<LockKeyhole size={19} aria-hidden="true" />}><input id="smart-manager-reset-confirm-password" name="confirm-password" type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} spellCheck={false} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" /><button type="button" onClick={() => setShowConfirmPassword((value) => !value)} aria-label={showConfirmPassword ? "Hide confirmation password" : "Show confirmation password"} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">{showConfirmPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}</button></AuthInput><PasswordStrengthMeter password={password} /><button type="submit" disabled={busy} className="min-h-[50px] w-full rounded-2xl bg-[#008a45] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#006f37] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">{busy ? ui.updating : ui.update}</button><button type="button" onClick={onBack} className="mx-auto block rounded-md text-[12.5px] font-semibold text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{ui.back}</button></form>}</EnterpriseAuthShell>;
+  return <EnterpriseAuthShell title={complete ? ui.resetCompleteTitle : ui.resetTitle} subtitle={complete ? ui.resetCompleteCopy : ui.resetCopy} asideTitle={authUi.aside.reset.title} asideCopy={authUi.aside.reset.copy} motion>{complete ? <div className="space-y-4"><AuthNotice type="success">{ui.resetComplete}</AuthNotice><button type="button" onClick={onBack} className="min-h-[50px] w-full rounded-2xl bg-[#008a45] py-3.5 text-[13.5px] font-semibold text-white transition hover:bg-[#006f37] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2">{ui.continueToSignIn}</button></div> : <form onSubmit={submit} className="space-y-4" noValidate aria-busy={busy}>{error && <AuthNotice>{error}</AuthNotice>}<AuthInput label={ui.newPassword} icon={<LockKeyhole size={19} aria-hidden="true" />}><input id="smart-manager-reset-password" name="new-password" type={showPassword ? "text" : "password"} autoComplete="new-password" autoFocus value={password} onChange={(event) => setPassword(event.target.value)} spellCheck={false} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? authUi.login.hidePassword : authUi.login.showPassword} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">{showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}</button></AuthInput><AuthInput label={ui.confirmPassword} icon={<LockKeyhole size={19} aria-hidden="true" />}><input id="smart-manager-reset-confirm-password" name="confirm-password" type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} spellCheck={false} className="h-full min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" /><button type="button" onClick={() => setShowConfirmPassword((value) => !value)} aria-label={showConfirmPassword ? ui.hideConfirmPassword : ui.showConfirmPassword} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">{showConfirmPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}</button></AuthInput><PasswordStrengthMeter password={password} /><button type="submit" disabled={busy} className="min-h-[50px] w-full rounded-2xl bg-[#008a45] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#006f37] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">{busy ? ui.updating : ui.update}</button><button type="button" onClick={onBack} className="mx-auto block rounded-md text-[12.5px] font-semibold text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{ui.back}</button></form>}</EnterpriseAuthShell>;
 }
 
 export function EmailConfirmationView({ email, onBack, onResend, toMessage }) {
+  const { lang } = useLanguage(); const authUi = authUiFor(lang); const ui = authUi.verify;
   const [cooldown, setCooldown] = useState(0); const [busy, setBusy] = useState(false); const [error, setError] = useState(null); const [sent, setSent] = useState(false);
+  useEffect(() => { setError(null); }, [lang]);
   useEffect(() => { if (!cooldown) return; const timer = window.setInterval(() => setCooldown((value) => Math.max(0, value - 1)), 1000); return () => window.clearInterval(timer); }, [cooldown]);
   async function resend() { if (!email || cooldown) return; setBusy(true); setError(null); try { await onResend(email); setSent(true); setCooldown(45); } catch (resendError) { setError(toMessage(resendError)); } finally { setBusy(false); } }
-  return <EnterpriseAuthShell title="Confirm your email" subtitle="Verify your email before creating or joining a Smart Manager workspace." asideTitle="Your workspace begins securely." asideCopy="Email verification protects your organisation and confirms the identity behind its first administrative account." motion><div className="space-y-4">{error && <AuthNotice>{error}</AuthNotice>}{sent && <AuthNotice type="success">A new verification email has been requested. Please allow a few minutes for delivery.</AuthNotice>}<div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><Mail size={20} aria-hidden="true" /></span><span className="rounded-full border border-emerald-200 bg-white/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-emerald-700">Step 1 of 2</span></div><p className="text-[13px] font-semibold text-slate-800">Open the verification email</p><p className="mt-1 text-[12px] leading-5 text-slate-500">We sent instructions to <span className="font-medium text-slate-700">{email || "your email address"}</span>. The link will securely continue your setup.</p></div><button type="button" disabled={busy || cooldown > 0 || !email} onClick={resend} className="w-full rounded-2xl border border-slate-200 py-3 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Resending…" : cooldown ? `Resend available in ${cooldown}s` : "Resend verification email"}</button><button type="button" onClick={onBack} className="mx-auto block text-[12.5px] font-semibold text-slate-500 hover:text-slate-800">Back to sign in</button></div></EnterpriseAuthShell>;
+  return <EnterpriseAuthShell title={ui.title} subtitle={ui.subtitle} asideTitle={authUi.aside.verify.title} asideCopy={authUi.aside.verify.copy} motion><div className="space-y-4">{error && <AuthNotice>{error}</AuthNotice>}{sent && <AuthNotice type="success">{ui.resent}</AuthNotice>}<div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><Mail size={20} aria-hidden="true" /></span><span className="rounded-full border border-emerald-200 bg-white/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-emerald-700">{ui.step}</span></div><p className="text-[13px] font-semibold text-slate-800">{ui.open}</p><p className="mt-1 text-[12px] leading-5 text-slate-500">{ui.sent(email || ui.fallbackEmail)}</p></div><button type="button" disabled={busy || cooldown > 0 || !email} onClick={resend} className="w-full rounded-2xl border border-slate-200 py-3 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{busy ? ui.resending : cooldown ? ui.resendIn(cooldown) : ui.resend}</button><button type="button" onClick={onBack} className="mx-auto block text-[12.5px] font-semibold text-slate-500 hover:text-slate-800">{ui.back}</button></div></EnterpriseAuthShell>;
 }
 
 export const VerificationView = EmailConfirmationView;

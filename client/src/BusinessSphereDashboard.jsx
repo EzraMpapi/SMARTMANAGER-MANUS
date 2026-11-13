@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef, useContext, lazy, Suspense } from "react";
-import { useLanguage } from "./contexts/LanguageContext";
+import { useLanguage, useLanguageOptional } from "./contexts/LanguageContext";
 import { createPortal } from "react-dom";
 import {
   LayoutDashboard, Users, ShoppingCart, Package, Wallet, Briefcase, Share2,
@@ -46,6 +46,7 @@ import { ORGANIZATION_INDUSTRY_OPTIONS, normalizeOrganizationIndustryFocus, reme
 import { buildEmailTemplateHtml, buildSafeEmailTemplateSegments, escapeEmailHtml, findEmailTemplateLinkIssues, validateEmailHyperlink } from "./lib/emailTemplateSafety";
 import { getGuardedPersistenceCompanyId, guardedPersistenceClient, setGuardedPersistenceCompanyId } from "./lib/guardedPersistenceClient";
 import { clearOnboardingProgress, getSignupProgressionStep, getSignupStepOneValidationError, hasOnboardingProgress, readOnboardingProgress, writeOnboardingProgress } from "./lib/onboardingProgress";
+import { COUNTRY_LABELS, INDUSTRY_LABELS, MODULE_LABELS, ROLE_LABELS, SIGNUP_BRAND_TAGLINES, signupUiFor } from "./lib/signupTranslations";
 import { shouldOpenOnboardingTour } from "./lib/onboardingTourState";
 import { subscriptionStateLabel, subscriptionAllowsModule, useSubscriptionAccess } from "./lib/subscriptionAccess";
 import { FreeTrialBanner } from "./components/FreeTrialBanner";
@@ -44327,11 +44328,11 @@ const JOIN_COMPANY_ROLE_OPTIONS = [
   { id: "Supplier", label: "Supplier" },
 ];
 
-export function workspaceJoinErrorMessage(error, fallback) {
+export function workspaceJoinErrorMessage(error, fallback, messages = {}) {
   const message = String(error?.message || "").toLowerCase();
-  if (message.includes("invalid join code")) return "That company join code is not recognised. Check the code with your administrator and try again.";
-  if (message.includes("already belongs to a different company")) return "This account already belongs to another workspace. Use the account assigned to this company or ask an administrator for help.";
-  if (isTerminalWorkspaceSessionError(error)) return "Your session has expired. Sign in again, then retry joining the company.";
+  if (message.includes("invalid join code")) return messages.joinCodeInvalid || "That company join code is not recognised. Check the code with your administrator and try again.";
+  if (message.includes("already belongs to a different company")) return messages.alreadyMember || "This account already belongs to another workspace. Use the account assigned to this company or ask an administrator for help.";
+  if (isTerminalWorkspaceSessionError(error)) return messages.sessionExpired || "Your session has expired. Sign in again, then retry joining the company.";
   return error?.message || fallback;
 }
 
@@ -44356,6 +44357,8 @@ function workspaceBackgroundPayload(dataUrl) {
 }
 
 function WorkspaceBrandingControls({ logo, signatureLogo, primaryColor, accentColor, onLogoChange, onSignatureLogoChange, onPrimaryColorChange, onAccentColorChange }) {
+  const { lang } = useLanguageOptional();
+  const ui = signupUiFor(lang).branding;
   const fileRef = useRef(null);
   const signatureFileRef = useRef(null);
   const [fileError, setFileError] = useState(null);
@@ -44364,17 +44367,19 @@ function WorkspaceBrandingControls({ logo, signatureLogo, primaryColor, accentCo
   const [cropZoom, setCropZoom] = useState(1);
   const [cropPosition, setCropPosition] = useState({ x: 50, y: 50 });
 
+  useEffect(() => { setFileError(null); setSignatureFileError(null); }, [lang]);
+
   function selectLogo(event) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     if (!/^(image\/png|image\/jpeg|image\/webp|image\/svg\+xml)$/.test(file.type) || file.size > 2 * 1024 * 1024) {
-      setFileError("Choose a PNG, JPEG, WebP, or SVG logo under 2 MB.");
+      setFileError(ui.logoTypeError);
       return;
     }
     const reader = new FileReader();
     reader.onload = () => { setFileError(null); setCropSource(String(reader.result || "")); setCropZoom(1); setCropPosition({ x: 50, y: 50 }); };
-    reader.onerror = () => setFileError("The logo could not be read. Please choose another file.");
+    reader.onerror = () => setFileError(ui.logoReadError);
     reader.readAsDataURL(file);
   }
 
@@ -44383,12 +44388,12 @@ function WorkspaceBrandingControls({ logo, signatureLogo, primaryColor, accentCo
     event.target.value = "";
     if (!file || !onSignatureLogoChange) return;
     if (!["image/png", "image/jpeg", "image/webp", "image/svg+xml"].includes(file.type) || file.size > 2 * 1024 * 1024) {
-      setSignatureFileError("Choose a PNG, JPEG, WebP, or SVG signature logo under 2 MB.");
+      setSignatureFileError(ui.signatureTypeError);
       return;
     }
     const reader = new FileReader();
     reader.onload = () => { setSignatureFileError(null); onSignatureLogoChange(String(reader.result || "")); };
-    reader.onerror = () => setSignatureFileError("The signature logo could not be read. Please choose another file.");
+    reader.onerror = () => setSignatureFileError(ui.signatureReadError);
     reader.readAsDataURL(file);
   }
 
@@ -44408,44 +44413,44 @@ function WorkspaceBrandingControls({ logo, signatureLogo, primaryColor, accentCo
       onLogoChange(canvas.toDataURL("image/png"));
       setCropSource(null);
     };
-    image.onerror = () => setFileError("The logo preview could not be cropped. Please choose another image.");
+    image.onerror = () => setFileError(ui.logoCropError);
     image.src = cropSource;
   }
 
   return <fieldset className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
-    <legend className="px-1 text-[12px] font-bold uppercase tracking-[.12em] text-emerald-800">Optional workspace branding</legend>
-    <p className="mt-1 text-[11.5px] leading-5 text-slate-600">Add a logo and select colors now. You can change them later in Settings.</p>
+    <legend className="px-1 text-[12px] font-bold uppercase tracking-[.12em] text-emerald-800">{ui.legend}</legend>
+    <p className="mt-1 text-[11.5px] leading-5 text-slate-600">{ui.copy}</p>
     <div className="mt-4 flex items-center gap-3">
-      <button type="button" onClick={() => fileRef.current?.click()} className="group relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-emerald-200 bg-white text-emerald-700 transition hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2" aria-label={logo ? "Change organization logo" : "Upload organization logo"}>
-        {logo ? <img src={logo} alt="Organization logo preview" className="h-full w-full object-contain p-2" /> : <UploadCloud size={18} aria-hidden="true" />}
-        {logo && <span className="absolute inset-0 grid place-items-center bg-slate-950/45 text-[9px] font-bold text-white opacity-0 transition group-hover:opacity-100">Change</span>}
+      <button type="button" onClick={() => fileRef.current?.click()} className="group relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-emerald-200 bg-white text-emerald-700 transition hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2" aria-label={logo ? ui.changeLogo : ui.uploadLogo}>
+        {logo ? <img src={logo} alt={ui.logoPreview} className="h-full w-full object-contain p-2" /> : <UploadCloud size={18} aria-hidden="true" />}
+        {logo && <span className="absolute inset-0 grid place-items-center bg-slate-950/45 text-[9px] font-bold text-white opacity-0 transition group-hover:opacity-100">{ui.change}</span>}
       </button>
-      <div className="min-w-0"><p className="text-[12px] font-semibold text-slate-800">Organization logo</p><p className="mt-0.5 text-[10.5px] leading-4 text-slate-500">PNG, JPG, WebP, or SVG · 2 MB maximum</p>{logo && <button type="button" onClick={() => onLogoChange(null)} className="mt-1 text-[10.5px] font-semibold text-red-600 hover:underline">Remove logo</button>}</div>
+      <div className="min-w-0"><p className="text-[12px] font-semibold text-slate-800">{ui.logoTitle}</p><p className="mt-0.5 text-[10.5px] leading-4 text-slate-500">{ui.logoHint}</p>{logo && <button type="button" onClick={() => onLogoChange(null)} className="mt-1 text-[10.5px] font-semibold text-red-600 hover:underline">{ui.removeLogo}</button>}</div>
       <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={selectLogo} className="sr-only" />
     </div>
     {fileError && <p role="alert" className="mt-3 text-[11px] font-medium text-red-700">{fileError}</p>}
-    {cropSource && <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/60 p-3" aria-label="Logo crop preview"><div className="flex flex-col gap-3 sm:flex-row"><div className="grid h-32 w-32 shrink-0 place-items-center overflow-hidden rounded-2xl border border-sky-200 bg-white"><img src={cropSource} alt="Crop preview" className="h-full w-full object-cover" style={{ objectPosition: `${cropPosition.x}% ${cropPosition.y}%`, transform: `scale(${cropZoom})` }} /></div><div className="min-w-0 flex-1"><p className="text-[11.5px] font-bold text-sky-950">Adjust logo crop</p><p className="mt-1 text-[10.5px] leading-4 text-slate-600">Center the mark before it is saved to the workspace.</p><label className="mt-3 block text-[10.5px] font-semibold text-slate-700">Zoom <input type="range" min="1" max="2.5" step="0.1" value={cropZoom} onChange={(event) => setCropZoom(Number(event.target.value))} className="mt-1 w-full accent-emerald-600" /></label><label className="mt-2 block text-[10.5px] font-semibold text-slate-700">Horizontal position <input type="range" min="0" max="100" value={cropPosition.x} onChange={(event) => setCropPosition((current) => ({ ...current, x: Number(event.target.value) }))} className="mt-1 w-full accent-emerald-600" /></label><label className="mt-2 block text-[10.5px] font-semibold text-slate-700">Vertical position <input type="range" min="0" max="100" value={cropPosition.y} onChange={(event) => setCropPosition((current) => ({ ...current, y: Number(event.target.value) }))} className="mt-1 w-full accent-emerald-600" /></label></div></div><div className="mt-3 flex flex-wrap justify-end gap-2"><button type="button" onClick={() => setCropSource(null)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10.5px] font-semibold text-slate-600 transition hover:border-slate-300">Cancel crop</button><button type="button" onClick={applyCrop} className="rounded-xl bg-emerald-700 px-3 py-2 text-[10.5px] font-bold text-white transition hover:bg-emerald-800">Apply crop</button></div></div>}
+    {cropSource && <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/60 p-3" aria-label={ui.cropPreviewLabel}><div className="flex flex-col gap-3 sm:flex-row"><div className="grid h-32 w-32 shrink-0 place-items-center overflow-hidden rounded-2xl border border-sky-200 bg-white"><img src={cropSource} alt={ui.cropPreviewAlt} className="h-full w-full object-cover" style={{ objectPosition: `${cropPosition.x}% ${cropPosition.y}%`, transform: `scale(${cropZoom})` }} /></div><div className="min-w-0 flex-1"><p className="text-[11.5px] font-bold text-sky-950">{ui.cropTitle}</p><p className="mt-1 text-[10.5px] leading-4 text-slate-600">{ui.cropCopy}</p><label className="mt-3 block text-[10.5px] font-semibold text-slate-700">{ui.zoom} <input type="range" min="1" max="2.5" step="0.1" value={cropZoom} onChange={(event) => setCropZoom(Number(event.target.value))} className="mt-1 w-full accent-emerald-600" /></label><label className="mt-2 block text-[10.5px] font-semibold text-slate-700">{ui.horizontal} <input type="range" min="0" max="100" value={cropPosition.x} onChange={(event) => setCropPosition((current) => ({ ...current, x: Number(event.target.value) }))} className="mt-1 w-full accent-emerald-600" /></label><label className="mt-2 block text-[10.5px] font-semibold text-slate-700">{ui.vertical} <input type="range" min="0" max="100" value={cropPosition.y} onChange={(event) => setCropPosition((current) => ({ ...current, y: Number(event.target.value) }))} className="mt-1 w-full accent-emerald-600" /></label></div></div><div className="mt-3 flex flex-wrap justify-end gap-2"><button type="button" onClick={() => setCropSource(null)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10.5px] font-semibold text-slate-600 transition hover:border-slate-300">{ui.cancelCrop}</button><button type="button" onClick={applyCrop} className="rounded-xl bg-emerald-700 px-3 py-2 text-[10.5px] font-bold text-white transition hover:bg-emerald-800">{ui.applyCrop}</button></div></div>}
     {onSignatureLogoChange && <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/60 p-3.5">
       <div className="flex items-start gap-3">
-        <button type="button" onClick={() => signatureFileRef.current?.click()} className="group relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-sky-200 bg-white text-sky-700 transition hover:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2" aria-label={signatureLogo ? "Change email signature logo" : "Upload email signature logo"}>
-          {signatureLogo ? <img src={signatureLogo} alt="Email signature logo preview" className="h-full w-full object-contain p-2" /> : <PenTool size={18} aria-hidden="true" />}
-          {signatureLogo && <span className="absolute inset-0 grid place-items-center bg-slate-950/45 text-[9px] font-bold text-white opacity-0 transition group-hover:opacity-100">Change</span>}
+        <button type="button" onClick={() => signatureFileRef.current?.click()} className="group relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-sky-200 bg-white text-sky-700 transition hover:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2" aria-label={signatureLogo ? ui.changeSignature : ui.uploadSignature}>
+          {signatureLogo ? <img src={signatureLogo} alt={ui.signaturePreview} className="h-full w-full object-contain p-2" /> : <PenTool size={18} aria-hidden="true" />}
+          {signatureLogo && <span className="absolute inset-0 grid place-items-center bg-slate-950/45 text-[9px] font-bold text-white opacity-0 transition group-hover:opacity-100">{ui.change}</span>}
         </button>
-        <div className="min-w-0 flex-1"><p className="text-[12px] font-semibold text-slate-800">Email signature logo</p><p className="mt-0.5 text-[10.5px] leading-4 text-slate-500">Used in branded email previews and exported templates · 2 MB maximum</p>{signatureLogo && <button type="button" onClick={() => onSignatureLogoChange(null)} className="mt-1 text-[10.5px] font-semibold text-red-600 hover:underline">Remove signature logo</button>}</div>
+        <div className="min-w-0 flex-1"><p className="text-[12px] font-semibold text-slate-800">{ui.signatureTitle}</p><p className="mt-0.5 text-[10.5px] leading-4 text-slate-500">{ui.signatureHint}</p>{signatureLogo && <button type="button" onClick={() => onSignatureLogoChange(null)} className="mt-1 text-[10.5px] font-semibold text-red-600 hover:underline">{ui.removeSignature}</button>}</div>
       </div>
       <input ref={signatureFileRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={selectSignatureLogo} className="sr-only" />
       {signatureFileError && <p role="alert" className="mt-2 text-[11px] font-medium text-red-700">{signatureFileError}</p>}
     </div>}
     <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <label className="block text-[11px] font-semibold text-slate-700">Primary color
-        <span className="mt-1.5 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2"><input type="color" value={primaryColor} onChange={(event) => onPrimaryColorChange(event.target.value.toUpperCase())} className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0" aria-label="Choose primary brand color" /><span className="font-mono text-[11px] text-slate-600">{primaryColor}</span></span>
+      <label className="block text-[11px] font-semibold text-slate-700">{ui.primaryColor}
+        <span className="mt-1.5 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2"><input type="color" value={primaryColor} onChange={(event) => onPrimaryColorChange(event.target.value.toUpperCase())} className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0" aria-label={ui.choosePrimary} /><span className="font-mono text-[11px] text-slate-600">{primaryColor}</span></span>
       </label>
-      <label className="block text-[11px] font-semibold text-slate-700">Accent color
-        <span className="mt-1.5 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2"><input type="color" value={accentColor} onChange={(event) => onAccentColorChange(event.target.value.toUpperCase())} className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0" aria-label="Choose accent brand color" /><span className="font-mono text-[11px] text-slate-600">{accentColor}</span></span>
+      <label className="block text-[11px] font-semibold text-slate-700">{ui.accentColor}
+        <span className="mt-1.5 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2"><input type="color" value={accentColor} onChange={(event) => onAccentColorChange(event.target.value.toUpperCase())} className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0" aria-label={ui.chooseAccent} /><span className="font-mono text-[11px] text-slate-600">{accentColor}</span></span>
       </label>
     </div>
-    <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Brand color presets">{WORKSPACE_BRAND_SWATCHES.map((color) => <button key={color} type="button" onClick={() => onPrimaryColorChange(color)} className={`h-6 w-6 rounded-full border-2 transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 ${primaryColor === color ? "border-slate-900" : "border-white"}`} style={{ backgroundColor: color }} aria-label={`Use ${color} as primary color`} />)}</div>
-    <div className="mt-4 flex items-center gap-2 rounded-xl bg-slate-950 px-3 py-2.5 text-white"><span className="grid h-7 w-7 place-items-center overflow-hidden rounded-lg text-[11px] font-black" style={{ backgroundColor: primaryColor }}>{logo ? <img src={logo} alt="" className="h-full w-full object-contain p-1" /> : "W"}</span><span className="text-[11.5px] font-semibold">Workspace preview</span><span className="ml-auto h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accentColor }} aria-label={`Accent color ${accentColor}`} /></div>
+    <div className="mt-3 flex flex-wrap gap-1.5" aria-label={ui.presets}>{WORKSPACE_BRAND_SWATCHES.map((color) => <button key={color} type="button" onClick={() => onPrimaryColorChange(color)} className={`h-6 w-6 rounded-full border-2 transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 ${primaryColor === color ? "border-slate-900" : "border-white"}`} style={{ backgroundColor: color }} aria-label={ui.useColor(color)} />)}</div>
+    <div className="mt-4 flex items-center gap-2 rounded-xl bg-slate-950 px-3 py-2.5 text-white"><span className="grid h-7 w-7 place-items-center overflow-hidden rounded-lg text-[11px] font-black" style={{ backgroundColor: primaryColor }}>{logo ? <img src={logo} alt="" className="h-full w-full object-contain p-1" /> : "W"}</span><span className="text-[11.5px] font-semibold">{ui.preview}</span><span className="ml-auto h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accentColor }} aria-label={ui.accentValue(accentColor)} /></div>
   </fieldset>;
 }
 
@@ -44457,6 +44462,15 @@ function WorkspaceBrandingControls({ logo, signatureLogo, primaryColor, accentCo
 // comment on companies.join_code for why that is a deliberate privacy
 // boundary, not an oversight.
 export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
+  const { lang, setLang, languageOptions } = useLanguageOptional();
+  const ui = signupUiFor(lang);
+  const brandTaglines = SIGNUP_BRAND_TAGLINES[lang] || SIGNUP_BRAND_TAGLINES.en;
+  const moduleLabels = MODULE_LABELS[lang] || MODULE_LABELS.en;
+  const industryLabels = INDUSTRY_LABELS[lang] || INDUSTRY_LABELS.en;
+  const countryLabels = COUNTRY_LABELS[lang] || COUNTRY_LABELS.en;
+  const roleLabels = ROLE_LABELS[lang] || ROLE_LABELS.en;
+  const langRef = useRef(lang);
+  langRef.current = lang;
   const centralizedAuth = useContext(AuthContext) || { session: null, user: null };
   const hasConfirmedSession = Boolean(centralizedAuth.session?.access_token && centralizedAuth.user?.id);
   const onboardingModuleIds = useMemo(() => ONBOARDING_MODULES.map((module) => module.id), []);
@@ -44494,10 +44508,12 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [customerRef, setCustomerRef] = useState(() => onboardingProgress?.customerRef || "");
   const [preferredPlanCode, setPreferredPlanCode] = useState(() => onboardingProgress?.preferredPlanCode || "TWIGA");
   const [onboardingPlans, setOnboardingPlans] = useState([]);
-  const [onboardingPlanError, setOnboardingPlanError] = useState("");
+  const [onboardingPlanUnavailable, setOnboardingPlanUnavailable] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+
+  useEffect(() => { setError(null); }, [lang]);
 
   useEffect(() => {
     if (!IS_ISOLATED_SIGNUP_E2E || typeof window === "undefined") return undefined;
@@ -44515,7 +44531,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     fetch("/api/billing/catalog")
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("catalog unavailable")))
       .then((payload) => { if (active) setOnboardingPlans(Array.isArray(payload?.plans) ? payload.plans : []); })
-      .catch(() => { if (active) setOnboardingPlanError("Package choices will be available after workspace creation."); });
+      .catch(() => { if (active) setOnboardingPlanUnavailable(true); });
     return () => { active = false; };
   }, []);
 
@@ -44555,13 +44571,13 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     setCustomerRef("");
     setPreferredPlanCode("TWIGA");
     setOnboardingPlans([]);
-    setOnboardingPlanError("");
+    setOnboardingPlanUnavailable(false);
     setShowPassword(false);
     setShowConfirmPassword(false);
     setTermsAccepted(false);
   }
 
-  const step1ValidationError = getSignupStepOneValidationError({ account, termsAccepted });
+  const step1ValidationError = getSignupStepOneValidationError({ account, termsAccepted, messages: ui.errors });
   const step1Valid = !step1ValidationError;
   const isPortalRole = joinRole === "External Client" || joinRole === "Supplier";
   const joinAccountValid = account.fullName.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email.trim()) && isEnterprisePassword(account.password) && account.password === account.confirmPassword;
@@ -44594,9 +44610,9 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
         previousSessionToken = window.sessionStorage.getItem("bs_session_access_token");
         window.sessionStorage.setItem("bs_session_access_token", passkeySession.accessToken);
         const notification = await passkeyNotificationMutation.mutateAsync({ friendlyName: result?.friendly_name || "Onboarding administrator passkey" });
-        notify(notification.delivered ? "Passkey created and the administrator security email was sent." : "Passkey created. Email delivery is awaiting its verified provider configuration.");
+        notify(notification.delivered ? ui.errors.passkeyEmailSent : ui.errors.passkeyEmailPending);
       } catch (_notificationError) {
-        notify("Passkey created, but the administrator security email could not be delivered.", "error");
+        notify(ui.errors.passkeyEmailFailed, "error");
       } finally {
         if (previousSessionToken) window.sessionStorage.setItem("bs_session_access_token", previousSessionToken); else window.sessionStorage.removeItem("bs_session_access_token");
       }
@@ -44629,7 +44645,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     // simulate the outcome locally and say so, rather than silently doing
     // nothing or pretending a real signup happened.
     if (!IS_CONFIGURED) {
-      notify(`Demo mode — no Supabase project connected, so "${company.name || "your company"}" is not really created. Continuing with the sample company instead.`);
+      notify(ui.errors.demo(company.name || "your company"));
       clearOnboardingProgress();
       onAuthenticated(null);
       return;
@@ -44678,7 +44694,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
           await sb("branches").insert({ company_id: rpcResult.id, name: firstBranch.trim() || "Head Office", is_headquarters: true }).run();
         } catch (setupError) {
           authDebug("Optional workspace details failed", { message: setupError?.message || "unknown" });
-          workspaceWarning = "Your workspace was created, but some optional setup details could not be saved. You can retry them in Settings.";
+          workspaceWarning = ui.errors.workspaceSetupPartial;
         }
       }
       if (mode === "create" && rpcResult?.id) {
@@ -44686,7 +44702,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
           const freePlanRpc = await callWorkspaceRpcWithSessionRefresh("billing_start_free_plan", { p_plan_code: "FREE_15" }, workspaceRpc.accessToken);
           freePlanDetails = freePlanRpc.data?.subscription || null;
         } catch (freePlanError) {
-          freePlanWarning = "Your workspace was created, but its FREE_15 access could not be confirmed yet. Sign in and open Subscription & Billing from the account menu to retry safely.";
+          freePlanWarning = ui.errors.freePlan;
           authDebug("FREE_15 activation failed after workspace creation", { message: freePlanError?.message || "unknown" });
         }
       }
@@ -44698,7 +44714,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
           await recordConfirmedIndustryFocusAudit("", branding.industryFocus, account.fullName.trim());
           Object.assign(rpcResult, { logo: branding.logo, brand_primary_color: branding.primaryColor, brand_accent_color: branding.accentColor, category: branding.industryFocus });
         } catch (brandingError) {
-          brandingWarning = brandingError?.message || "Workspace branding could not be saved. You can retry from Settings.";
+          brandingWarning = brandingError?.message || ui.errors.brandingFallback;
         }
       }
       if (account.phone.trim()) {
@@ -44720,7 +44736,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       setCompletedWorkspace({ mode, name: rpcResult.name || company.name.trim(), email: signUpResult.user.email, workspaceWarning, brandingWarning, freePlanWarning, freePlanDetails, passkeySession: { accessToken: workspaceRpc.accessToken, refreshToken: workspaceRpc.refreshToken } });
     } catch (err) {
       if (isTerminalWorkspaceSessionError(err)) clearStoredAuthSession();
-      setError(accountCreated ? workspaceJoinErrorMessage(err, "Your account was created, but workspace setup could not complete. Please sign in to continue setup.") : workspaceJoinErrorMessage(err, "Couldn't complete sign up. Please try again."));
+      setError(accountCreated ? workspaceJoinErrorMessage(err, ui.errors.accountCreatedFallback, ui.errors) : workspaceJoinErrorMessage(err, ui.errors.signUpFallback, ui.errors));
     } finally {
       setBusy(false);
     }
@@ -44730,8 +44746,8 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
 
   // Step labels per mode
   const stepLabels = mode === "create"
-    ? ["Account", "Workspace", "Modules"]
-    : ["Join"];
+    ? ui.header.stepsCreate
+    : ui.header.stepsJoin;
 
   const gradientBg = "linear-gradient(160deg, #052614 0%, #0F4D26 35%, #16A34A 70%, #22C55E 100%)";
   const [authBranding] = useState(readAuthBranding);
@@ -44740,15 +44756,15 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const onboardingPanelStyle = onboardingBackground ? { backgroundImage: `linear-gradient(145deg, rgba(5,38,20,.95), rgba(15,77,38,.78)), url(\"${onboardingBackground}\")`, backgroundPosition: "center", backgroundSize: "cover" } : { background: gradientBg };
 
   if (completedWorkspace?.isolatedSession?.authenticated) {
-    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><OfflineSyncBanner /><section className="w-full max-w-2xl rounded-[24px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]" aria-labelledby="isolated-workspace-title"><CheckCircle2 size={30} className="mx-auto text-emerald-700" aria-hidden="true" /><p className="mt-5 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Account created</p><h1 id="isolated-workspace-title" className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950">Congratulations — you’re ready.</h1><p role="status" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] leading-5 text-slate-600">Isolated authenticated workspace session is active. No authentication request or tenant record was sent to the configured Supabase project.</p><div className="mt-4 flex flex-wrap justify-center gap-2"><button type="button" onClick={() => setIsolatedPreferencesOpen(true)} className="rounded-xl border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-700">Preview dashboard preferences</button><button type="button" onClick={() => setIsolatedComplianceAuditOpen(true)} className="rounded-xl border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-700">Preview compliance audit workspace</button></div>{isolatedPreferencesOpen && <Suspense fallback={<div role="status" aria-label="Loading dashboard preferences" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] text-slate-600">Loading dashboard preferences…</div>}><LazyDashboardPreferencesDrawer isOpen onClose={() => setIsolatedPreferencesOpen(false)} /></Suspense>}{isolatedComplianceAuditOpen && <Suspense fallback={<div role="status" aria-label="Loading compliance audit workspace" className="mt-4 rounded-xl bg-slate-100 p-2 text-left text-[11.5px] text-slate-600">Loading compliance audit workspace…</div>}><LazyComplianceAuditLogView companyId="e2e-isolated-tenant" /></Suspense>}</section></div>;
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><OfflineSyncBanner /><section className="w-full max-w-2xl rounded-[24px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]" aria-labelledby="isolated-workspace-title"><CheckCircle2 size={30} className="mx-auto text-emerald-700" aria-hidden="true" /><p className="mt-5 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">{ui.success.accountCreated}</p><h1 id="isolated-workspace-title" className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950">{ui.success.congratulations}</h1><p role="status" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] leading-5 text-slate-600">Isolated authenticated workspace session is active. No authentication request or tenant record was sent to the configured Supabase project.</p><div className="mt-4 flex flex-wrap justify-center gap-2"><button type="button" onClick={() => setIsolatedPreferencesOpen(true)} className="rounded-xl border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-700">Preview dashboard preferences</button><button type="button" onClick={() => setIsolatedComplianceAuditOpen(true)} className="rounded-xl border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-700">Preview compliance audit workspace</button></div>{isolatedPreferencesOpen && <Suspense fallback={<div role="status" aria-label="Loading dashboard preferences" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] text-slate-600">Loading dashboard preferences…</div>}><LazyDashboardPreferencesDrawer isOpen onClose={() => setIsolatedPreferencesOpen(false)} /></Suspense>}{isolatedComplianceAuditOpen && <Suspense fallback={<div role="status" aria-label="Loading compliance audit workspace" className="mt-4 rounded-xl bg-slate-100 p-2 text-left text-[11.5px] text-slate-600">Loading compliance audit workspace…</div>}><LazyComplianceAuditLogView companyId="e2e-isolated-tenant" /></Suspense>}</section></div>;
   }
 
   if (completedWorkspace?.pendingEmailVerification) {
-    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><div className="w-full max-w-md text-center"><div className="mb-6 flex flex-col items-center"><BrandLogo variant="compact" priority className="h-24 w-24 shadow-[0_18px_36px_rgba(0,138,69,.2)]"/><p className="mt-3 text-[21px] font-extrabold tracking-[.01em] text-[#101828]" style={{ fontFamily: "'Poppins',sans-serif" }}>SMART <span className="text-[#008A45]">MANAGER</span></p></div><div className="rounded-[24px] border border-emerald-100 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><Mail size={28}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Confirm your email</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Check your inbox to continue.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">We created the account for <strong>{completedWorkspace.email}</strong>. Confirm the email, then return here and sign in to finish setting up your workspace. Your setup details remain saved on this device; your password is never stored.</p><button type="button" onClick={onSwitchToLogin} className="mt-7 w-full rounded-xl bg-[#0B5D3B] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#084B30]">Continue to sign in</button></div></div></div>;
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><div className="w-full max-w-md text-center"><div className="mb-6 flex flex-col items-center"><BrandLogo variant="compact" priority className="h-24 w-24 shadow-[0_18px_36px_rgba(0,138,69,.2)]"/><p className="mt-3 text-[21px] font-extrabold tracking-[.01em] text-[#101828]" style={{ fontFamily: "'Poppins',sans-serif" }}>SMART <span className="text-[#008A45]">MANAGER</span></p></div><div className="rounded-[24px] border border-emerald-100 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><Mail size={28}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">{ui.success.pendingTitle}</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>{ui.success.pendingHeading}</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">{ui.success.pendingPrefix} <strong>{completedWorkspace.email}</strong>. {ui.success.pendingSuffix}</p><button type="button" onClick={onSwitchToLogin} className="mt-7 w-full rounded-xl bg-[#0B5D3B] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#084B30]">{ui.success.continueToSignIn}</button></div></div></div>;
   }
 
   if (completedWorkspace) {
-    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><div className="w-full max-w-md text-center"><div className="mb-6 flex flex-col items-center"><BrandLogo variant="compact" priority className="h-24 w-24 shadow-[0_18px_36px_rgba(0,138,69,.2)]"/><p className="mt-3 text-[21px] font-extrabold tracking-[.01em] text-[#101828]" style={{ fontFamily: "'Poppins',sans-serif" }}>SMART <span className="text-[#008A45]">MANAGER</span></p><p className="mt-1 text-[11px] font-semibold tracking-[.08em] text-[#008A45]">Simamia Biashara Yako. Popote, Wakati Wote.</p></div><div className="rounded-[24px] border border-emerald-100 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={30}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Account created</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Congratulations — you’re ready.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">Your Smart Manager account and {completedWorkspace.mode === "create" ? `${completedWorkspace.name} workspace` : "workspace access"} are ready. Sign in with {completedWorkspace.email} to continue.</p>{completedWorkspace.isolatedTest && <p role="status" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] leading-5 text-slate-600">Isolated browser test completed. No authentication request or tenant record was sent to the configured Supabase project.</p>}{completedWorkspace.passkeySession && <section className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-left" aria-labelledby="onboarding-passkey-title"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-emerald-700 shadow-sm"><Fingerprint size={20} aria-hidden="true" /></span><div className="min-w-0"><h2 id="onboarding-passkey-title" className="text-[12.5px] font-bold text-emerald-950">Secure this account with a passkey</h2><p className="mt-1 text-[11px] leading-5 text-emerald-900/75">Use this device or password manager for faster, phishing-resistant sign-in. Your password remains available as a fallback.</p></div></div>{passkeyError && <p role="alert" className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-[11px] leading-5 text-red-700">{passkeyError}</p>}<button type="button" onClick={enrollPasskey} disabled={passkeyBusy} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-[11.5px] font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60">{passkeyBusy ? <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> : <Fingerprint size={15} aria-hidden="true" />}{passkeyBusy ? "Waiting for device confirmation…" : "Create passkey now"}</button></section>}{passkeyStatus === "enrolled" && <div role="status" className="mt-5 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-left text-[11.5px] font-semibold text-emerald-800"><CheckCircle2 size={16} aria-hidden="true" />Passkey created. This account is ready for secure sign-in.</div>}{completedWorkspace.workspaceWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">{completedWorkspace.workspaceWarning}</p>}{completedWorkspace.brandingWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">Your account is ready, but branding was not saved: {completedWorkspace.brandingWarning}</p>}<button type="button" onClick={onSwitchToLogin} className="mt-7 w-full rounded-xl bg-[#0B5D3B] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#084B30]">Continue to sign in</button></div></div></div>;
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><div className="w-full max-w-md text-center"><div className="mb-6 flex flex-col items-center"><BrandLogo variant="compact" priority className="h-24 w-24 shadow-[0_18px_36px_rgba(0,138,69,.2)]"/><p className="mt-3 text-[21px] font-extrabold tracking-[.01em] text-[#101828]" style={{ fontFamily: "'Poppins',sans-serif" }}>SMART <span className="text-[#008A45]">MANAGER</span></p><p className="mt-1 text-[11px] font-semibold tracking-[.08em] text-[#008A45]">{brandTaglines.short}</p></div><div className="rounded-[24px] border border-emerald-100 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={30}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">{ui.success.accountCreated}</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>{ui.success.congratulations}</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">{completedWorkspace.mode === "create" ? ui.success.completedCreate(completedWorkspace.name, completedWorkspace.email) : ui.success.completedJoin(completedWorkspace.email)}</p>{completedWorkspace.isolatedTest && <p role="status" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] leading-5 text-slate-600">{ui.success.isolatedTest}</p>}{completedWorkspace.passkeySession && <section className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-left" aria-labelledby="onboarding-passkey-title"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-emerald-700 shadow-sm"><Fingerprint size={20} aria-hidden="true" /></span><div className="min-w-0"><h2 id="onboarding-passkey-title" className="text-[12.5px] font-bold text-emerald-950">{ui.success.passkeyTitle}</h2><p className="mt-1 text-[11px] leading-5 text-emerald-900/75">{ui.success.passkeyCopy}</p></div></div>{passkeyError && <p role="alert" className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-[11px] leading-5 text-red-700">{passkeyError}</p>}<button type="button" onClick={enrollPasskey} disabled={passkeyBusy} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-[11.5px] font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60">{passkeyBusy ? <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> : <Fingerprint size={15} aria-hidden="true" />}{passkeyBusy ? ui.success.passkeyBusy : ui.success.passkeyButton}</button></section>}{passkeyStatus === "enrolled" && <div role="status" className="mt-5 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-left text-[11.5px] font-semibold text-emerald-800"><CheckCircle2 size={16} aria-hidden="true" />{ui.success.passkeyCreated}</div>}{completedWorkspace.workspaceWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">{completedWorkspace.workspaceWarning}</p>}{completedWorkspace.brandingWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">{ui.success.brandingWarningPrefix} {completedWorkspace.brandingWarning}</p>}<button type="button" onClick={onSwitchToLogin} className="mt-7 w-full rounded-xl bg-[#0B5D3B] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#084B30]">{ui.success.continueToSignIn}</button></div></div></div>;
   }
 
   return (
@@ -44762,98 +44778,98 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
         <div className="relative z-10">
           <div className="mb-16 flex items-center gap-3">
             <BrandLogo variant="compact" priority className="h-12 w-12 ring-1 ring-white/15 shadow-lg" />
-            <div><p className="text-[18px] font-bold leading-tight text-white" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p><p className="mt-0.5 text-[11px] text-emerald-100/70">Simamia. Manage. Grow.</p></div>
+            <div><p className="text-[18px] font-bold leading-tight text-white" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p><p className="mt-0.5 text-[11px] text-emerald-100/70">{brandTaglines.panel}</p></div>
           </div>
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[.18em] text-emerald-200">{mode === "join" ? "Secure company access" : "Your business command center"}</p>
-          <h1 className="max-w-md text-[44px] font-bold leading-[1.08] tracking-[-.04em] text-white">{mode === "join" ? "Join the workspace your team already trusts." : "Build the workspace your business deserves."}</h1>
-          <p className="mt-6 max-w-sm text-[14px] leading-7 text-emerald-50/75">{mode === "join" ? "Use the secure join code shared by your company administrator. Access remains scoped to the workspace and role you are assigned." : "Create a focused operating system for finance, people, sales, inventory, and the decisions that move your company forward."}</p>
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[.18em] text-emerald-200">{mode === "join" ? ui.panel.badgeJoin : ui.panel.badgeCreate}</p>
+          <h1 className="max-w-md text-[44px] font-bold leading-[1.08] tracking-[-.04em] text-white">{mode === "join" ? ui.panel.titleJoin : ui.panel.titleCreate}</h1>
+          <p className="mt-6 max-w-sm text-[14px] leading-7 text-emerald-50/75">{mode === "join" ? ui.panel.copyJoin : ui.panel.copyCreate}</p>
         </div>
-        <div className="relative z-10 space-y-3 text-[11.5px] text-emerald-50/80"><p className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-200" /> Tenant-scoped from the first record</p><p className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-200" /> Role-aware access for every teammate</p><p className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-200" /> Designed for accountable execution</p></div>
+        <div className="relative z-10 space-y-3 text-[11.5px] text-emerald-50/80">{ui.panel.bullets.map((bullet) => <p key={bullet} className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-200" /> {bullet}</p>)}</div>
       </div>
 
       <div className="sm-onboarding-content flex min-h-screen w-full flex-1 items-center justify-center px-4 py-8 sm:px-8 lg:w-[55%] lg:px-14">
         <div className="w-full max-w-[560px]">
-          <div className="mb-7 flex items-center gap-3 lg:hidden"><BrandLogo variant="compact" priority className="h-12 w-12 shadow-md" /><div><p className="text-[18px] font-bold text-slate-950" style={{ fontFamily: "Poppins,sans-serif" }}>SMART <span className="text-[#16A34A]">MANAGER</span></p><p className="text-[10.5px] text-slate-400">Simamia Biashara Yako.</p></div></div>
-          <div className="sm-onboarding-heading mb-5 flex items-center justify-between"><div><p className="text-[10.5px] font-bold uppercase tracking-[.18em] text-[#16A34A]">Smart Manager onboarding</p><h2 className="mt-1 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>{mode === "join" ? "Join your company" : "Create your workspace"}</h2><p className="mt-1 text-[13px] leading-5 text-slate-500">{mode === "join" ? "Enter the details approved by your workspace administrator." : "A guided setup for your account, company, and starting modules."}</p></div><button type="button" onClick={onSwitchToLogin} className="sm-onboarding-back rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11.5px] font-semibold text-slate-500 transition hover:border-slate-300 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40">Back to sign in</button></div>
+          <div className="mb-7 flex items-center gap-3 lg:hidden"><BrandLogo variant="compact" priority className="h-12 w-12 shadow-md" /><div><p className="text-[18px] font-bold text-slate-950" style={{ fontFamily: "Poppins,sans-serif" }}>SMART <span className="text-[#16A34A]">MANAGER</span></p><p className="text-[10.5px] text-slate-400">{brandTaglines.short}</p></div></div>
+          <div className="sm-onboarding-heading mb-5 flex items-center justify-between gap-3"><div><p className="text-[10.5px] font-bold uppercase tracking-[.18em] text-[#16A34A]">{ui.header.onboardingLabel}</p><h2 className="mt-1 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>{mode === "join" ? ui.header.joinTitle : ui.header.createTitle}</h2><p className="mt-1 text-[13px] leading-5 text-slate-500">{mode === "join" ? ui.header.joinSubtitle : ui.header.createSubtitle}</p></div><div className="flex shrink-0 items-center gap-2"><label className="sm-language-control inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-semibold text-slate-600 shadow-sm" title={ui.header.languageLabel}><Languages size={14} aria-hidden="true" /><span className="sr-only">{ui.header.languageLabel}</span><select data-testid="onboarding-language-select" aria-label={ui.header.languageLabel} value={lang} onChange={(event) => setLang(event.target.value)} className="sm-language-select max-w-[7.5rem] appearance-none bg-transparent outline-none">{languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}</select><ChevronDown size={13} aria-hidden="true" /></label><button type="button" onClick={onSwitchToLogin} className="sm-onboarding-back rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11.5px] font-semibold text-slate-500 transition hover:border-slate-300 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40">{ui.header.backToSignIn}</button></div></div>
 
-          <div className="sm-onboarding-mode mb-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm" role="group" aria-label="Choose how to get started"><button type="button" aria-pressed={mode === "create"} onClick={() => { if (mode === "create") return; setMode("create"); setStep(hasConfirmedSession ? 2 : 1); setError(null); }} className={`sm-onboarding-mode-button flex-1 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${mode === "create" ? "is-active bg-emerald-50 text-[#15803D] shadow-sm" : "text-slate-400 hover:text-slate-700"}`}>Create a company</button><button type="button" aria-pressed={mode === "join"} onClick={() => { if (mode === "join") return; setMode("join"); setStep(1); setError(null); }} className={`sm-onboarding-mode-button flex-1 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${mode === "join" ? "is-active bg-emerald-50 text-[#15803D] shadow-sm" : "text-slate-400 hover:text-slate-700"}`}>Join existing company</button></div>
+          <div className="sm-onboarding-mode mb-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm" role="group" aria-label={ui.header.modeGroupLabel}><button type="button" aria-pressed={mode === "create"} onClick={() => { if (mode === "create") return; setMode("create"); setStep(hasConfirmedSession ? 2 : 1); setError(null); }} className={`sm-onboarding-mode-button flex-1 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${mode === "create" ? "is-active bg-emerald-50 text-[#15803D] shadow-sm" : "text-slate-400 hover:text-slate-700"}`}>{ui.header.createMode}</button><button type="button" aria-pressed={mode === "join"} onClick={() => { if (mode === "join") return; setMode("join"); setStep(1); setError(null); }} className={`sm-onboarding-mode-button flex-1 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${mode === "join" ? "is-active bg-emerald-50 text-[#15803D] shadow-sm" : "text-slate-400 hover:text-slate-700"}`}>{ui.header.joinMode}</button></div>
 
-          <div className="sm-onboarding-steps mb-5 flex items-center gap-2" aria-label="Setup progress">{stepLabels.map((label, index) => { const number = index + 1; const active = mode === "join" ? number === 1 : step === number; const done = mode === "join" ? false : step > number; return <React.Fragment key={label}><div className={`sm-onboarding-step flex shrink-0 items-center gap-2 ${active ? "is-active" : ""} ${done ? "is-done" : ""}`} aria-current={active ? "step" : undefined}><span className="sm-onboarding-step-number grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold">{done ? <Check size={13} aria-hidden="true" /> : number}</span><span className="sm-onboarding-step-label text-[11px] font-semibold">{label}</span></div>{index < stepLabels.length - 1 && <div className={`sm-onboarding-step-line h-px flex-1 ${done ? "is-done" : ""}`} aria-hidden="true" />}</React.Fragment>; })}</div>
+          <div className="sm-onboarding-steps mb-5 flex items-center gap-2" aria-label={ui.header.progressLabel}>{stepLabels.map((label, index) => { const number = index + 1; const active = mode === "join" ? number === 1 : step === number; const done = mode === "join" ? false : step > number; return <React.Fragment key={label}><div className={`sm-onboarding-step flex shrink-0 items-center gap-2 ${active ? "is-active" : ""} ${done ? "is-done" : ""}`} aria-current={active ? "step" : undefined}><span className="sm-onboarding-step-number grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold">{done ? <Check size={13} aria-hidden="true" /> : number}</span><span className="sm-onboarding-step-label text-[11px] font-semibold">{label}</span></div>{index < stepLabels.length - 1 && <div className={`sm-onboarding-step-line h-px flex-1 ${done ? "is-done" : ""}`} aria-hidden="true" />}</React.Fragment>; })}</div>
 
           <div className="sm-onboarding-card rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,.08)] sm:p-7">
             {error && <div role="alert" className="mb-4 rounded-xl border border-red-100 bg-red-50 px-3.5 py-3 text-[12px] leading-5 text-red-700">{error}</div>}
-            {restoredOnboardingProgress && !completedWorkspace && <div role="status" className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-3 text-[12px] leading-5 text-emerald-800"><p>Your in-progress setup was restored for this browser session. Re-enter your password to continue; passwords, confirmations, logo files, and company join codes are never saved.</p><button type="button" onClick={discardSavedSetup} className="shrink-0 rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1" aria-label="Discard saved setup and start again">Discard saved setup</button></div>}
+            {restoredOnboardingProgress && !completedWorkspace && <div role="status" className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-3 text-[12px] leading-5 text-emerald-800"><p>{ui.header.restoredNotice}</p><button type="button" onClick={discardSavedSetup} className="shrink-0 rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1" aria-label={ui.header.discardLabel}>{ui.header.discard}</button></div>}
             {mode === "join" ? (
               <form onSubmit={handleFinalSubmit} noValidate className="sm-onboarding-form sm-onboarding-form--join auth-step-panel space-y-4" aria-live="polite" aria-busy={busy}>
-                <div className="mb-5"><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Enter your access details</h3><p className="mt-1 text-[12.5px] text-slate-500">Ask your workspace administrator for the company join code, then confirm the details below.</p></div>
-                {hasConfirmedSession ? <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3.5"><p className="flex items-center gap-2 text-[11.5px] font-bold text-emerald-900"><ShieldCheck size={15} aria-hidden="true" />Signed in as {account.email || "your account"}</p><p className="mt-1 text-[10.5px] leading-4 text-emerald-800/80">Your existing account will be linked to this workspace. No new password is needed.</p></div> : null}
-                <FormField label="Full name" required><div className="relative"><User size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" autoComplete="name" autoCapitalize="words" required aria-required="true" /></div></FormField>
+                <div className="mb-5"><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>{ui.join.heading}</h3><p className="mt-1 text-[12.5px] text-slate-500">{ui.join.copy}</p></div>
+                {hasConfirmedSession ? <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3.5"><p className="flex items-center gap-2 text-[11.5px] font-bold text-emerald-900"><ShieldCheck size={15} aria-hidden="true" />{ui.join.signedInAs(account.email || ui.join.signedInFallback)}</p><p className="mt-1 text-[10.5px] leading-4 text-emerald-800/80">{ui.join.signedInCopy}</p></div> : null}
+                <FormField label={ui.fields.fullName} required><div className="relative"><User size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder={ui.fields.fullNamePlaceholder} autoComplete="name" autoCapitalize="words" required aria-required="true" /></div></FormField>
                 {hasConfirmedSession ? null : <>
-                  <FormField label="Email address" required><div className="relative"><Mail size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} type="email" inputMode="email" value={account.email} onChange={(e) => setAccountField("email", e.target.value)} placeholder="you@company.tz" autoComplete="email" autoCapitalize="none" spellCheck={false} required aria-required="true" /></div></FormField>
-                  <div className="grid gap-3 sm:grid-cols-2"><FormField label="Password" required><div className="relative"><Lock size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9 pr-10`} type={showPassword ? "text" : "password"} value={account.password} onChange={(e) => setAccountField("password", e.target.value)} placeholder="Create a password" autoComplete="new-password" spellCheck={false} required aria-required="true" /><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}</button></div></FormField><FormField label="Confirm password" required><div className="relative"><input className={`${inputClass} pr-10`} type={showConfirmPassword ? "text" : "password"} value={account.confirmPassword} onChange={(e) => setAccountField("confirmPassword", e.target.value)} placeholder="Repeat password" autoComplete="new-password" spellCheck={false} required aria-required="true" aria-describedby={account.password && account.confirmPassword && account.password !== account.confirmPassword ? "join-password-match" : undefined} /><button type="button" onClick={() => setShowConfirmPassword((current) => !current)} className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" aria-label={showConfirmPassword ? "Hide confirmation password" : "Show confirmation password"}>{showConfirmPassword ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}</button></div></FormField></div>
+                  <FormField label={ui.fields.email} required><div className="relative"><Mail size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} type="email" inputMode="email" value={account.email} onChange={(e) => setAccountField("email", e.target.value)} placeholder={ui.fields.emailPlaceholder} autoComplete="email" autoCapitalize="none" spellCheck={false} required aria-required="true" /></div></FormField>
+                  <div className="grid gap-3 sm:grid-cols-2"><FormField label={ui.fields.password} required><div className="relative"><Lock size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9 pr-10`} type={showPassword ? "text" : "password"} value={account.password} onChange={(e) => setAccountField("password", e.target.value)} placeholder={ui.fields.passwordPlaceholder} autoComplete="new-password" spellCheck={false} required aria-required="true" /><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" aria-label={showPassword ? ui.fields.hidePassword : ui.fields.showPassword}>{showPassword ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}</button></div></FormField><FormField label={ui.fields.confirmPassword} required><div className="relative"><input className={`${inputClass} pr-10`} type={showConfirmPassword ? "text" : "password"} value={account.confirmPassword} onChange={(e) => setAccountField("confirmPassword", e.target.value)} placeholder={ui.fields.confirmPlaceholder} autoComplete="new-password" spellCheck={false} required aria-required="true" aria-describedby={account.password && account.confirmPassword && account.password !== account.confirmPassword ? "join-password-match" : undefined} /><button type="button" onClick={() => setShowConfirmPassword((current) => !current)} className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" aria-label={showConfirmPassword ? ui.fields.hideConfirm : ui.fields.showConfirm}>{showConfirmPassword ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}</button></div></FormField></div>
                   <PasswordStrengthMeter password={account.password} />
-                  {!account.password && <p className="text-[10.5px] leading-4 text-slate-400">Use at least 8 characters with uppercase, lowercase, number, and symbol.</p>}
-                  {account.password && account.confirmPassword && account.password !== account.confirmPassword && <p id="join-password-match" role="alert" className="flex items-center gap-1 text-[11.5px] font-medium text-red-600"><AlertCircle size={12} aria-hidden="true" /> Passwords do not match.</p>}
+                  {!account.password && <p className="text-[10.5px] leading-4 text-slate-400">{ui.fields.passwordHint}</p>}
+                  {account.password && account.confirmPassword && account.password !== account.confirmPassword && <p id="join-password-match" role="alert" className="flex items-center gap-1 text-[11.5px] font-medium text-red-600"><AlertCircle size={12} aria-hidden="true" /> {ui.fields.mismatch}</p>}
                 </>}
-                <FormField label="Company join code" required>
+                <FormField label={ui.join.joinCode} required>
                   <div className="relative">
                     <Key size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" />
-                    <input id="company-join-code" name="joinCode" className={`${inputClass} pl-9 pr-10 uppercase tracking-[.16em] ${joinCodeError ? "border-red-300 focus:border-red-400 focus:ring-red-200" : ""}`} value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12))} placeholder="A1B2C3D4" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={12} required aria-required="true" aria-invalid={joinCodeError} aria-describedby="join-code-help" />
+                    <input id="company-join-code" name="joinCode" className={`${inputClass} pl-9 pr-10 uppercase tracking-[.16em] ${joinCodeError ? "border-red-300 focus:border-red-400 focus:ring-red-200" : ""}`} value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12))} placeholder={ui.join.joinCodePlaceholder} autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={12} required aria-required="true" aria-invalid={joinCodeError} aria-describedby="join-code-help" />
                     {joinCode.trim().length >= 6 && <CheckCircle2 size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600" aria-hidden="true" />}
                   </div>
-                  <p id="join-code-help" className="mt-1 text-[10.5px] leading-4 text-slate-400">6–12 characters. Join codes are shared privately by your company administrator.</p>
-                  {joinCodeError && <p role="alert" className="mt-1 text-[11px] font-medium text-red-600">Join codes are at least 6 characters.</p>}
+                  <p id="join-code-help" className="mt-1 text-[10.5px] leading-4 text-slate-400">{ui.join.joinCodeHelp}</p>
+                  {joinCodeError && <p role="alert" className="mt-1 text-[11px] font-medium text-red-600">{ui.join.joinCodeError}</p>}
                 </FormField>
-                <FormField label="Your role"><select className={inputClass} value={joinRole} onChange={(e) => setJoinRole(e.target.value)} aria-describedby="join-role-help">{JOIN_COMPANY_ROLE_OPTIONS.map((role) => <option key={role.id} value={role.id}>{role.label}</option>)}</select><p id="join-role-help" className="mt-1 text-[10.5px] leading-4 text-slate-400">Administrators approve elevated access after your workspace membership is confirmed.</p></FormField>
-                {isPortalRole && <FormField label="Company name on your records" required><input className={inputClass} value={customerRef} onChange={(e) => setCustomerRef(e.target.value)} placeholder="e.g. Kilimanjaro Traders Ltd" autoComplete="organization" required aria-required="true" /></FormField>}
-                <label className="flex items-start gap-2 pt-1 text-[11px] text-slate-500"><input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} aria-describedby="join-terms-help" className="mt-0.5 accent-[#16A34A]" required /><span>I agree to the Terms of Service and Privacy Policy.</span></label>
-                <p id="join-terms-help" className="text-[10.5px] text-slate-400">Your request is recorded against this workspace and role when you continue.</p>
-                <p id="join-submit-help" className="text-[10.5px] text-slate-400">{step2Valid ? "Your administrator can review elevated access after you join." : "Complete the required details and accept the terms to continue."}</p>
-                <button type="submit" disabled={!step2Valid || busy} aria-busy={busy} aria-describedby="join-submit-help" className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{busy ? <><LoaderCircle size={17} className="animate-spin" aria-hidden="true" /><span>Requesting access…</span></> : "Request secure access →"}</button>
+                <FormField label={ui.join.role}><select className={inputClass} value={joinRole} onChange={(e) => setJoinRole(e.target.value)} aria-describedby="join-role-help">{JOIN_COMPANY_ROLE_OPTIONS.map((role) => <option key={role.id} value={role.id}>{roleLabels[role.id] || role.label}</option>)}</select><p id="join-role-help" className="mt-1 text-[10.5px] leading-4 text-slate-400">{ui.join.roleHelp}</p></FormField>
+                {isPortalRole && <FormField label={ui.join.customerRef} required><input className={inputClass} value={customerRef} onChange={(e) => setCustomerRef(e.target.value)} placeholder={ui.join.customerRefPlaceholder} autoComplete="organization" required aria-required="true" /></FormField>}
+                <label className="flex items-start gap-2 pt-1 text-[11px] text-slate-500"><input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} aria-describedby="join-terms-help" className="mt-0.5 accent-[#16A34A]" required /><span>{ui.fields.terms}</span></label>
+                <p id="join-terms-help" className="text-[10.5px] text-slate-400">{ui.join.termsHelp}</p>
+                <p id="join-submit-help" className="text-[10.5px] text-slate-400">{step2Valid ? ui.join.helpReady : ui.join.helpPending}</p>
+                <button type="submit" disabled={busy || !step2Valid} aria-busy={busy} aria-describedby="join-submit-help" className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{busy ? <><LoaderCircle size={17} className="animate-spin" aria-hidden="true" /><span>{ui.join.submitting}</span></> : ui.join.submit}</button>
               </form>
             ) : step === 1 ? (
               <form onSubmit={continueToCompanySetup} noValidate className="sm-onboarding-form sm-onboarding-form--account auth-step-panel space-y-4" aria-live="polite">
-                <div className="mb-5"><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Create your account</h3><p className="mt-1 text-[12.5px] text-slate-500">Your account becomes the initial organisation owner.</p></div>
-                <FormField label="Full name" required><div className="relative"><User size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" autoComplete="name" autoCapitalize="words" required aria-required="true" autoFocus /></div></FormField>
-                <FormField label="Email address" required><div className="relative"><Mail size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} type="email" inputMode="email" value={account.email} onChange={(e) => setAccountField("email", e.target.value)} placeholder="you@company.tz" autoComplete="email" autoCapitalize="none" spellCheck={false} required aria-required="true" /></div></FormField>
-                <div className="grid gap-3 sm:grid-cols-2"><FormField label="Phone number"><div className="relative"><Phone size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} type="tel" inputMode="tel" value={account.phone} onChange={(e) => setAccountField("phone", e.target.value)} placeholder="e.g. +255 712 345 678" autoComplete="tel" /></div></FormField><FormField label="Password" required><div className="relative"><Lock size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9 pr-10`} type={showPassword ? "text" : "password"} value={account.password} onChange={(e) => setAccountField("password", e.target.value)} placeholder="Create a password" autoComplete="new-password" spellCheck={false} required aria-required="true" /><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}</button></div></FormField></div>
-                <FormField label="Confirm password" required><div className="relative"><input className={`${inputClass} pr-10`} type={showConfirmPassword ? "text" : "password"} value={account.confirmPassword} onChange={(e) => setAccountField("confirmPassword", e.target.value)} placeholder="Repeat password" autoComplete="new-password" spellCheck={false} required aria-required="true" aria-describedby={account.password && account.confirmPassword && account.password !== account.confirmPassword ? "signup-password-match" : undefined} /><button type="button" onClick={() => setShowConfirmPassword((current) => !current)} className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" aria-label={showConfirmPassword ? "Hide confirmation password" : "Show confirmation password"}>{showConfirmPassword ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}</button></div></FormField>
+                <div className="mb-5"><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>{ui.account.heading}</h3><p className="mt-1 text-[12.5px] text-slate-500">{ui.account.copy}</p></div>
+                <FormField label={ui.fields.fullName} required><div className="relative"><User size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder={ui.fields.fullNamePlaceholder} autoComplete="name" autoCapitalize="words" required aria-required="true" autoFocus /></div></FormField>
+                <FormField label={ui.fields.email} required><div className="relative"><Mail size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} type="email" inputMode="email" value={account.email} onChange={(e) => setAccountField("email", e.target.value)} placeholder={ui.fields.emailPlaceholder} autoComplete="email" autoCapitalize="none" spellCheck={false} required aria-required="true" /></div></FormField>
+                <div className="grid gap-3 sm:grid-cols-2"><FormField label={ui.fields.phone}><div className="relative"><Phone size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} type="tel" inputMode="tel" value={account.phone} onChange={(e) => setAccountField("phone", e.target.value)} placeholder={ui.fields.phonePlaceholder} autoComplete="tel" /></div></FormField><FormField label={ui.fields.password} required><div className="relative"><Lock size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9 pr-10`} type={showPassword ? "text" : "password"} value={account.password} onChange={(e) => setAccountField("password", e.target.value)} placeholder={ui.fields.passwordPlaceholder} autoComplete="new-password" spellCheck={false} required aria-required="true" /><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" aria-label={showPassword ? ui.fields.hidePassword : ui.fields.showPassword}>{showPassword ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}</button></div></FormField></div>
+                <FormField label={ui.fields.confirmPassword} required><div className="relative"><input className={`${inputClass} pr-10`} type={showConfirmPassword ? "text" : "password"} value={account.confirmPassword} onChange={(e) => setAccountField("confirmPassword", e.target.value)} placeholder={ui.fields.confirmPlaceholder} autoComplete="new-password" spellCheck={false} required aria-required="true" aria-describedby={account.password && account.confirmPassword && account.password !== account.confirmPassword ? "signup-password-match" : undefined} /><button type="button" onClick={() => setShowConfirmPassword((current) => !current)} className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" aria-label={showConfirmPassword ? ui.fields.hideConfirm : ui.fields.showConfirm}>{showConfirmPassword ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}</button></div></FormField>
                 <PasswordStrengthMeter password={account.password} />
-                {!account.password && <p className="text-[10.5px] leading-4 text-slate-400">Use at least 8 characters with uppercase, lowercase, number, and symbol.</p>}
-                {account.password && account.confirmPassword && account.password !== account.confirmPassword && <p id="signup-password-match" role="alert" className="flex items-center gap-1 text-[11.5px] font-medium text-red-600"><AlertCircle size={12} aria-hidden="true" /> Passwords do not match.</p>}
-                <label className="flex items-start gap-2 pt-1 text-[11px] text-slate-500"><input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} aria-describedby="signup-terms-help" className="mt-0.5 accent-[#16A34A]" required /><span>I agree to the Terms of Service and Privacy Policy.</span></label>
-                <p id="signup-terms-help" className="text-[10.5px] text-slate-400">Accept the terms to unlock the company setup step. Your account and company are not created until the final launch action.</p>
-                <p id="signup-continue-help" className="text-[10.5px] text-slate-400">{step1Valid ? "Your account is created only after you launch the workspace." : "Complete every required field and accept the terms to continue."}</p>
-                <button type="submit" disabled={busy || !step1Valid} aria-disabled={busy || !step1Valid} aria-describedby="signup-continue-help" className="w-full rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>Continue to company setup →</button>
+                {!account.password && <p className="text-[10.5px] leading-4 text-slate-400">{ui.fields.passwordHint}</p>}
+                {account.password && account.confirmPassword && account.password !== account.confirmPassword && <p id="signup-password-match" role="alert" className="flex items-center gap-1 text-[11.5px] font-medium text-red-600"><AlertCircle size={12} aria-hidden="true" /> {ui.fields.mismatch}</p>}
+                <label className="flex items-start gap-2 pt-1 text-[11px] text-slate-500"><input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} aria-describedby="signup-terms-help" className="mt-0.5 accent-[#16A34A]" required /><span>{ui.fields.terms}</span></label>
+                <p id="signup-terms-help" className="text-[10.5px] text-slate-400">{ui.account.termsHelp}</p>
+                <p id="signup-continue-help" className="text-[10.5px] text-slate-400">{step1Valid ? ui.account.helpReady : ui.account.helpPending}</p>
+                <button type="submit" disabled={busy || !step1Valid} aria-disabled={busy || !step1Valid} aria-describedby="signup-continue-help" className="w-full rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{ui.account.continue}</button>
               </form>
             ) : step === 2 ? (
               <form onSubmit={(e) => { e.preventDefault(); if (step2Valid) setStep(getSignupProgressionStep({ step: 2, account, company })); }} noValidate className="sm-onboarding-form sm-onboarding-form--workspace auth-step-panel space-y-4" aria-live="polite">
-                <div className="mb-5 flex items-center gap-2">{hasConfirmedSession ? null : <button type="button" onClick={() => setStep(1)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" aria-label="Back to account details"><ChevronLeft size={17} aria-hidden="true" /></button>}<div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Register your company</h3><p className="mt-0.5 text-[12.5px] text-slate-500">Configure the first workspace essentials.</p></div></div>
-                {hasConfirmedSession && <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3.5"><p className="flex items-center gap-2 text-[11.5px] font-bold text-emerald-900"><ShieldCheck size={15} aria-hidden="true" />Signed in as {account.email || "your verified account"}</p><p className="mt-1 text-[10.5px] leading-4 text-emerald-800/80">This company will be owned by your verified account. No new password is needed.</p></div>}
-                <FormField label="Company name" required><div className="relative"><Building2 size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} value={company.name} onChange={(e) => setCompanyField("name", e.target.value)} placeholder="e.g. Kilimanjaro Traders Ltd" autoComplete="organization" autoCapitalize="words" spellCheck={false} required aria-required="true" autoFocus aria-describedby="company-name-help" /></div><p id="company-name-help" className="mt-1 text-[10.5px] leading-4 text-slate-400">Use the registered name your team will recognise.</p></FormField>
-                <div className="grid gap-3 sm:grid-cols-2"><FormField label="Country" required><select className={inputClass} value={company.country} onChange={(e) => setCompanyField("country", e.target.value)} autoComplete="country-name" required aria-required="true">{SIGNUP_COUNTRIES.map((country) => <option key={country}>{country}</option>)}</select></FormField><FormField label="Currency" required><select className={inputClass} value={company.currency} onChange={(e) => setCompanyField("currency", e.target.value)} required aria-required="true">{SIGNUP_CURRENCIES.map((currency) => <option key={currency}>{currency}</option>)}</select></FormField></div>
-                <FormField label="Industry" required><select className={inputClass} value={company.category} onChange={(e) => setCompanyField("category", e.target.value)} required aria-required="true">{ORGANIZATION_INDUSTRY_OPTIONS.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select></FormField>
-                <div className="grid gap-3 sm:grid-cols-2"><FormField label="Website"><div className="relative"><Globe2 size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} type="url" inputMode="url" value={company.website} onChange={(e) => setCompanyField("website", e.target.value)} placeholder="https://yourcompany.com" autoComplete="url" autoCapitalize="none" spellCheck={false} /></div></FormField><FormField label="Tax ID / TIN"><div className="relative"><FileText size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} value={company.taxId} onChange={(e) => setCompanyField("taxId", e.target.value)} placeholder="123-456-789" autoCapitalize="characters" spellCheck={false} /></div></FormField></div>
-                <fieldset><legend className="mb-1.5 block text-[12px] font-semibold text-slate-600">Business scale</legend><div className="grid grid-cols-2 gap-2">{[["small", "Small business", "Essential modules"], ["large", "Growing / Enterprise", "Full initial suite"]].map(([value, label, copy]) => <button key={value} type="button" aria-pressed={businessScale === value} onClick={() => { setBusinessScale(value); setSelectedModules(new Set(SCALE_MODULE_PRESETS[value])); }} className={`rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${businessScale === value ? "border-[#16A34A] bg-emerald-50" : "border-slate-200 bg-white hover:border-slate-300"}`}><p className="text-[12px] font-semibold text-slate-800">{label}</p><p className="mt-0.5 text-[10.5px] text-slate-400">{copy}</p></button>)}</div><p className="mt-1 text-[10.5px] leading-4 text-slate-400">Sets which modules start enabled. You can change every module later in Settings.</p></fieldset>
-                <FormField label="First branch / location"><div className="relative"><Building2 size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} value={firstBranch} onChange={(e) => setFirstBranch(e.target.value)} placeholder="Head Office" autoComplete="organization" autoCapitalize="words" /></div></FormField>
+                <div className="mb-5 flex items-center gap-2">{hasConfirmedSession ? null : <button type="button" onClick={() => setStep(1)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" aria-label={ui.workspace.backLabel}><ChevronLeft size={17} aria-hidden="true" /></button>}<div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>{ui.workspace.heading}</h3><p className="mt-0.5 text-[12.5px] text-slate-500">{ui.workspace.copy}</p></div></div>
+                {hasConfirmedSession && <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3.5"><p className="flex items-center gap-2 text-[11.5px] font-bold text-emerald-900"><ShieldCheck size={15} aria-hidden="true" />{ui.workspace.confirmedAs(account.email || ui.workspace.confirmedFallback)}</p><p className="mt-1 text-[10.5px] leading-4 text-emerald-800/80">{ui.workspace.confirmedCopy}</p></div>}
+                <FormField label={ui.workspace.companyName} required><div className="relative"><Building2 size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} value={company.name} onChange={(e) => setCompanyField("name", e.target.value)} placeholder={ui.workspace.companyNamePlaceholder} autoComplete="organization" autoCapitalize="words" spellCheck={false} required aria-required="true" autoFocus aria-describedby="company-name-help" /></div><p id="company-name-help" className="mt-1 text-[10.5px] leading-4 text-slate-400">{ui.workspace.companyNameHelp}</p></FormField>
+                <div className="grid gap-3 sm:grid-cols-2"><FormField label={ui.workspace.country} required><select className={inputClass} value={company.country} onChange={(e) => setCompanyField("country", e.target.value)} autoComplete="country-name" required aria-required="true">{SIGNUP_COUNTRIES.map((country) => <option key={country} value={country}>{countryLabels[country] || country}</option>)}</select></FormField><FormField label={ui.workspace.currency} required><select className={inputClass} value={company.currency} onChange={(e) => setCompanyField("currency", e.target.value)} required aria-required="true">{SIGNUP_CURRENCIES.map((currency) => <option key={currency}>{currency}</option>)}</select></FormField></div>
+                <FormField label={ui.workspace.industry} required><select className={inputClass} value={company.category} onChange={(e) => setCompanyField("category", e.target.value)} required aria-required="true">{ORGANIZATION_INDUSTRY_OPTIONS.map((category) => <option key={category.id} value={category.id}>{industryLabels[category.id] || category.label}</option>)}</select></FormField>
+                <div className="grid gap-3 sm:grid-cols-2"><FormField label={ui.workspace.website}><div className="relative"><Globe2 size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} type="url" inputMode="url" value={company.website} onChange={(e) => setCompanyField("website", e.target.value)} placeholder={ui.workspace.websitePlaceholder} autoComplete="url" autoCapitalize="none" spellCheck={false} /></div></FormField><FormField label={ui.workspace.taxId}><div className="relative"><FileText size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} value={company.taxId} onChange={(e) => setCompanyField("taxId", e.target.value)} placeholder={ui.workspace.taxIdPlaceholder} autoCapitalize="characters" spellCheck={false} /></div></FormField></div>
+                <fieldset><legend className="mb-1.5 block text-[12px] font-semibold text-slate-600">{ui.workspace.scaleLegend}</legend><div className="grid grid-cols-2 gap-2">{[["small", ui.workspace.scaleSmallLabel, ui.workspace.scaleSmallCopy], ["large", ui.workspace.scaleLargeLabel, ui.workspace.scaleLargeCopy]].map(([value, label, copy]) => <button key={value} type="button" aria-pressed={businessScale === value} onClick={() => { setBusinessScale(value); setSelectedModules(new Set(SCALE_MODULE_PRESETS[value])); }} className={`rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${businessScale === value ? "border-[#16A34A] bg-emerald-50" : "border-slate-200 bg-white hover:border-slate-300"}`}><p className="text-[12px] font-semibold text-slate-800">{label}</p><p className="mt-0.5 text-[10.5px] text-slate-400">{copy}</p></button>)}</div><p className="mt-1 text-[10.5px] leading-4 text-slate-400">{ui.workspace.scaleHelp}</p></fieldset>
+                <FormField label={ui.workspace.branch}><div className="relative"><Building2 size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" aria-hidden="true" /><input className={`${inputClass} pl-9`} value={firstBranch} onChange={(e) => setFirstBranch(e.target.value)} placeholder={ui.workspace.branchPlaceholder} autoComplete="organization" autoCapitalize="words" /></div></FormField>
                 <WorkspaceBrandingControls logo={company.logo} primaryColor={company.brandColor} accentColor={company.brandAccentColor} onLogoChange={(value) => setCompanyField("logo", value)} onPrimaryColorChange={(value) => setCompanyField("brandColor", value)} onAccentColorChange={(value) => setCompanyField("brandAccentColor", value)} />
-                <p id="workspace-continue-help" className="text-[10.5px] text-slate-400">{step2Valid ? "You can review modules and the free plan on the next step." : "Enter your company name to continue."}</p>
-                <button type="submit" disabled={!step2Valid} aria-describedby="workspace-continue-help" className="w-full rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>Continue to modules →</button>
+                <p id="workspace-continue-help" className="text-[10.5px] text-slate-400">{step2Valid ? ui.workspace.helpReady : ui.workspace.helpPending}</p>
+                <button type="submit" disabled={!step2Valid} aria-describedby="workspace-continue-help" className="w-full rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{ui.workspace.continue}</button>
               </form>
             ) : (
               <div className="sm-onboarding-form sm-onboarding-form--modules auth-step-panel space-y-4" aria-live="polite">
-                <div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(2)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" aria-label="Back to company details"><ChevronLeft size={17} aria-hidden="true" /></button><div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Choose your starting modules</h3><p className="mt-0.5 text-[12.5px] text-slate-500">Enable the workflows you need first. You can change these later.</p></div></div>
-                <div role="group" aria-label="Starting modules" className="sm-onboarding-module-grid grid grid-cols-2 gap-2.5 sm:grid-cols-3">{ONBOARDING_MODULES.map((module) => { const Icon = module.icon; const activeModule = selectedModules.has(module.id); return <button key={module.id} type="button" aria-pressed={activeModule} onClick={() => toggleModule(module.id)} className={`sm-onboarding-module flex items-start gap-2 rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${activeModule ? "is-active border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}><span className={`mt-0.5 rounded-lg p-1.5 ${activeModule ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}><Icon size={14} aria-hidden="true" /></span><span className="min-w-0"><span className="block truncate text-[11.5px] font-semibold">{module.label}</span><span className="mt-0.5 block text-[10px]">{activeModule ? "Enabled" : "Not enabled"}</span></span>{activeModule && <Check size={12} className="ml-auto shrink-0" aria-hidden="true" />}</button>; })}</div>
-                <p className="text-[11.5px] leading-5 text-slate-500">{selectedModules.size} of {ONBOARDING_MODULES.length} modules enabled. Module choices are saved to your workspace and can be changed by authorised administrators later.</p>
-                <section className="sm-onboarding-plan rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-emerald-700">FREE PLAN — 15 DAYS</p><h4 className="mt-1 flex items-center gap-2 text-[15px] font-bold text-emerald-950"><CheckCircle2 size={16} aria-hidden="true" />Karibu SMART MANAGER</h4><p className="mt-1 text-[11.5px] leading-5 text-emerald-900/80">Anza na siku 15 BURE. Hakuna malipo yanayohitajika sasa; chagua kifurushi unachopendelea.</p><label className="mt-3 block text-[11px] font-semibold text-emerald-950">Preferred package<select value={preferredPlanCode} onChange={(event) => setPreferredPlanCode(event.target.value)} className="mt-1.5 w-full rounded-xl border border-emerald-200 bg-white px-3 py-2.5 text-[12px] font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">{onboardingPlans.length ? onboardingPlans.map((plan) => <option key={plan.code} value={plan.code}>{plan.name} — TZS {Number(plan.monthlyPrice || 0).toLocaleString()} / mwezi</option>) : <option value="FREE_15">FREE_15 — FREE FOR 15 DAYS</option>}</select></label>{onboardingPlanError && <p className="mt-2 text-[10.5px] text-amber-700">{onboardingPlanError}</p>}<p className="mt-2 text-[10.5px] leading-4 text-emerald-800">Mpango wa FREE_15 unaanza baada ya kampuni kusajiliwa. Data yako itahifadhiwa hata ufikiaji ukiisha.</p></section>
-                {hasConfirmedSession && mode === "create" && <><label className="flex items-start gap-2 text-[11px] text-slate-500"><input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} aria-describedby="launch-terms-help" className="mt-0.5 accent-[#16A34A]" required /><span>I agree to the Terms of Service and Privacy Policy.</span></label><p id="launch-terms-help" className="text-[10.5px] text-slate-400">Your company is created only after you accept the terms and launch.</p></>}
-                <p id="launch-help" className="text-[10.5px] text-slate-400">{launchValid ? "Your FREE_15 access starts after the company is created." : hasConfirmedSession && mode === "create" ? "Accept the terms to launch your workspace." : "Review your setup to continue."}</p>
-                <button type="button" onClick={handleFinalSubmit} disabled={busy || !launchValid} aria-busy={busy} aria-describedby="launch-help" className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{busy ? <><LoaderCircle size={17} className="animate-spin" aria-hidden="true" /><span>Launching workspace…</span></> : "Launch Smart Manager →"}</button>
+                <div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(2)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" aria-label={ui.modules.backLabel}><ChevronLeft size={17} aria-hidden="true" /></button><div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>{ui.modules.heading}</h3><p className="mt-0.5 text-[12.5px] text-slate-500">{ui.modules.copy}</p></div></div>
+                <div role="group" aria-label={ui.modules.heading} className="sm-onboarding-module-grid grid grid-cols-2 gap-2.5 sm:grid-cols-3">{ONBOARDING_MODULES.map((module) => { const Icon = module.icon; const activeModule = selectedModules.has(module.id); return <button key={module.id} type="button" aria-pressed={activeModule} onClick={() => toggleModule(module.id)} className={`sm-onboarding-module flex items-start gap-2 rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${activeModule ? "is-active border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}><span className={`mt-0.5 rounded-lg p-1.5 ${activeModule ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}><Icon size={14} aria-hidden="true" /></span><span className="min-w-0"><span className="block truncate text-[11.5px] font-semibold">{moduleLabels[module.id] || module.label}</span><span className="mt-0.5 block text-[10px]">{activeModule ? ui.modules.enabled : ui.modules.notEnabled}</span></span>{activeModule && <Check size={12} className="ml-auto shrink-0" aria-hidden="true" />}</button>; })}</div>
+                <p className="text-[11.5px] leading-5 text-slate-500">{ui.modules.count(selectedModules.size, ONBOARDING_MODULES.length)}</p>
+                <section className="sm-onboarding-plan rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-emerald-700">{ui.modules.planBadge}</p><h4 className="mt-1 flex items-center gap-2 text-[15px] font-bold text-emerald-950"><CheckCircle2 size={16} aria-hidden="true" />{ui.modules.planTitle}</h4><p className="mt-1 text-[11.5px] leading-5 text-emerald-900/80">{ui.modules.planCopy}</p><label className="mt-3 block text-[11px] font-semibold text-emerald-950">{ui.modules.preferredPackage}<select value={preferredPlanCode} onChange={(event) => setPreferredPlanCode(event.target.value)} className="mt-1.5 w-full rounded-xl border border-emerald-200 bg-white px-3 py-2.5 text-[12px] font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">{onboardingPlans.length ? onboardingPlans.map((plan) => <option key={plan.code} value={plan.code}>{plan.name} — {new Intl.NumberFormat(lang, { style: "currency", currency: "TZS", maximumFractionDigits: 0 }).format(Number(plan.monthlyPrice || 0))}</option>) : <option value="FREE_15">FREE_15</option>}</select></label>{onboardingPlanUnavailable && <p className="mt-2 text-[10.5px] text-amber-700">{ui.errors.planUnavailable}</p>}<p className="mt-2 text-[10.5px] leading-4 text-emerald-800">{ui.modules.planNote}</p></section>
+                {hasConfirmedSession && mode === "create" && <><label className="flex items-start gap-2 text-[11px] text-slate-500"><input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} aria-describedby="launch-terms-help" className="mt-0.5 accent-[#16A34A]" required /><span>{ui.fields.terms}</span></label><p id="launch-terms-help" className="text-[10.5px] text-slate-400">{ui.modules.launchTermsHelp}</p></>}
+                <p id="launch-help" className="text-[10.5px] text-slate-400">{launchValid ? ui.modules.helpReady : hasConfirmedSession && mode === "create" ? ui.modules.helpPending : ui.modules.helpPendingReview}</p>
+                <button type="button" onClick={handleFinalSubmit} disabled={busy || !launchValid} aria-busy={busy} aria-describedby="launch-help" className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{busy ? <><LoaderCircle size={17} className="animate-spin" aria-hidden="true" /><span>{ui.modules.launching}</span></> : ui.modules.launch}</button>
               </div>
             )}
           </div>
 
-          <div className="mt-5 text-center"><p className="text-[12.5px] text-slate-500">Already have an account? <button type="button" onClick={onSwitchToLogin} className="font-semibold text-[#16A34A] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 rounded">Sign in</button></p><p className="mt-2 text-[11.5px] text-slate-400">{mode === "join" ? "Need to create a new company? Switch to Create a company above." : "Joining an existing company? Switch to Join existing company above."}</p></div>
+          <div className="mt-5 text-center"><p className="text-[12.5px] text-slate-500">{ui.footer.haveAccount} <button type="button" onClick={onSwitchToLogin} className="font-semibold text-[#16A34A] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 rounded">{ui.footer.signIn}</button></p><p className="mt-2 text-[11.5px] text-slate-400">{mode === "join" ? ui.footer.switchToCreate : ui.footer.switchToJoin}</p></div>
         </div>
       </div>
     </main>
@@ -44869,6 +44885,13 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
 // one to set; this account will only ever sign in through the same OAuth
 // provider again.
 function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
+  const { lang } = useLanguageOptional();
+  const ui = signupUiFor(lang);
+  const oauth = ui.oauthSetup;
+  const moduleLabels = MODULE_LABELS[lang] || MODULE_LABELS.en;
+  const industryLabels = INDUSTRY_LABELS[lang] || INDUSTRY_LABELS.en;
+  const countryLabels = COUNTRY_LABELS[lang] || COUNTRY_LABELS.en;
+  const roleLabels = ROLE_LABELS[lang] || ROLE_LABELS.en;
   const [mode, setMode] = useState("create");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -44883,6 +44906,8 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
   const [preferredPlanCode, setPreferredPlanCode] = useState("FREE_15");
   const [onboardingPlans, setOnboardingPlans] = useState([]);
   const welcomeEmailMutation = trpc.accountRegistration.sendWelcomeEmail.useMutation();
+
+  useEffect(() => { setError(null); }, [lang]);
 
   useEffect(() => {
     if (!IS_CONFIGURED) return undefined;
@@ -44920,7 +44945,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
           }, oauthUser.accessToken);
       const rpcResult = workspaceRpc.data;
 
-      if (!rpcResult?.id) throw new Error("Workspace setup did not return a confirmed company record.");
+      if (!rpcResult?.id) throw new Error(oauth.rpcError);
 
       if (mode === "create") {
         const confirmedFocus = normalizeOrganizationIndustryFocus(company.category);
@@ -44940,7 +44965,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
         try {
           await callWorkspaceRpcWithSessionRefresh("billing_start_free_plan", { p_plan_code: "FREE_15" }, workspaceRpc.accessToken);
         } catch (_freePlanError) {
-          freePlanWarning = "Your workspace is ready, but its FREE_15 access could not be confirmed yet. Open Subscription & Billing from the account menu after sign-in to retry safely.";
+          freePlanWarning = ui.errors.freePlan;
         }
       }
 
@@ -44959,7 +44984,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
         trialWarning,
       });
     } catch (err) {
-      setError(workspaceJoinErrorMessage(err, "Couldn't complete setup. Please try again."));
+      setError(workspaceJoinErrorMessage(err, ui.errors.signUpFallback));
     } finally {
       setBusy(false);
     }
@@ -44976,42 +45001,42 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
         </div>
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg border border-slate-200/60 p-6 sm:p-8 space-y-5">
           <div>
-            <h2 className="text-[18px] font-semibold text-[#111827] mb-1">One more step, {fullName.split(" ")[0] || "there"}</h2>
-            <p className="text-[13px] text-slate-500">Signed in as {oauthUser.email} — now set up your organization.</p>
+            <h2 className="text-[18px] font-semibold text-[#111827] mb-1">{oauth.welcomeTitle(fullName.split(" ")[0] || oauth.welcomeFallback)}</h2>
+            <p className="text-[13px] text-slate-500">{oauth.signedInAs(oauthUser.email)}</p>
           </div>
 
-          <FormField label="Your name" required><input className={inputClass} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" /></FormField>
+          <FormField label={ui.fields.fullName} required><input className={inputClass} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={ui.fields.fullNamePlaceholder} /></FormField>
 
           <div className="flex gap-2 bg-slate-100 rounded-lg p-1">
-            <button type="button" onClick={() => setMode("create")} className={`flex-1 text-[12.5px] font-medium py-2 rounded-md transition-colors ${mode === "create" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>Create a company</button>
-            <button type="button" onClick={() => setMode("join")} className={`flex-1 text-[12.5px] font-medium py-2 rounded-md transition-colors ${mode === "join" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>Join a company</button>
+            <button type="button" onClick={() => setMode("create")} className={`flex-1 text-[12.5px] font-medium py-2 rounded-md transition-colors ${mode === "create" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>{ui.header.createMode}</button>
+            <button type="button" onClick={() => setMode("join")} className={`flex-1 text-[12.5px] font-medium py-2 rounded-md transition-colors ${mode === "join" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>{ui.header.joinMode}</button>
           </div>
 
           {mode === "create" ? (
             <div className="space-y-4">
-              <FormField label="Organization name" required><input className={inputClass} value={company.name} onChange={(e) => setCompanyField("name", e.target.value)} placeholder="e.g. BEIRAHISI HARDWARE" /></FormField>
-              <FormField label="Organization industry focus">
+              <FormField label={ui.workspace.companyName} required><input className={inputClass} value={company.name} onChange={(e) => setCompanyField("name", e.target.value)} placeholder={ui.workspace.companyNamePlaceholder} /></FormField>
+              <FormField label={ui.workspace.industry}>
                 <select className={inputClass} value={company.category} onChange={(event) => setCompanyField("category", event.target.value)}>
-                  {ORGANIZATION_INDUSTRY_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                  {ORGANIZATION_INDUSTRY_OPTIONS.map((option) => <option key={option.id} value={option.id}>{industryLabels[option.id] || option.label}</option>)}
                 </select>
-                <p className="mt-1 text-[10.5px] leading-4 text-slate-400">This saves your confirmed organization focus and tailors the next sign-in view.</p>
+                <p className="mt-1 text-[10.5px] leading-4 text-slate-400">{oauth.industryFocusHelp}</p>
               </FormField>
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Country">
+                <FormField label={ui.workspace.country}>
                   <select className={inputClass} value={company.country} onChange={(e) => setCompanyField("country", e.target.value)}>
-                    {SIGNUP_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    {SIGNUP_COUNTRIES.map((c) => <option key={c} value={c}>{countryLabels[c] || c}</option>)}
                   </select>
                 </FormField>
-                <FormField label="Currency">
+                <FormField label={ui.workspace.currency}>
                   <select className={inputClass} value={company.currency} onChange={(e) => setCompanyField("currency", e.target.value)}>
                     {SIGNUP_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </FormField>
               </div>
               <div>
-                <label className="text-[12.5px] font-medium text-slate-600 block mb-2">Business scale</label>
+                <label className="text-[12.5px] font-medium text-slate-600 block mb-2">{ui.workspace.scaleLegend}</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {[{ id: "small", label: "Small Business", hint: "One location, lean team" }, { id: "large", label: "Large Business", hint: "Multiple departments" }].map((s) => (
+                  {[{ id: "small", label: ui.workspace.scaleSmallLabel, hint: ui.workspace.scaleSmallCopy }, { id: "large", label: ui.workspace.scaleLargeLabel, hint: ui.workspace.scaleLargeCopy }].map((s) => (
                     <button
                       key={s.id} type="button"
                       onClick={() => { setBusinessScale(s.id); setSelectedModules(new Set(s.id === "small" ? getIndustryProfile(company.category).recommendedModules : SCALE_MODULE_PRESETS.large)); }}
@@ -45023,10 +45048,10 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
                     </button>
                   ))}
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1.5">Sets a sensible starting set of modules below — nothing is locked away either way.</p>
+                <p className="text-[11px] text-slate-400 mt-1.5">{ui.workspace.scaleHelp}</p>
               </div>
               <div>
-                <label className="text-[12.5px] font-medium text-slate-600 block mb-2">Select modules to use</label>
+                <label className="text-[12.5px] font-medium text-slate-600 block mb-2">{oauth.selectModules}</label>
                 <div className="grid grid-cols-3 gap-2">
                   {ONBOARDING_MODULES.map((m) => {
                     const Icon = m.icon;
@@ -45034,35 +45059,35 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
                     return (
                       <button key={m.id} type="button" onClick={() => toggleModule(m.id)} className={`flex flex-col items-center gap-1 rounded-lg border py-2.5 px-1 transition-colors ${on ? "border-[#16A34A]/40 bg-[#16A34A]/5" : "border-slate-200"}`}>
                         <Icon size={15} className={on ? "text-[#16A34A]" : "text-slate-400"} />
-                        <span className={`text-[10.5px] font-medium text-center leading-tight ${on ? "text-[#111827]" : "text-slate-400"}`}>{m.label}</span>
+                        <span className={`text-[10.5px] font-medium text-center leading-tight ${on ? "text-[#111827]" : "text-slate-400"}`}>{moduleLabels[m.id] || m.label}</span>
                       </button>
                     );
                   })}
                 </div>
               </div>
-              <FormField label="Your first branch or location (optional)">
-                <input className={inputClass} value={firstBranch} onChange={(e) => setFirstBranch(e.target.value)} placeholder="e.g. Kariakoo Branch — defaults to Head Office" />
+              <FormField label={ui.workspace.branch}>
+                <input className={inputClass} value={firstBranch} onChange={(e) => setFirstBranch(e.target.value)} placeholder={oauth.branchPlaceholder} />
               </FormField>
               <section className="rounded-xl border border-emerald-100 bg-emerald-50 p-3.5">
-                <p className="text-[10px] font-bold uppercase tracking-[.13em] text-emerald-700">FREE PLAN — 15 DAYS</p>
-                <p className="mt-1 text-[12px] font-semibold text-emerald-950">Anza na siku 15 BURE — no payment is required today.</p>
+                <p className="text-[10px] font-bold uppercase tracking-[.13em] text-emerald-700">{ui.modules.planBadge}</p>
+                <p className="mt-1 text-[12px] font-semibold text-emerald-950">{ui.modules.planCopy}</p>
                 <select value={preferredPlanCode} onChange={(event) => setPreferredPlanCode(event.target.value)} className="mt-2 w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-[12px] font-semibold text-slate-800">
-                  {onboardingPlans.length ? onboardingPlans.map((plan) => <option key={plan.code} value={plan.code}>{plan.category === "Football" ? "⚽ " : ""}{plan.name} — TZS {Number(plan.monthlyPrice || 0).toLocaleString()} / mwezi</option>) : <option value="FREE_15">FREE_15 — FREE FOR 15 DAYS</option>}
+                  {onboardingPlans.length ? onboardingPlans.map((plan) => <option key={plan.code} value={plan.code}>{plan.category === "Football" ? "⚽ " : ""}{plan.name} — {new Intl.NumberFormat(lang, { style: "currency", currency: "TZS", maximumFractionDigits: 0 }).format(Number(plan.monthlyPrice || 0))}</option>) : <option value="FREE_15">FREE_15</option>}
                 </select>
               </section>
             </div>
           ) : (
             <div className="space-y-4">
-              <FormField label="Company join code" required><input className={inputClass} value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="e.g. A1B2C3D4" /></FormField>
-              <FormField label="Your role">
+              <FormField label={ui.join.joinCode} required><input className={inputClass} value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder={ui.join.joinCodePlaceholder} /></FormField>
+              <FormField label={ui.join.role}>
                 <select className={inputClass} value={joinRole} onChange={(e) => setJoinRole(e.target.value)}>
-                  {JOIN_COMPANY_ROLE_OPTIONS.map((role) => <option key={role.id} value={role.id}>{role.label}</option>)}
+                  {JOIN_COMPANY_ROLE_OPTIONS.map((role) => <option key={role.id} value={role.id}>{roleLabels[role.id] || role.label}</option>)}
                 </select>
-                <p className="mt-1 text-[10.5px] leading-4 text-slate-400">For security, workspace administrators approve elevated roles after access is confirmed.</p>
+                <p className="mt-1 text-[10.5px] leading-4 text-slate-400">{ui.join.roleHelp}</p>
               </FormField>
               {isPortalRole && (
-                <FormField label="Your company name, exactly as it appears on your records" required>
-                  <input className={inputClass} value={customerRef} onChange={(e) => setCustomerRef(e.target.value)} placeholder="e.g. Kilimo Fresh Distributors" />
+                <FormField label={ui.join.customerRef} required>
+                  <input className={inputClass} value={customerRef} onChange={(e) => setCustomerRef(e.target.value)} placeholder={oauth.customerRefPlaceholder} />
                 </FormField>
               )}
             </div>
@@ -45071,9 +45096,9 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
           {error && <p className="text-[12.5px] text-[#EF4444] rounded-lg px-3 py-2" style={{ backgroundColor: "#FEE2E2" }}>{error}</p>}
 
           <div className="flex gap-2">
-            <button type="button" onClick={onCancel} className="btn-secondary flex-1 text-[13px] font-medium rounded-lg py-3">Cancel</button>
-            <button type="submit" disabled={!valid || busy} aria-label="Finish setup" className="flex-[2] btn-primary text-white text-[14px] font-semibold rounded-lg py-3 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
-              {busy ? <LoaderCircle size={16} className="animate-spin" /> : "Finish Setup"}
+            <button type="button" onClick={onCancel} className="btn-secondary flex-1 text-[13px] font-medium rounded-lg py-3">{oauth.cancel}</button>
+            <button type="submit" disabled={!valid || busy} aria-label={oauth.finishAria} className="flex-[2] btn-primary text-white text-[14px] font-semibold rounded-lg py-3 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+              {busy ? <LoaderCircle size={16} className="animate-spin" /> : oauth.finish}
             </button>
           </div>
         </form>

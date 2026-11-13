@@ -111,11 +111,11 @@ export function getSignupProgressionStep({ account, company, step }) {
   return 3;
 }
 
-export function getSignupStepOneValidationError({ account, termsAccepted }) {
-  if (!account?.fullName?.trim()) return "Please enter your full name.";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account?.email?.trim() || "")) return "Please enter a valid email address.";
-  if (!isEnterprisePassword(account?.password || "")) return "Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.";
-  if (account.password !== account.confirmPassword) return "Passwords do not match.";
-  if (!termsAccepted) return "Please accept the Terms of Service and Privacy Policy to continue.";
+export function getSignupStepOneValidationError({ account, termsAccepted, messages = {} }) {
+  if (!account?.fullName?.trim()) return messages.fullName || "Please enter your full name.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account?.email?.trim() || "")) return messages.email || "Please enter a valid email address.";
+  if (!isEnterprisePassword(account?.password || "")) return messages.password || "Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.";
+  if (account.password !== account.confirmPassword) return messages.mismatch || "Passwords do not match.";
+  if (!termsAccepted) return messages.terms || "Please accept the Terms of Service and Privacy Policy to continue.";
   return null;
 }

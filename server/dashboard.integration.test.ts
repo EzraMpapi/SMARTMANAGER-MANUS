@@ -27,6 +27,8 @@ const preferencesDrawerSource = readFileSync(new URL("../client/src/components/D
 const passwordAccountProvisioningSource = readFileSync(new URL("./passwordAccountProvisioning.ts", import.meta.url), "utf8");
 const brandLogoSource = readFileSync(new URL("../client/src/components/BrandLogo.tsx", import.meta.url), "utf8");
 const enterpriseAuthSource = readFileSync(new URL("../client/src/components/EnterpriseAuthViews.jsx", import.meta.url), "utf8");
+const authTranslationsSource = readFileSync(new URL("../client/src/lib/authTranslations.ts", import.meta.url), "utf8");
+const signupTranslationsSource = readFileSync(new URL("../client/src/lib/signupTranslations.ts", import.meta.url), "utf8");
 const indexHtmlSource = readFileSync(new URL("../client/index.html", import.meta.url), "utf8");
 const authContextSource = readFileSync(new URL("../client/src/contexts/AuthContext.tsx", import.meta.url), "utf8");
 
@@ -144,7 +146,8 @@ describe("BusinessSphere launch and live-data integration", () => {
   it("keeps password-login failures truthful instead of collapsing them into a generic connection message", () => {
     expect(dashboardSource).toContain("toAuthUserMessage(loginError)");
     expect(dashboardSource).toContain("validatePasswordLogin(identifier, password)");
-    expect(enterpriseAuthSource).toContain("Use the same provider you used when your workspace account was created.");
+    expect(authTranslationsSource).toContain("Use the same provider you used when your workspace account was created.");
+    expect(enterpriseAuthSource).toContain("{ui.oauthNote}");
     expect(dashboardSource).not.toContain('setError("Something went wrong — check your connection.")');
   });
 
@@ -167,14 +170,14 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("keeps enterprise onboarding progressive and writes selected module intent through the shared company-module contract", () => {
     expect(dashboardSource).toContain('const stepLabels = mode === "create"');
-    expect(dashboardSource).toContain('["Account", "Workspace", "Modules"]');
-    expect(dashboardSource).toContain('["Join"]');
+    expect(signupTranslationsSource).toContain('stepsCreate: ["Account", "Workspace", "Modules"]');
+    expect(signupTranslationsSource).toContain('stepsJoin: ["Join"]');
     expect(dashboardSource).toContain("isEnterprisePassword(account.password)");
     expect(dashboardSource).toContain("companyDefaultsForCountry(val)");
-    expect(dashboardSource).toContain("Account created");
-    expect(dashboardSource).toContain("Congratulations — you’re ready.");
-    expect(dashboardSource).toContain("Continue to sign in");
-    expect(dashboardSource).toContain("Your account becomes the initial organisation owner.");
+    expect(signupTranslationsSource).toContain("Account created");
+    expect(signupTranslationsSource).toContain("Congratulations — you’re ready.");
+    expect(signupTranslationsSource).toContain("Continue to sign in");
+    expect(signupTranslationsSource).toContain("Your account becomes the initial organisation owner.");
     expect(dashboardSource).toContain("const joinAccountValid");
     expect(dashboardSource).toContain("disabled={busy || !step2Valid}");
     expect(dashboardSource).not.toContain('placeholder="Min. 6 characters"');
@@ -182,7 +185,7 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("offers optional organization branding in workspace setup and persists it through the protected save mutation", () => {
     expect(dashboardSource).toContain("function WorkspaceBrandingControls");
-    expect(dashboardSource).toContain("Optional workspace branding");
+    expect(signupTranslationsSource).toContain("Optional workspace branding");
     expect(dashboardSource).toContain("<UploadCloud size={18}");
     expect(dashboardSource).toContain('accept="image/png,image/jpeg,image/webp,image/svg+xml"');
     expect(dashboardSource).toContain("file.size > 2 * 1024 * 1024");
@@ -196,7 +199,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   it("keeps Settings upload controls defined and constrains both Join Company flows to supported workspace roles", () => {
     expect(dashboardSource).toContain("Info, Upload} from \"lucide-react\"");
     expect(dashboardSource).toContain("const JOIN_COMPANY_ROLE_OPTIONS");
-    expect(dashboardSource).toContain("JOIN_COMPANY_ROLE_OPTIONS.map((role) => <option key={role.id} value={role.id}>{role.label}</option>)");
+    expect(dashboardSource).toContain("JOIN_COMPANY_ROLE_OPTIONS.map((role) => <option key={role.id} value={role.id}>{roleLabels[role.id] || role.label}</option>)");
     expect(dashboardSource).not.toContain('ROLES.filter((r) => r !== "Organization Owner").map((r) => <option key={r}>{r}</option>)');
     expect(dashboardSource).toContain("p_join_code: joinCode.trim().toUpperCase()");
     expect(dashboardSource).toContain("workspaceJoinErrorMessage(err");
@@ -925,7 +928,8 @@ it("exposes dedicated non-login recovery and email-confirmation screens with acc
   expect(publicAuthSource).toContain("PasswordRecoveryView");
   expect(publicAuthSource).toContain("EmailConfirmationView");
   expect(dashboardSource).toContain('className="sm-onboarding-form sm-onboarding-form--join auth-step-panel space-y-4" aria-live="polite"');
-  expect(dashboardSource).toContain('className="sm-onboarding-form sm-onboarding-form--modules auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"');
+  expect(dashboardSource).toContain('className="sm-onboarding-form sm-onboarding-form--modules auth-step-panel space-y-4" aria-live="polite">');
+  expect(dashboardSource).toContain('<div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(2)}');
   expect(dashboardSource).toContain('<LoginPage initialDiagnostic={terminalSessionDiagnostic} onAuthenticated=');
 });
 
