@@ -39372,6 +39372,67 @@ const AI_QUICK_ACTIONS = [
   },
 ];
 
+// Reusable prompt templates turn common workflows into consistent, editable
+// starting points. They remain read-only analysis/drafting requests: the
+// assistant uses the scoped live snapshot and any resulting mutation proposal
+// still goes through the existing approval workflow.
+const AI_PROMPT_TEMPLATES = [
+  {
+    id: "board-update",
+    label: "Board update",
+    description: "Turn live signals into a leadership memo",
+    icon: FileText,
+    color: "#0F766E",
+    scopes: ["finance", "sales", "inventory", "hr"],
+    prompt: "Draft a board-ready business update from the live snapshot. Use these headings: Executive summary, performance signals, material risks, decisions needed, and next 30 days. Include exact supplied figures where available and label missing evidence clearly.",
+  },
+  {
+    id: "customer-follow-up",
+    label: "Customer follow-up",
+    description: "Draft a warm, evidence-based message",
+    icon: MessageSquare,
+    color: "#2563EB",
+    scopes: ["sales"],
+    prompt: "Choose the highest-priority open sales opportunity from the live pipeline and draft a concise customer follow-up message. Reference only supplied deal facts, include one clear next step, and do not invent a meeting date, discount, or promise.",
+  },
+  {
+    id: "month-end-close",
+    label: "Month-end close",
+    description: "Build an accountant's close checklist",
+    icon: ClipboardList,
+    color: "#7C3AED",
+    scopes: ["finance"],
+    prompt: "Create a month-end close checklist grounded in the live finance snapshot. Prioritize unreconciled items, overdue receivables, missing documentation, expense anomalies, and approvals. Separate confirmed data from checks the team still needs to perform.",
+  },
+  {
+    id: "risk-register",
+    label: "Risk register",
+    description: "Create owners and mitigations for risks",
+    icon: ShieldCheck,
+    color: "#B45309",
+    scopes: ["finance", "sales", "inventory", "hr"],
+    prompt: "Create a practical risk register from the live snapshot with columns: risk, evidence, likelihood, impact, early warning signal, mitigation, and suggested owner. Do not assign a person unless the supplied data supports it.",
+  },
+  {
+    id: "weekly-kpi-review",
+    label: "Weekly KPI review",
+    description: "Prepare a focused team review",
+    icon: Target,
+    color: "#DB2777",
+    scopes: ["finance", "sales", "inventory", "hr"],
+    prompt: "Prepare a weekly KPI review using only the current business snapshot. Highlight what improved, what deteriorated, the three metrics that need attention next week, and three specific questions for the team.",
+  },
+  {
+    id: "sop-draft",
+    label: "SOP draft",
+    description: "Turn a process into a usable checklist",
+    icon: ClipboardList,
+    color: "#475569",
+    scopes: ["finance", "sales", "inventory", "hr", "suppliers"],
+    prompt: "Draft a concise standard operating procedure for the most important process suggested by the current role and data. Use: purpose, scope, prerequisites, numbered steps, control points, evidence to retain, and escalation path. Mark assumptions for review.",
+  },
+];
+
 // Tool contract exposed to the model. Deliberately scoped to shared tables
 // the assistant already reads — no tool touches data it can't see. Each
 // persona above only offers the subset relevant to its role.
@@ -39643,6 +39704,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
 
   const tools = AI_TOOLS_ALL.filter((t) => persona.tools.includes(t.name));
   const quickActions = AI_QUICK_ACTIONS.filter((action) => action.scopes.some((scope) => persona.scope.includes(scope))).slice(0, 6);
+  const promptTemplates = AI_PROMPT_TEMPLATES.filter((template) => template.scopes.some((scope) => persona.scope.includes(scope))).slice(0, 4);
   const assistantMutation = trpc.ai.assist.useMutation();
   const requestApprovalMutation = trpc.ai.requestActionApproval.useMutation();
   const decideApprovalMutation = trpc.ai.decideActionApproval.useMutation();
@@ -40094,6 +40156,38 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
                     <span className="min-w-0">
                       <span className="block truncate text-[11px] font-semibold text-slate-700 group-hover:text-[#111827]">{action.label}</span>
                       <span className="block truncate text-[10px] text-slate-400">{action.description}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {promptTemplates.length > 0 && (
+          <div className="mt-2.5 border-t border-slate-200/70 pt-2.5">
+            <div className="mb-1.5 flex items-center gap-1.5">
+              <FileText size={12} className="text-[#2563EB]" />
+              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Prompt templates</span>
+              <span className="text-[10px] text-slate-400">· editable starting points</span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+              {promptTemplates.map((template) => {
+                const Icon = template.icon;
+                return (
+                  <button
+                    key={template.id}
+                    type="button"
+                    onClick={() => { setInput(template.prompt); setAssistantError(null); }}
+                    disabled={busy}
+                    title={template.prompt}
+                    className="group flex min-w-0 items-center gap-2 rounded-lg border border-dashed border-slate-200/90 bg-slate-50/60 px-2.5 py-2 text-left transition-colors hover:border-[#2563EB]/40 hover:bg-[#2563EB]/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md" style={{ backgroundColor: `${template.color}14`, color: template.color }}>
+                      <Icon size={14} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[11px] font-semibold text-slate-700 group-hover:text-[#111827]">{template.label}</span>
+                      <span className="block truncate text-[10px] text-slate-400">{template.description}</span>
                     </span>
                   </button>
                 );

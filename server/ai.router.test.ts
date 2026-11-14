@@ -53,6 +53,14 @@ describe("AI router and grounded dashboard signals", () => {
     expect(dashboardSource).toContain("Pipeline coach");
     expect(dashboardSource).toContain("Specialized tools");
     expect(dashboardSource).toContain("grounded in live data");
+    expect(dashboardSource).toContain("AI_PROMPT_TEMPLATES");
+    expect(dashboardSource).toContain("Board update");
+    expect(dashboardSource).toContain("Customer follow-up");
+    expect(dashboardSource).toContain("Month-end close");
+    expect(dashboardSource).toContain("Risk register");
+    expect(dashboardSource).toContain("Weekly KPI review");
+    expect(dashboardSource).toContain("SOP draft");
+    expect(dashboardSource).toContain("editable starting points");
   });
 
   it("maps provider failures to actionable fallback states without exposing provider internals", () => {
