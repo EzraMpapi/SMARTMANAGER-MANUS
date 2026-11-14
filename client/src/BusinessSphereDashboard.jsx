@@ -53,6 +53,7 @@ import { SHELL_COLOR_PRESETS, useDashboardPreferences } from "./contexts/Dashboa
 import { resolveConnectedWorkspaceSnapshot } from "./lib/connectedWorkspaceSnapshot";
 import { buildConnectedWorkspaceCsv, connectedWorkspaceExportFilename } from "./lib/connectedWorkspaceExport";
 import { buildOwnerRecordHistoryCsv, buildOwnerRecordHistoryPrintHtml, ownerRecordHistoryExportFilename } from "./lib/ownerRecordHistoryExport";
+import { buildTraVfdEvidence, OFFICIAL_TRA_RECEIPT_VERIFICATION, OFFICIAL_TRA_TAXPAYER_PORTAL } from "./lib/traVfdHandoff";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { AuthContext, useAuthContext } from "./contexts/AuthContext";
 import { fetchWithSupabaseAuthRecovery, getSupabaseAuthClient, isDefinitiveSupabaseAuthFailure, refreshSupabaseSession } from "./lib/supabaseAuthClient";
@@ -1623,6 +1624,8 @@ function mapInvoiceRow(r) {
     amountPaid: Number(r.amount_paid ?? data.amount_paid) || 0,
     items: mapDocItems(r.items ?? r.sales_invoice_items ?? data.items),
     payments: (r.payments ?? r.sales_payments ?? []).map(mapPaymentRow).sort((a, b) => (a.date < b.date ? 1 : -1)),
+    data,
+    traVfd: data.tra_vfd || null,
   };
 }
 
@@ -11235,6 +11238,27 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
   async function convertQuoteToInvoice(quote) {
     return convertDocumentToInvoice({ ...quote, kind: "quotations" });
   }
+  async function saveTraVfdEvidence(doc, input) {
+    const evidence = buildTraVfdEvidence(input);
+    if (requiresConfirmedPersistence() && !doc?.dbId) {
+      notify("This invoice is not linked to a confirmed server record. Refresh Sales before saving TRA VFD evidence.", "error");
+      return false;
+    }
+    try {
+      if (requiresConfirmedPersistence()) {
+        const current = doc.data && typeof doc.data === "object" ? doc.data : {};
+        await sb("sales_invoices").eq("id", doc.dbId).update({ data: { ...current, tra_vfd: evidence } }).single().run();
+      }
+      invoices.setRows((prev) => prev.map((invoice) => invoice.id === doc.id ? { ...invoice, traVfd: evidence, data: { ...(invoice.data || {}), tra_vfd: evidence } } : invoice));
+      setSelected((selectedDocument) => selectedDocument && selectedDocument.id === doc.id ? { ...selectedDocument, traVfd: evidence, data: { ...(selectedDocument.data || {}), tra_vfd: evidence } } : selectedDocument);
+      logAudit("TRA VFD evidence updated", "Sales", currentUser.name, `${doc.id} · ${evidence.status}`);
+      notify(evidence.status === "READY_TO_PRINT" ? "TRA receipt evidence saved — ready to print from the official verification page." : "TRA VFD handoff evidence saved.");
+      return true;
+    } catch (error) {
+      notify(persistenceFailureMessage("Saving TRA VFD evidence", error), "error");
+      return false;
+    }
+  }
 
   async function addDocument(form) {
     // ── Credit limit gate (invoices only) ─────────────────────────────────
@@ -11612,6 +11636,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
           onDelete={(id) => deleteDocument(selected.kind, id)}
           onPrint={printInvoice}
           onConvertToInvoice={convertDocumentToInvoice}
+          onSaveTraVfd={saveTraVfdEvidence}
           onRecordPayment={async (id, payment) => {
             const patch = await recordPayment(invoices, id, payment, `${currentUser.name} (${currentUser.role})`);
             if (patch) setSelected((s) => (s && s.id === id ? { ...s, ...patch } : s));
@@ -11629,7 +11654,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
   );
 }
 
-function DocPanel({ doc, onClose, onAdvance, onDelete, onPrint, onConvertToInvoice, onRecordPayment, onProcessReturn }) {
+function DocPanel({ doc, onClose, onAdvance, onDelete, onPrint, onConvertToInvoice, onSaveTraVfd, onRecordPayment, onProcessReturn }) {
   // Escape key closes the panel — WCAG 2.1 SC 2.1.2 (keyboard trap) and
   // basic quality-of-life for keyboard users. Added here because DocPanel
   // is the highest-traffic slide-over in the system (Sales, Finance, Procurement).
@@ -11652,12 +11677,50 @@ function DocPanel({ doc, onClose, onAdvance, onDelete, onPrint, onConvertToInvoi
   const [showPayLink, setShowPayLink] = useState(false);
   const [paymentSaving, setPaymentSaving] = useState(false);
   const [actionSaving, setActionSaving] = useState(false);
+  const [traReceiptUrl, setTraReceiptUrl] = useState(doc.traVfd?.receiptUrl || "");
+  const [traVerificationCode, setTraVerificationCode] = useState(doc.traVfd?.verificationCode || "");
+  const [traSaving, setTraSaving] = useState(false);
 
   async function runDocumentAction(action) {
     setActionSaving(true);
     try { return await action(); } finally { setActionSaving(false); }
   }
 
+  // Generate a payment reference number (M-Pesa / mobile money style)
+  async function saveTraEvidence(input) {
+    if (!onSaveTraVfd) return false;
+    setTraSaving(true);
+    try {
+      const saved = await onSaveTraVfd(doc, input);
+      if (saved) {
+        setTraReceiptUrl(input.receiptUrl || "");
+        setTraVerificationCode(input.verificationCode || "");
+      }
+      return saved;
+    } finally {
+      setTraSaving(false);
+    }
+  }
+  function openOfficialTraPortal() {
+    window.open(OFFICIAL_TRA_TAXPAYER_PORTAL, "_blank", "noopener,noreferrer");
+    void saveTraEvidence({
+      receiptUrl: traReceiptUrl,
+      verificationCode: traVerificationCode,
+      submittedExternallyAt: new Date().toISOString(),
+    });
+  }
+  function openReceiptVerification() {
+    window.open(OFFICIAL_TRA_RECEIPT_VERIFICATION, "_blank", "noopener,noreferrer");
+    void saveTraEvidence({
+      receiptUrl: traReceiptUrl,
+      verificationCode: traVerificationCode,
+      submittedExternallyAt: doc.traVfd?.submittedExternallyAt || new Date().toISOString(),
+    });
+  }
+  function printTraReceipt() {
+    window.open(traReceiptUrl || OFFICIAL_TRA_RECEIPT_VERIFICATION, "_blank", "noopener,noreferrer");
+    notify(traReceiptUrl ? "Opened the official TRA receipt page. Use its Print action to print the VFD receipt." : "Open the official TRA verification page, enter the code, then print the receipt there.");
+  }
   // Generate a payment reference number (M-Pesa / mobile money style)
   function genRef(method) {
     const prefix = {
@@ -11891,6 +11954,35 @@ function DocPanel({ doc, onClose, onAdvance, onDelete, onPrint, onConvertToInvoi
           )}
         </div>
 
+        {isInvoice && (
+          <div className="mx-6 mb-1 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+            <div className="flex items-start gap-3">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700"><Landmark size={15} /></span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[12.5px] font-bold text-amber-950">TRA VFD receipt</p>
+                    <p className="mt-0.5 text-[10.5px] leading-4 text-amber-800/75">Open the official TRA service, complete fiscalization there, then capture its verification evidence here. Smart Manager does not claim TRA acceptance without an approved provider.</p>
+                  </div>
+                  <span className="rounded-full border border-amber-200 bg-white/70 px-2 py-1 text-[9.5px] font-bold tracking-wide text-amber-800">{doc.traVfd?.status || "AWAITING_HANDOFF"}</span>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <button type="button" onClick={openOfficialTraPortal} disabled={traSaving} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2.5 text-[11.5px] font-bold text-white hover:bg-slate-700 disabled:opacity-50"><ArrowUpRight size={13} /> Open TRA taxpayer portal</button>
+                  <button type="button" onClick={openReceiptVerification} disabled={traSaving} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-white px-3 py-2.5 text-[11.5px] font-bold text-amber-900 hover:bg-amber-100 disabled:opacity-50"><QrCode size={13} /> Verify receipt</button>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                  <input value={traVerificationCode} onChange={(event) => setTraVerificationCode(event.target.value)} placeholder="TRA verification code" className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-[11px] font-mono text-slate-800 outline-none focus:border-amber-500" aria-label="TRA verification code" />
+                  <input value={traReceiptUrl} onChange={(event) => setTraReceiptUrl(event.target.value)} placeholder="https://verify.tra.go.tz/..." className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-[11px] text-slate-800 outline-none focus:border-amber-500" aria-label="TRA receipt verification URL" />
+                  <button type="button" onClick={() => void saveTraEvidence({ receiptUrl: traReceiptUrl, verificationCode: traVerificationCode, submittedExternallyAt: doc.traVfd?.submittedExternallyAt || new Date().toISOString() })} disabled={traSaving || (!traReceiptUrl.trim() && !traVerificationCode.trim())} className="rounded-xl border border-amber-300 bg-amber-100 px-3 py-2 text-[11px] font-bold text-amber-900 hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50">{traSaving ? "Saving…" : "Save evidence"}</button>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[10px] leading-4 text-amber-800/70">Only official <span className="font-mono">verify.tra.go.tz</span> links are accepted for print evidence.</p>
+                  <button type="button" onClick={printTraReceipt} className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100"><Printer size={13} /> Print VFD receipt</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Actions */}
         <div className="px-6 py-4 border-t border-slate-100 flex flex-col gap-2">
           {/* Quick Send row — WhatsApp + Email */}

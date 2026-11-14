@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const traHandoffSource = readFileSync(new URL("../client/src/lib/traVfdHandoff.js", import.meta.url), "utf8");
 const salesStart = dashboardSource.indexOf("function Sales(");
 const salesEnd = dashboardSource.indexOf("/* ------------------------------- INVENTORY", salesStart);
 const salesSource = dashboardSource.slice(salesStart, salesEnd);
@@ -32,6 +33,16 @@ describe("Sales interaction and persistence contracts", () => {
     expect(salesSource).toContain("const confirmed = await onRecordPayment(doc.id");
     expect(salesSource).toContain("No further action");
     expect(salesSource).not.toContain("<button className=\"flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors\">\n              <Printer");
+  });
+
+  it("keeps the TRA VFD workflow as an official-service handoff with persisted operator evidence", () => {
+    expect(dashboardSource).toContain('import { buildTraVfdEvidence, OFFICIAL_TRA_RECEIPT_VERIFICATION, OFFICIAL_TRA_TAXPAYER_PORTAL }');
+    expect(salesSource).toContain("async function saveTraVfdEvidence(doc, input)");
+    expect(salesSource).toContain('await sb("sales_invoices").eq("id", doc.dbId).update({ data: { ...current, tra_vfd: evidence } })');
+    expect(salesSource).toContain("Open TRA taxpayer portal");
+    expect(salesSource).toContain("Print VFD receipt");
+    expect(salesSource).toContain("onSaveTraVfd={saveTraVfdEvidence}");
+    expect(traHandoffSource).toContain('if (url.protocol !== "https:" || url.hostname !== "verify.tra.go.tz") return ""');
   });
 
   it("converts confirmed quotations and sales orders once into linked invoices", () => {
