@@ -1,6 +1,6 @@
 import React, { useState, type CSSProperties } from "react";
 
-export const SMART_MANAGER_LOGO_URL = "/brand/smart-manager-logo.png";
+export const SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-logo_86919456.png";
 export const SMART_MANAGER_MARK_URL = SMART_MANAGER_LOGO_URL;
 export const SMART_MANAGER_LOGO_ANIMATION_URL = "/manus-storage/1000411291_698e34d5.mp4";
 

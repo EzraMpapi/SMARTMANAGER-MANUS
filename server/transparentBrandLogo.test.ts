@@ -9,8 +9,8 @@ describe("transparent Smart Manager branding", () => {
     expect(brandLogoSource).not.toContain("rounded-[22%] bg-white");
   });
 
-  it("keeps transparency in the canonical uploaded logo asset", () => {
-    const png = fs.readFileSync("client/public/brand/smart-manager-logo.png");
+  it("keeps transparency in the optimized local logo fallback asset", () => {
+    const png = fs.readFileSync("client/public/brand/smart-manager-logo-512.png");
     expect(png.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
     // PNG color type 6 is RGBA, so the asset can preserve transparent pixels.
     expect(png[25]).toBe(6);

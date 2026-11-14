@@ -6,9 +6,9 @@ describe("managed application logo configuration", () => {
     const manifest = readFileSync("MANAGED_ASSET_MANIFEST.md", "utf8");
     const brandLogoComponent = readFileSync("client/src/components/BrandLogo.tsx", "utf8");
     const documentShell = readFileSync("client/index.html", "utf8");
-    const managedLogoPath = "/manus-storage/smart-manager-logo_ad2a1e4d.png";
+    const managedLogoPath = "/manus-storage/smart-manager-logo_86919456.png";
     const markPath = "/manus-storage/smart-manager-mark_aa277576.png";
-    const publicLogoPath = "/brand/smart-manager-logo.png";
+    const publicLogoPath = managedLogoPath;
 
     expect(manifest).toContain(managedLogoPath);
     expect(manifest).toContain(markPath);

@@ -41,8 +41,8 @@ describe("Android Trusted Web Activity delivery path", () => {
       startUrl: "/",
       webManifestUrl: "https://menejajanja.vercel.app/manifest.webmanifest",
       fallbackType: "customtabs",
-      iconUrl: "https://menejajanja.vercel.app/brand/smart-manager-logo.png",
-      maskableIconUrl: "https://menejajanja.vercel.app/brand/smart-manager-logo.png",
+      iconUrl: "https://menejajanja.vercel.app/manus-storage/smart-manager-logo_86919456.png",
+      maskableIconUrl: "https://menejajanja.vercel.app/manus-storage/smart-manager-logo_86919456.png",
     });
     expect(JSON.stringify(template)).toContain("REPLACE_WITH_ORGANIZATION_KEYSTORE_PATH");
     expect(JSON.stringify(template)).not.toContain("sha256_cert_fingerprints");

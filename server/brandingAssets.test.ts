@@ -8,7 +8,6 @@ const documentHead = fs.readFileSync(path.join(repositoryRoot, "client/index.htm
 const manifest = fs.readFileSync(path.join(repositoryRoot, "client/public/manifest.webmanifest"), "utf8");
 
 const logoAssets = [
-  "client/public/brand/smart-manager-logo.png",
   "client/public/brand/smart-manager-logo-512.png",
   "client/public/brand/smart-manager-logo-192.png",
   "client/public/brand/smart-manager-logo-180.png",
@@ -17,8 +16,8 @@ const logoAssets = [
 ];
 
 describe("Smart Manager branding assets", () => {
-  it("uses the same local transparent logo route for full and compact variants", () => {
-    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/brand/smart-manager-logo.png"');
+  it("uses the managed transparent logo route for full and compact variants", () => {
+    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-logo_86919456.png"');
     expect(brandLogoSource).toContain("SMART_MANAGER_MARK_URL = SMART_MANAGER_LOGO_URL");
     expect(brandLogoSource).toContain('variant === "compact" ? SMART_MANAGER_MARK_URL : SMART_MANAGER_LOGO_URL');
     expect(brandLogoSource).toContain("width={512} height={512}");

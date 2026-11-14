@@ -67,7 +67,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("uses the supplied Smart Manager logo through one accessible responsive component across public, auth, dashboard, state, and browser surfaces", () => {
-    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/brand/smart-manager-logo.png"');
+    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-logo_86919456.png"');
     expect(brandLogoSource).toContain("SMART_MANAGER_MARK_URL = SMART_MANAGER_LOGO_URL");
     expect(brandLogoSource).toContain('alt={decorative ? "" : label}');
     expect(brandLogoSource).toContain("width={512} height={512}");
