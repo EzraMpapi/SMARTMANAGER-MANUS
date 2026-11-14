@@ -7,9 +7,10 @@ const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashbo
 describe("public and dashboard interaction contracts", () => {
   it("gives public theme and language controls explicit button semantics and state handlers", () => {
     expect(homeSource).toContain('type="button"\n              onClick={toggleTheme}');
-    expect(homeSource).toContain('type="button"\n              onClick={() => setLang(lang === "en" ? "sw" : "en")}');
+    expect(homeSource).toContain('languageOptions.map');
+    expect(homeSource).toContain('onChange={(event) => setLang(event.target.value as typeof lang)}');
+    expect(homeSource).toContain('title={t("switchLanguage")}');
     expect(homeSource).toContain('title="Toggle theme"');
-    expect(homeSource).toContain('title="Switch language"');
   });
 
   it("keeps public navigation and passkey controls bound to supported destinations or clear availability feedback", () => {
@@ -19,6 +20,17 @@ describe("public and dashboard interaction contracts", () => {
     expect(homeSource).toContain('disabled={passkeyPending}');
     expect(homeSource).toContain('id="public-passkey-status"');
     expect(homeSource).toContain('Passkey sign-in is not configured for this workspace.');
+  });
+
+  it("exposes a conversion-focused sales journey without inventing customer proof", () => {
+    expect(homeSource).toContain('id="workflow"');
+    expect(homeSource).toContain("From the first sale to a paid invoice.");
+    expect(homeSource).toContain("into a traceable invoice");
+    expect(homeSource).toContain('id="industries"');
+    expect(homeSource).toContain('id="pricing"');
+    expect(homeSource).toContain("Request a live walkthrough");
+    expect(homeSource).toContain("Final pricing depends on workspace size");
+    expect(homeSource).not.toContain("Trusted by 10,000");
   });
 
   it("keeps dashboard action controls connected to real navigation, command, or confirmation paths", () => {

@@ -10,6 +10,7 @@ jobs:
   validate:
     name: Unit, Schema, Type and Production Build
     runs-on: ubuntu-latest
+    environment: Production – smatimeneja
 
     steps:
       - name: Checkout Repository
@@ -23,7 +24,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 10.4.1
+          version: 10.34.2
           run_install: false
 
       - name: Get pnpm store directory
@@ -43,6 +44,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Verify Supabase schema contract
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: pnpm run verify:supabase-schema
 
       - name: Run Type Check
@@ -52,9 +56,12 @@ jobs:
         run: pnpm test -- --coverage --reporter=verbose
 
       - name: Run Automated Dependency Vulnerability Audit
-        run: pnpm audit --prod || true
+        run: pnpm audit --prod --audit-level high
 
       - name: Run Production Build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: NODE_OPTIONS="--max-old-space-size=4096" pnpm build
 
       - name: Notify Slack on Success
@@ -76,7 +83,7 @@ jobs:
             "$SLACK_WEBHOOK_URL"
 
   browser-signup:
-    name: Browser Signup Journey
+    name: Browser Dashboard Preference Journey
     needs: validate
     runs-on: ubuntu-latest
     permissions:
@@ -94,7 +101,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 10.4.1
+          version: 10.34.2
           run_install: false
 
       - name: Restore pnpm cache
@@ -111,8 +118,14 @@ jobs:
       - name: Install Chromium for Playwright
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run isolated browser signup journey
-        run: pnpm run test:browser
+      - name: Run isolated dashboard preference journey
+        run: |
+          pnpm run pretest:browser
+          node scripts/serve-build-for-e2e.mjs > isolated-browser-server.log 2>&1 &
+          E2E_STATIC_SERVER_PID=$!
+          trap 'kill "$E2E_STATIC_SERVER_PID"' EXIT
+          sleep 1
+          PLAYWRIGHT_EXTERNAL_SERVER=1 pnpm exec playwright test browser-tests/signupWizard.spec.ts --config=playwright.isolated.config.ts
 
       - name: Upload browser diagnostics
         if: failure()
@@ -122,4 +135,5 @@ jobs:
           path: |
             test-results/
             playwright-report/
+            isolated-browser-server.log
           if-no-files-found: ignore

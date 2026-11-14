@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Deployment Status &amp; Next Gates</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.slide-container{width:1280px;min-height:720px;background:#0b1220;color:#edf4f2;font-family:Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
+.content{min-height:720px;margin:0 74px;padding-top:56px;display:flex;flex-direction:column}
+.kicker{font-size:14px;letter-spacing:3px;text-transform:uppercase;color:#55d6be;font-weight:700}
+h2{font-size:42px;line-height:1.08;letter-spacing:-1px;margin-top:16px;font-weight:750}
+.intro{color:#9fb3b0;font-size:19px;line-height:1.45;max-width:850px;margin-top:12px}
+.rule{height:1px;background:#29403c;margin-top:20px}
+
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:30px;flex:1}
+.col-header{font-size:14px;letter-spacing:2px;text-transform:uppercase;padding-top:8px;margin-bottom:12px}
+.col-verified .col-header{color:#55d6be;border-top:3px solid #55d6be}
+.col-pending .col-header{color:#f2b84b;border-top:3px solid #f2b84b}
+
+.check-list{list-style:none}
+.check-list li{position:relative;padding-left:32px;margin-bottom:12px;font-size:18px;line-height:1.4;color:#edf4f2}
+.check-list li span{display:block;font-size:15px;color:#8fa4a0;margin-top:4px;line-height:1.45}
+
+.col-verified .check-list li::before{content:"✓";position:absolute;left:0;top:0;color:#55d6be;font-weight:700;font-size:18px}
+.col-pending .check-list li::before{content:"○";position:absolute;left:0;top:0;color:#f2b84b;font-weight:700;font-size:22px;line-height:18px}
+
+.footer{display:flex;justify-content:space-between;color:#617873;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding-top:10px;margin-bottom:8px;border-top:1px solid #29403c}
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <div class="content">
+    <div class="kicker">07 / Status</div>
+    <h2>Deployment Status &amp; Next Gates</h2>
+    <p class="intro">The remediation control plane is live and validated, but production drainage remains safely disabled until all provider and operational gates are met.</p>
+    <div class="rule"></div>
+    
+    <div class="columns">
+      <div class="col-verified">
+        <div class="col-header">Verified &amp; Applied</div>
+        <ul class="check-list">
+          <li>Migrations Applied
+            <span>Webhook event log (013), remediation control plane (014), and hardening (015) are live in Supabase.</span>
+          </li>
+          <li>Live Smoke Test
+            <span>Dry-run control-plane smoke succeeded without creating persistent operational state.</span>
+          </li>
+          <li>Security Boundaries
+            <span>Service-only grants and RLS boundaries are present and enforced.</span>
+          </li>
+          <li>Local Validation
+            <span>Python worker and Vitest contract suites passed all tests.</span>
+          </li>
+        </ul>
+      </div>
+      
+      <div class="col-pending">
+        <div class="col-header">Pending Gates</div>
+        <ul class="check-list">
+          <li>Provider Confirmation
+            <span>Confirm the target provider and validate sandbox fixtures.</span>
+          </li>
+          <li>Concurrency Testing
+            <span>Run disposable concurrency tests to verify lock behavior under load.</span>
+          </li>
+          <li>Observability
+            <span>Add metrics and alerts for quarantine floods and replay attacks.</span>
+          </li>
+          <li>Test-Tenant Rehearsal
+            <span>Rehearse the end-to-end financial path in a controlled test tenant.</span>
+          </li>
+          <li>Two-Person Approval
+            <span>Obtain explicit two-person authorization before any production drain.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer"><span>Ready for provider integration</span><span>08 / 08</span></div>
+  </div>
+</div>
+</body>
+</html>

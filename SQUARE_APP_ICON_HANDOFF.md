@@ -1,24 +1,24 @@
 # Smart Manager Square App-Icon Handoff
 
-The current uploaded official Smart Manager logo is intentionally used **unchanged** throughout the application. Its 3:2 horizontal composition is appropriate for authentication branding, browser sharing metadata, and the current standard PWA icon surface; it is not appropriate to crop, stretch, or mask into a square launcher icon.
+A square transparent Smart Manager mark is now prepared from the trusted source artwork and stored in the repository-managed public asset path. It preserves the recognizable interlocking S-shaped shield, removes the decorative background effects, and is exported at practical website, favicon, PWA, and Android sizes.
 
-> Provide one approved square Smart Manager app-icon export before replacing the PWA icon. The export must be supplied as an official brand asset, not generated or reconstructed from the current horizontal artwork.
-
-| Requirement | Handoff specification |
+| Requirement | Delivered value |
 |---|---|
-| File type | Transparent PNG or WebP |
-| Canvas | 1024 × 1024 pixels; square, with no added coloured frame |
-| Content | The approved simplified Smart Manager mark only; no cropped wordmark or slogan |
-| Safe area | Keep the mark within the central 72% of the canvas to support Android adaptive-icon masking |
-| Colour | Preserve the approved Tanzania flag accent, green mark, circuit detail, and upward-growth concept exactly as delivered by the brand owner |
-| Naming | `smart-manager-app-icon-1024.png` |
+| Primary web asset | `client/public/brand/smart-manager-logo.png` |
+| PWA assets | `smart-manager-logo-192.png` and `smart-manager-logo-512.png` |
+| Browser assets | `smart-manager-logo-32.png` and `smart-manager-logo-64.png` |
+| Apple touch asset | `smart-manager-logo-180.png` |
+| Canvas | Square PNGs with real transparent alpha |
+| Content | Simplified Smart Manager mark only; no wordmark or slogan |
+| Safe area | Central padding retained around the mark |
+| Android source | `android/assets/smart-manager-logo.png` synchronized to the 512 × 512 primary mark |
 
-## Safe replacement procedure
+## Integration status
 
-1. Store the supplied square export in `/home/ubuntu/webdev-static-assets/` and upload it through managed web asset storage.
-2. Update the `icons[0]` entry in `client/public/manifest.webmanifest` to the new managed URL, with `sizes` set to `1024x1024` and `purpose` set to `any maskable`.
-3. Update the browser favicon and Apple touch icon references in `client/index.html` only if the supplied square export is approved for those uses.
-4. Rebuild the web application, refresh the Android Trusted Web Activity project, and regenerate its launcher assets before signing a production Android App Bundle.
-5. Verify the result on a rounded Android launcher mask, a square Android launcher mask, Chrome install prompt, and iOS Home Screen.
+The shared `BrandLogo` component now uses the local `/brand/smart-manager-logo.png` path for both full and compact variants. The browser document head declares optimized 32px, 64px, and 180px assets. The PWA manifest declares 192 × 192 and 512 × 512 PNG entries with `any` and `any maskable` purposes. The embedded Android web-app manifest declares the actual 512 × 512 dimensions.
 
-No square asset has been fabricated, cropped, recoloured, or inferred from the uploaded horizontal logo.
+## Release checks
+
+Before store distribution, verify the logo on light and dark navigation surfaces, an Android rounded launcher mask, a square launcher mask, Chrome’s install prompt, and the iOS Home Screen. Keep the Android release keystore and final Digital Asset Links fingerprint outside the repository until the release owner approves them.
+
+The asset package contains no credentials, signing material, or external storage dependency. The source PNGs were checked for valid PNG headers, expected dimensions, and transparent alpha channels.

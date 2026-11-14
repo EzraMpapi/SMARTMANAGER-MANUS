@@ -45,6 +45,16 @@ describe("AI router and grounded dashboard signals", () => {
     expect(dashboardSource).toContain("Business signals");
   });
 
+  it("exposes role-aware specialized AI shortcuts without bypassing the assistant approval flow", () => {
+    expect(dashboardSource).toContain("AI_QUICK_ACTIONS");
+    expect(dashboardSource).toContain("Executive brief");
+    expect(dashboardSource).toContain("Cash & collections");
+    expect(dashboardSource).toContain("Reorder plan");
+    expect(dashboardSource).toContain("Pipeline coach");
+    expect(dashboardSource).toContain("Specialized tools");
+    expect(dashboardSource).toContain("grounded in live data");
+  });
+
   it("exposes configurePreferences procedure and AI preferences drawer assistant", () => {
     expect(routersSource).toContain("configurePreferences: protectedProcedure");
     expect(routersSource).toContain("dashboard_ai_preferences");

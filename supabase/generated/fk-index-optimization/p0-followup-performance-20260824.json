@@ -1,0 +1,123 @@
+{
+  "captured_at": "2026-08-24T17:31:03Z",
+  "project_ref": "rlhngsrihahhyxnjxrxm",
+  "scope": "read_only_post_p0_follow_up",
+  "p0_indexes": {
+    "expected_count": 5,
+    "present_count": 5,
+    "index_size_each_bytes": 16384,
+    "definitions_verified": true
+  },
+  "relation_metrics": [
+    {
+      "table": "workforce_role_permissions",
+      "relation_size_bytes": 122880,
+      "relation_size": "120 kB",
+      "n_live_tup_snapshot": 0,
+      "seq_scan": 0,
+      "idx_scan": 0
+    },
+    {
+      "table": "workforce_permissions",
+      "relation_size_bytes": 49152,
+      "relation_size": "48 kB",
+      "n_live_tup_snapshot": 0,
+      "seq_scan": 11,
+      "idx_scan": 0
+    }
+  ],
+  "index_metrics_snapshot": [
+    {"index": "ix_workforce_permissions_created_by_fk", "idx_scan": 0, "idx_tup_read": 0, "idx_tup_fetch": 0},
+    {"index": "ix_workforce_permissions_updated_by_fk", "idx_scan": 0, "idx_tup_read": 0, "idx_tup_fetch": 0},
+    {"index": "ix_workforce_role_permissions_company_id_approval_request_id_fk", "idx_scan": 0, "idx_tup_read": 0, "idx_tup_fetch": 0},
+    {"index": "ix_workforce_role_permissions_granted_by_fk", "idx_scan": 0, "idx_tup_read": 0, "idx_tup_fetch": 0},
+    {"index": "ix_workforce_role_permissions_revoked_by_fk", "idx_scan": 0, "idx_tup_read": 0, "idx_tup_fetch": 0}
+  ],
+  "explain_analyze": [
+    {
+      "predicate": "workforce_role_permissions.company_id + approval_request_id",
+      "plan_node": "Index Scan",
+      "index": "ix_workforce_role_permissions_company_id_approval_request_id_fk",
+      "actual_rows": 0,
+      "planning_time_ms": 10.256,
+      "execution_time_ms": 0.125,
+      "shared_hit_blocks": 0,
+      "shared_read_blocks": 1
+    },
+    {
+      "predicate": "workforce_role_permissions.company_id + granted_by",
+      "plan_node": "Bitmap Heap Scan",
+      "index": "ix_workforce_role_permissions_granted_by_fk",
+      "actual_rows": 10,
+      "heap_rows": 67,
+      "planning_time_ms": 1.869,
+      "execution_time_ms": 2.313,
+      "shared_hit_blocks": 4,
+      "shared_read_blocks": 16
+    },
+    {
+      "predicate": "workforce_permissions.company_id + created_by",
+      "plan_node": "Bitmap Heap Scan",
+      "index": "ix_workforce_permissions_created_by_fk",
+      "actual_rows": 10,
+      "heap_rows": 20,
+      "planning_time_ms": 4.73,
+      "execution_time_ms": 3.915,
+      "shared_hit_blocks": 4,
+      "shared_read_blocks": 2
+    },
+    {
+      "predicate": "workforce_role_permissions.revoked_by IS NULL",
+      "plan_node": "Seq Scan",
+      "index": null,
+      "actual_rows": 100,
+      "planning_time_ms": 0.97,
+      "execution_time_ms": 0.127,
+      "shared_hit_blocks": 5,
+      "shared_read_blocks": 0
+    },
+    {
+      "predicate": "workforce_permissions.updated_by IS NULL",
+      "plan_node": "Seq Scan",
+      "index": null,
+      "actual_rows": 100,
+      "planning_time_ms": 0.707,
+      "execution_time_ms": 3.915,
+      "shared_hit_blocks": 5,
+      "shared_read_blocks": 0
+    }
+  ],
+  "performance_advisor": {
+    "unindexed_foreign_key_notice_count": 1012,
+    "p1_p2_applied": false
+  },
+  "schema_reconciliation": {
+    "repository_migration_files": 77,
+    "repository_declared_tables": 285,
+    "live_public_tables": 520,
+    "missing_repository_declared_tables": [],
+    "production_migration_count": 137,
+    "latest_production_migration": {
+      "name": "platform_admin_dashboard_settings_direct_access_policy",
+      "version": "20260824123045"
+    },
+    "table_ddl_executed": false
+  },
+  "limitations": [
+    "These are single fresh EXPLAIN ANALYZE runs, not a controlled repeated latency benchmark.",
+    "pg_stat counters are point-in-time snapshots and are not query-level plan usage counters.",
+    "Sequential scans for NULL-heavy predicates are expected on small relations.",
+    "No destructive DML or parent-side foreign-key enforcement test was run."
+  ],
+  "raw_capture_paths": [
+    "/home/ubuntu/.mcp/tool-results/2026-08-24_17-27-27.274174772_supabase_execute_sql_94edbcbe.json",
+    "/home/ubuntu/.mcp/tool-results/2026-08-24_17-27-47.487766741_supabase_execute_sql_027bda47.json",
+    "/home/ubuntu/.mcp/tool-results/2026-08-24_17-28-05.280202854_supabase_execute_sql_9db7fc93.json",
+    "/home/ubuntu/.mcp/tool-results/2026-08-24_17-28-28.876302402_supabase_execute_sql_8eb891f5.json",
+    "/home/ubuntu/.mcp/tool-results/2026-08-24_17-28-49.642479926_supabase_execute_sql_0690f320.json",
+    "/home/ubuntu/.mcp/tool-results/2026-08-24_17-29-11.721563797_supabase_execute_sql_0be79d2b.json",
+    "/home/ubuntu/.mcp/tool-results/2026-08-24_17-29-53.863226748_supabase_list_tables_cda77021.json",
+    "/home/ubuntu/.mcp/tool-results/2026-08-24_17-30-12.580816768_supabase_list_migrations_81f7bbc9.json",
+    "/home/ubuntu/.mcp/tool-results/2026-08-24_17-31-03.052875419_supabase_get_advisors_ab28c2b3.json"
+  ]
+}

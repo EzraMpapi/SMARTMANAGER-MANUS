@@ -13,7 +13,7 @@ export function EnterpriseModuleHeader({
   secondaryActions?: React.ReactNode;
 }) {
   return (
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-slate-200/80 dark:border-slate-800/80 mb-6">
+      <div className="sm-page-header flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-slate-200/80 dark:border-slate-800/80 mb-6">
       <div className="min-w-0">
         <h1 className="text-[22px] font-bold text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: "Poppins, sans-serif" }}>
           {title}
@@ -111,7 +111,7 @@ export function ScrollableModuleTabs({
               role="tab"
               aria-selected={isActive}
               tabIndex={isActive ? 0 : -1}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium whitespace-nowrap transition-all shrink-0 ${
+              className={`sm-control flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium whitespace-nowrap transition-all shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${
                 isActive
                   ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 font-semibold"
                   : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-white"
@@ -157,7 +157,7 @@ export function EnterpriseFilterBar({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-6 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm">
+    <div className="sm-panel flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-6 p-4">
       <div className="flex min-w-0 items-center gap-3 flex-1 flex-wrap">
         <div className="relative min-w-0 w-full flex-1 sm:min-w-[260px] sm:w-auto sm:flex-initial">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -166,7 +166,7 @@ export function EnterpriseFilterBar({
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-[13px] text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 transition-all"
+            className="sm-control w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-[13px] text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 transition-all"
           />
         </div>
         {filterContent}

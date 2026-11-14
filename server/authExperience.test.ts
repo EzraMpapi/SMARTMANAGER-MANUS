@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const authViewSource = readFileSync(new URL("../client/src/components/EnterpriseAuthViews.jsx", import.meta.url), "utf8");
+const authTranslationsSource = readFileSync(new URL("../client/src/lib/authTranslations.ts", import.meta.url), "utf8");
 const authGatewaySource = readFileSync(new URL("../client/src/components/PublicAuthGateway.jsx", import.meta.url), "utf8");
 const authSessionStorageSource = readFileSync(new URL("../client/src/lib/authSessionStorage.js", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8");
@@ -14,28 +15,36 @@ describe("public authentication experience", () => {
     expect(authViewSource).toContain('onClick={() => onOAuth("google")}');
     expect(authViewSource).toContain('type="button" disabled={busy}');
     expect(authGatewaySource).toContain('function oauth(provider)');
-    expect(authGatewaySource).toContain('provider=${encodeURIComponent(provider)}');
-    expect(authGatewaySource).toContain('redirect_to=${encodeURIComponent(redirectTo.toString())}');
+    expect(authGatewaySource).toContain('await auth.signInWithOAuth(provider)');
+    expect(authGatewaySource).toContain('useAuthContext');
   });
 
   it("honours the Remember Me choice without treating a session-only login as a persistent device session", () => {
     expect(authViewSource).toContain("const [rememberMe, setRememberMe] = useState(true)");
     expect(authViewSource).toContain("await onSignIn(email.trim(), password, rememberMe)");
-    expect(authGatewaySource).toContain('import { persistAuthSession } from "../lib/authSessionStorage"');
+    expect(authGatewaySource).toContain('await auth.adoptSession({ access_token: result.access_token, refresh_token: result.refresh_token })');
     expect(authSessionStorageSource).toContain("function persistAuthSession(result, remember = true)");
     expect(authSessionStorageSource).toContain('const SESSION_ACCESS_TOKEN_STORAGE_KEY = "bs_session_access_token"');
     expect(authSessionStorageSource).toContain("const activeStorage = remember ? window.localStorage : window.sessionStorage");
-    expect(appSource).toContain('window.sessionStorage.getItem("bs_session_access_token")');
-    expect(trpcBootstrapSource).toContain('sessionStorage.getItem("bs_session_access_token")');
+    expect(appSource).toContain("<AuthProvider>");
+    expect(trpcBootstrapSource).toContain("getSupabaseAuthClient");
+    expect(trpcBootstrapSource).toContain("client.auth.getSession()");
     expect(dashboardSource).toContain("function getStoredAccessToken()");
-    expect(dashboardSource).toContain("window.sessionStorage.getItem(SESSION_ACCESS_TOKEN_STORAGE_KEY)");
-    expect(dashboardSource).toContain("window.sessionStorage.removeItem(SESSION_ACCESS_TOKEN_STORAGE_KEY)");
+    expect(readFileSync(new URL("../client/src/contexts/AuthContext.tsx", import.meta.url), "utf8")).toContain("onAuthStateChange");
+  });
+
+  it("routes the legacy dashboard login through the centralized AuthContext OAuth handler", () => {
+    expect(dashboardSource).toContain("function LoginPage({ onAuthenticated, onSwitchToSignup, onForgotPassword, onOAuth");
+    expect(dashboardSource).toContain("onOAuth={onOAuth}");
+    expect(dashboardSource).toContain("onOAuth={centralizedAuth.signInWithOAuth}");
+    expect(dashboardSource).not.toContain("window.location.href = `${SUPABASE_URL}/auth/v1/authorize");
   });
 
   it("gives visible, provider-specific recovery paths when Google, Microsoft, or Apple OAuth returns an error", () => {
-    expect(authViewSource).toContain("Google sign-in was not completed");
-    expect(authViewSource).toContain("Microsoft sign-in was not completed");
-    expect(authViewSource).toContain("Apple sign-in was not completed");
+    expect(authTranslationsSource).toContain("${provider} sign-in was not completed");
+    expect(authTranslationsSource).toContain("Try ${provider} again, or use your work email and password instead.");
+    expect(authViewSource).toContain("const OAUTH_PROVIDER_NAMES = { google: \"Google\", azure: \"Microsoft\", apple: \"Apple\" }");
+    expect(authViewSource).toContain("ui.oauthFailed(providerName)");
     expect(authViewSource).toContain("function retryProvider()");
     expect(authViewSource).toContain("onOAuth(oauthProvider)");
     expect(authViewSource).toContain("function useEmailInstead()");

@@ -1,0 +1,786 @@
+server/legacyUiPersistenceContracts.test.ts-1-import { describe, expect, it } from "vitest";
+server/legacyUiPersistenceContracts.test.ts-2-import { readFileSync } from "node:fs";
+server/legacyUiPersistenceContracts.test.ts-3-import { resolve } from "node:path";
+server/legacyUiPersistenceContracts.test.ts-4-
+server/legacyUiPersistenceContracts.test.ts-5-const dashboardSource = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+server/legacyUiPersistenceContracts.test.ts-6-
+server/legacyUiPersistenceContracts.test.ts-7-describe("legacy UI persistence boundaries", () => {
+server/legacyUiPersistenceContracts.test.ts:8:  it("uses the server-backed team invitation procedures for HR invitations", () => {
+server/legacyUiPersistenceContracts.test.ts-9-    const employeesStart = dashboardSource.indexOf("function Employees(");
+server/legacyUiPersistenceContracts.test.ts-10-    const employeesEnd = dashboardSource.indexOf("function EmployeePanel(", employeesStart);
+server/legacyUiPersistenceContracts.test.ts-11-    const employeesSource = dashboardSource.slice(employeesStart, employeesEnd);
+server/legacyUiPersistenceContracts.test.ts-12-
+server/legacyUiPersistenceContracts.test.ts:13:    expect(employeesSource).toContain("trpc.teamInvitations.list.useQuery");
+server/legacyUiPersistenceContracts.test.ts:14:    expect(employeesSource).toContain("trpc.teamInvitations.create.useMutation");
+server/legacyUiPersistenceContracts.test.ts-15-    expect(employeesSource).toContain("No browser-only invite codes are created.");
+server/legacyUiPersistenceContracts.test.ts-16-    expect(employeesSource).not.toContain("hr_invite_codes");
+server/legacyUiPersistenceContracts.test.ts-17-    expect(employeesSource).not.toContain("ep_self_");
+server/legacyUiPersistenceContracts.test.ts-18-    expect(employeesSource).not.toContain("localStorage");
+server/legacyUiPersistenceContracts.test.ts-19-  });
+server/legacyUiPersistenceContracts.test.ts-20-
+server/legacyUiPersistenceContracts.test.ts-21-  it("does not claim integration settings saved when storage is unavailable", () => {
+server/legacyUiPersistenceContracts.test.ts-22-    const integrationStart = dashboardSource.indexOf("function IntegrationConnections(");
+server/legacyUiPersistenceContracts.test.ts-23-    const integrationEnd = dashboardSource.indexOf("function MobileMoneyReconciliation(", integrationStart);
+server/legacyUiPersistenceContracts.test.ts-24-    const integrationSource = dashboardSource.slice(integrationStart, integrationEnd);
+server/legacyUiPersistenceContracts.test.ts-25-
+server/legacyUiPersistenceContracts.test.ts-26-    expect(integrationSource).toContain("storageUnavailable");
+server/legacyUiPersistenceContracts.test.ts-27-    expect(integrationSource).toContain('runCompanyTableMutation("integration_connections", "update"');
+server/legacyUiPersistenceContracts.test.ts-28-    expect(integrationSource).toContain("The server did not confirm the integration update.");
+server/legacyUiPersistenceContracts.test.ts-29-    expect(integrationSource).not.toContain("saved locally regardless");
+server/legacyUiPersistenceContracts.test.ts-30-  });
+server/legacyUiPersistenceContracts.test.ts-31-
+server/legacyUiPersistenceContracts.test.ts-32-  it("reads employee announcements from the persisted HR table without a static seed", () => {
+server/legacyUiPersistenceContracts.test.ts-33-    expect(dashboardSource).toContain('useCompanyTable("hr_announcements", []');
+server/legacyUiPersistenceContracts.test.ts-34-    expect(dashboardSource).toContain("No local copy was used.");
+--
+server/teamInvitations.ts-1-import { createHash, randomBytes } from "node:crypto";
+server/teamInvitations.ts-2-import { and, desc, eq } from "drizzle-orm";
+server/teamInvitations.ts-3-import { TRPCError } from "@trpc/server";
+server/teamInvitations.ts-4-import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
+server/teamInvitations.ts:5:import { teamInvitations, type TeamInvitation } from "../drizzle/schema";
+server/teamInvitations.ts-6-import { getDb } from "./db";
+server/teamInvitations.ts-7-import { ENV } from "./_core/env";
+server/teamInvitations.ts-8-import { resolveVerifiedProfile } from "./aiApprovals";
+server/teamInvitations.ts-9-import { sendTransactionalEmail } from "./transactionalEmail";
+server/teamInvitations.ts-10-
+server/teamInvitations.ts-11-const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+server/teamInvitations.ts-12-const INVITATION_MANAGER_ROLES = new Set(["Organization Owner", "CEO", "Super Administrator", "System Administrator", "HR Manager"]);
+server/teamInvitations.ts-13-const INVITABLE_ROLES = new Set(["Finance Manager", "HR Manager", "Sales Manager", "Sales Representative", "Warehouse Staff", "Accountant", "Viewer"]);
+server/teamInvitations.ts-14-
+server/teamInvitations.ts-15-type InviteInput = { fullName: string; email: string; role: string };
+server/teamInvitations.ts-16-
+server/teamInvitations.ts-17-export function hashInvitationToken(token: string) {
+server/teamInvitations.ts-18-  return createHash("sha256").update(token).digest("hex");
+server/teamInvitations.ts-19-}
+server/teamInvitations.ts-20-
+server/teamInvitations.ts-21-export function newInvitationToken() {
+server/teamInvitations.ts-22-  return randomBytes(32).toString("base64url");
+server/teamInvitations.ts-23-}
+server/teamInvitations.ts-24-
+server/teamInvitations.ts-25-export function isInvitationExpired(expiresAt: Date | string, now = Date.now()) {
+server/teamInvitations.ts-26-  return new Date(expiresAt).getTime() <= now;
+server/teamInvitations.ts-27-}
+server/teamInvitations.ts-28-
+server/teamInvitations.ts-29-export function invitationOrigin(req: CreateExpressContextOptions["req"]) {
+server/teamInvitations.ts-30-  const forwardedHost = req.headers["x-forwarded-host"];
+server/teamInvitations.ts-31-  const host = (Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost) || req.headers.host;
+server/teamInvitations.ts-32-  const forwardedProto = req.headers["x-forwarded-proto"];
+server/teamInvitations.ts-33-  const protocol = (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto) || req.protocol || "https";
+server/teamInvitations.ts-34-  if (!host) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The invitation link could not be prepared." });
+server/teamInvitations.ts-35-  return `${protocol}://${host}`;
+server/teamInvitations.ts-36-}
+server/teamInvitations.ts-37-
+server/teamInvitations.ts-38-function requireInviteManager(role: string) {
+server/teamInvitations.ts:39:  if (!INVITATION_MANAGER_ROLES.has(role)) throw new TRPCError({ code: "FORBIDDEN", message: "Your workspace role cannot manage team invitations." });
+server/teamInvitations.ts-40-}
+server/teamInvitations.ts-41-
+server/teamInvitations.ts-42-function validateInvite(input: InviteInput) {
+server/teamInvitations.ts-43-  const fullName = input.fullName.trim().replace(/\s+/g, " ");
+server/teamInvitations.ts-44-  const email = input.email.trim().toLowerCase();
+server/teamInvitations.ts-45-  if (fullName.length < 2 || fullName.length > 120) throw new TRPCError({ code: "BAD_REQUEST", message: "Enter the teammate’s full name." });
+server/teamInvitations.ts-46-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new TRPCError({ code: "BAD_REQUEST", message: "Enter a valid team email address." });
+server/teamInvitations.ts-47-  if (!INVITABLE_ROLES.has(input.role)) throw new TRPCError({ code: "BAD_REQUEST", message: "Choose a valid workspace role." });
+server/teamInvitations.ts-48-  return { fullName, email, role: input.role };
+server/teamInvitations.ts-49-}
+server/teamInvitations.ts-50-
+server/teamInvitations.ts-51-async function requireDb() {
+server/teamInvitations.ts-52-  const db = await getDb();
+server/teamInvitations.ts-53-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Team invitations are temporarily unavailable." });
+server/teamInvitations.ts-54-  return db;
+server/teamInvitations.ts-55-}
+server/teamInvitations.ts-56-
+server/teamInvitations.ts-57-function serializeInvitation(row: TeamInvitation) {
+server/teamInvitations.ts-58-  return {
+server/teamInvitations.ts-59-    id: row.invitationId,
+server/teamInvitations.ts-60-    fullName: row.fullName,
+server/teamInvitations.ts-61-    email: row.email,
+server/teamInvitations.ts-62-    role: row.role,
+server/teamInvitations.ts-63-    status: row.status,
+server/teamInvitations.ts-64-    expiresAt: row.expiresAt.toISOString(),
+server/teamInvitations.ts-65-    createdAt: row.createdAt.toISOString(),
+server/teamInvitations.ts-66-    emailSentAt: row.emailSentAt?.toISOString() ?? null,
+server/teamInvitations.ts-67-    deliveryError: row.deliveryError ?? null,
+server/teamInvitations.ts-68-  };
+server/teamInvitations.ts-69-}
+server/teamInvitations.ts-70-
+server/teamInvitations.ts:71:async function sendInvitationEmail({ to, fullName, role, companyName, inviteUrl }: { to: string; fullName: string; role: string; companyName: string; inviteUrl: string }) {
+server/teamInvitations.ts-72-  const text = `Hello ${fullName},\n\nYou have been invited to join ${companyName} as ${role} in Smart Manager. Accept your invitation: ${inviteUrl}\n\nThis secure invitation expires in seven days. Sign in or create an account with ${to} to continue.`;
+server/teamInvitations.ts:73:  const delivered = await sendTransactionalEmail({ to: [to], subject: `You’re invited to ${companyName} on Smart Manager`, text, html: `<p>Hello ${escapeHtml(fullName)},</p><p>You have been invited to join <strong>${escapeHtml(companyName)}</strong> as a <strong>${escapeHtml(role)}</strong> in Smart Manager.</p><p><a href="${escapeHtml(inviteUrl)}">Accept your invitation</a></p><p>This secure invitation expires in seven days. Sign in or create an account with <strong>${escapeHtml(to)}</strong> to continue.</p>`, category: "invitation" });
+server/teamInvitations.ts-74-  return delivered.deliveryId;
+server/teamInvitations.ts-75-}
+server/teamInvitations.ts-76-
+server/teamInvitations.ts-77-function escapeHtml(value: string) {
+server/teamInvitations.ts-78-  return value.replace(/[&<>"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[character] || character));
+server/teamInvitations.ts-79-}
+server/teamInvitations.ts-80-
+server/teamInvitations.ts-81-async function companyNameForInvitation(companyId: string) {
+server/teamInvitations.ts-82-  if (!ENV.supabaseUrl || !ENV.supabaseSecretKey) throw new Error("Server-side company lookup is not configured.");
+server/teamInvitations.ts-83-  const params = new URLSearchParams({ select: "name", id: `eq.${companyId}`, limit: "1" });
+server/teamInvitations.ts-84-  const response = await fetch(`${ENV.supabaseUrl}/rest/v1/companies?${params.toString()}`, { headers: { apikey: ENV.supabaseSecretKey, authorization: `Bearer ${ENV.supabaseSecretKey}` } });
+server/teamInvitations.ts-85-  const rows = await response.json().catch(() => []) as Array<{ name?: string }>;
+server/teamInvitations.ts-86-  if (!response.ok || !rows[0]?.name) throw new Error("Workspace details could not be verified.");
+server/teamInvitations.ts-87-  return rows[0].name;
+server/teamInvitations.ts-88-}
+server/teamInvitations.ts-89-
+server/teamInvitations.ts-90-async function deliver(db: Awaited<ReturnType<typeof requireDb>>, row: TeamInvitation, token: string, req: CreateExpressContextOptions["req"]) {
+server/teamInvitations.ts-91-  try {
+server/teamInvitations.ts-92-    const companyName = await companyNameForInvitation(row.companyId);
+server/teamInvitations.ts-93-    const deliveryMessageId = await sendInvitationEmail({
+server/teamInvitations.ts-94-      to: row.email,
+server/teamInvitations.ts-95-      fullName: row.fullName,
+server/teamInvitations.ts-96-      role: row.role,
+server/teamInvitations.ts-97-      companyName,
+server/teamInvitations.ts-98-      inviteUrl: `${invitationOrigin(req)}/app?invite=${encodeURIComponent(token)}`,
+server/teamInvitations.ts-99-    });
+server/teamInvitations.ts:100:    await db.update(teamInvitations).set({ status: "pending", deliveryMessageId, deliveryError: null, emailSentAt: new Date() }).where(eq(teamInvitations.id, row.id));
+server/teamInvitations.ts-101-    return { delivered: true as const, deliveryError: null };
+server/teamInvitations.ts-102-  } catch (error) {
+server/teamInvitations.ts-103-    const deliveryError = error instanceof Error ? error.message.slice(0, 500) : "Invitation delivery failed.";
+server/teamInvitations.ts:104:    await db.update(teamInvitations).set({ status: "delivery_failed", deliveryError }).where(eq(teamInvitations.id, row.id));
+server/teamInvitations.ts-105-    return { delivered: false as const, deliveryError };
+server/teamInvitations.ts-106-  }
+server/teamInvitations.ts-107-}
+server/teamInvitations.ts-108-
+server/teamInvitations.ts-109-export async function createTeamInvitation(req: CreateExpressContextOptions["req"], input: InviteInput) {
+server/teamInvitations.ts-110-  const { profile } = await resolveVerifiedProfile(req);
+server/teamInvitations.ts-111-  requireInviteManager(profile.role);
+server/teamInvitations.ts-112-  const invite = validateInvite(input);
+server/teamInvitations.ts-113-  const db = await requireDb();
+server/teamInvitations.ts-114-  const token = newInvitationToken();
+server/teamInvitations.ts-115-  const now = new Date();
+server/teamInvitations.ts:116:  const [result] = await db.insert(teamInvitations).values({
+server/teamInvitations.ts-117-    invitationId: `inv_${randomBytes(12).toString("hex")}`,
+server/teamInvitations.ts-118-    companyId: profile.company_id,
+server/teamInvitations.ts-119-    email: invite.email,
+server/teamInvitations.ts-120-    fullName: invite.fullName,
+server/teamInvitations.ts-121-    role: invite.role,
+server/teamInvitations.ts-122-    tokenHash: hashInvitationToken(token),
+server/teamInvitations.ts-123-    status: "pending",
+server/teamInvitations.ts-124-    invitedByProfileId: profile.id,
+server/teamInvitations.ts-125-    invitedByRole: profile.role,
+server/teamInvitations.ts-126-    expiresAt: new Date(now.getTime() + INVITATION_TTL_MS),
+server/teamInvitations.ts-127-  });
+server/teamInvitations.ts-128-  const invitationId = Number((result as { insertId?: number }).insertId);
+server/teamInvitations.ts:129:  const created = (await db.select().from(teamInvitations).where(eq(teamInvitations.id, invitationId)).limit(1))[0];
+server/teamInvitations.ts-130-  if (!created) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The invitation could not be created." });
+server/teamInvitations.ts-131-  const delivery = await deliver(db, created, token, req);
+server/teamInvitations.ts-132-  return { invitation: serializeInvitation({ ...created, status: delivery.delivered ? "pending" : "delivery_failed", deliveryError: delivery.deliveryError, emailSentAt: delivery.delivered ? new Date() : null }), ...delivery };
+server/teamInvitations.ts-133-}
+server/teamInvitations.ts-134-
+server/teamInvitations.ts-135-export async function listTeamInvitations(req: CreateExpressContextOptions["req"]) {
+server/teamInvitations.ts-136-  const { profile } = await resolveVerifiedProfile(req);
+server/teamInvitations.ts-137-  requireInviteManager(profile.role);
+server/teamInvitations.ts-138-  const db = await requireDb();
+server/teamInvitations.ts:139:  const rows = await db.select().from(teamInvitations).where(eq(teamInvitations.companyId, profile.company_id)).orderBy(desc(teamInvitations.createdAt));
+server/teamInvitations.ts-140-  const now = Date.now();
+server/teamInvitations.ts:141:  await Promise.all(rows.filter((row) => row.status === "pending" && isInvitationExpired(row.expiresAt, now)).map((row) => db.update(teamInvitations).set({ status: "expired" }).where(eq(teamInvitations.id, row.id))));
+server/teamInvitations.ts-142-  return rows.map((row) => serializeInvitation({ ...row, status: row.status === "pending" && isInvitationExpired(row.expiresAt, now) ? "expired" : row.status }));
+server/teamInvitations.ts-143-}
+server/teamInvitations.ts-144-
+server/teamInvitations.ts-145-async function ownedInvitation(db: Awaited<ReturnType<typeof requireDb>>, invitationId: string, companyId: string) {
+server/teamInvitations.ts:146:  const row = (await db.select().from(teamInvitations).where(and(eq(teamInvitations.invitationId, invitationId), eq(teamInvitations.companyId, companyId))).limit(1))[0];
+server/teamInvitations.ts-147-  if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Team invitation not found." });
+server/teamInvitations.ts-148-  return row;
+server/teamInvitations.ts-149-}
+server/teamInvitations.ts-150-
+server/teamInvitations.ts-151-export async function resendTeamInvitation(req: CreateExpressContextOptions["req"], invitationId: string) {
+server/teamInvitations.ts-152-  const { profile } = await resolveVerifiedProfile(req);
+server/teamInvitations.ts-153-  requireInviteManager(profile.role);
+server/teamInvitations.ts-154-  const db = await requireDb();
+server/teamInvitations.ts-155-  const row = await ownedInvitation(db, invitationId, profile.company_id);
+server/teamInvitations.ts-156-  if (row.status === "accepted" || row.status === "revoked") throw new TRPCError({ code: "CONFLICT", message: "This invitation can no longer be resent." });
+server/teamInvitations.ts-157-  const token = newInvitationToken();
+server/teamInvitations.ts-158-  const expiresAt = new Date(Date.now() + INVITATION_TTL_MS);
+server/teamInvitations.ts:159:  await db.update(teamInvitations).set({ tokenHash: hashInvitationToken(token), status: "pending", expiresAt, deliveryError: null, revokedAt: null }).where(eq(teamInvitations.id, row.id));
+server/teamInvitations.ts-160-  const refreshed = { ...row, tokenHash: hashInvitationToken(token), status: "pending" as const, expiresAt, deliveryError: null, revokedAt: null };
+server/teamInvitations.ts-161-  const delivery = await deliver(db, refreshed, token, req);
+server/teamInvitations.ts-162-  return { invitation: serializeInvitation({ ...refreshed, status: delivery.delivered ? "pending" : "delivery_failed", deliveryError: delivery.deliveryError, emailSentAt: delivery.delivered ? new Date() : null }), ...delivery };
+server/teamInvitations.ts-163-}
+server/teamInvitations.ts-164-
+server/teamInvitations.ts-165-export async function revokeTeamInvitation(req: CreateExpressContextOptions["req"], invitationId: string) {
+server/teamInvitations.ts-166-  const { profile } = await resolveVerifiedProfile(req);
+server/teamInvitations.ts-167-  requireInviteManager(profile.role);
+server/teamInvitations.ts-168-  const db = await requireDb();
+server/teamInvitations.ts-169-  const row = await ownedInvitation(db, invitationId, profile.company_id);
+server/teamInvitations.ts-170-  if (row.status === "accepted") throw new TRPCError({ code: "CONFLICT", message: "Accepted invitations cannot be revoked." });
+server/teamInvitations.ts:171:  await db.update(teamInvitations).set({ status: "revoked", revokedAt: new Date() }).where(eq(teamInvitations.id, row.id));
+server/teamInvitations.ts-172-  return { success: true as const };
+server/teamInvitations.ts-173-}
+server/teamInvitations.ts-174-
+server/teamInvitations.ts-175-async function authenticatedIdentity(token: string) {
+server/teamInvitations.ts-176-  if (!ENV.supabaseUrl || !ENV.supabaseAnonKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Supabase verification is not configured." });
+server/teamInvitations.ts-177-  const response = await fetch(`${ENV.supabaseUrl}/auth/v1/user`, { headers: { apikey: ENV.supabaseAnonKey, authorization: `Bearer ${token}` } });
+server/teamInvitations.ts-178-  const identity = await response.json().catch(() => null) as { id?: string; email?: string } | null;
+server/teamInvitations.ts-179-  if (!response.ok || !identity?.id || !identity.email) throw new TRPCError({ code: "UNAUTHORIZED", message: "Sign in with your invited email address to accept this invitation." });
+server/teamInvitations.ts-180-  return { id: identity.id, email: identity.email.trim().toLowerCase() };
+server/teamInvitations.ts-181-}
+server/teamInvitations.ts-182-
+server/teamInvitations.ts-183-async function attachProfileToInvitation(profileId: string, companyId: string, role: string, fullName: string) {
+server/teamInvitations.ts-184-  if (!ENV.supabaseUrl || !ENV.supabaseSecretKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Invitation acceptance is not configured." });
+server/teamInvitations.ts-185-  const currentResponse = await fetch(`${ENV.supabaseUrl}/rest/v1/profiles?select=id,company_id&id=eq.${encodeURIComponent(profileId)}&limit=1`, {
+server/teamInvitations.ts-186-    headers: { apikey: ENV.supabaseSecretKey, authorization: `Bearer ${ENV.supabaseSecretKey}` },
+server/teamInvitations.ts-187-  });
+server/teamInvitations.ts-188-  const current = await currentResponse.json().catch(() => []) as Array<{ id?: string; company_id?: string | null }>;
+server/teamInvitations.ts-189-  if (!currentResponse.ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The invitation recipient profile could not be verified." });
+server/teamInvitations.ts-190-  if (current[0]?.company_id && current[0].company_id !== companyId) throw new TRPCError({ code: "CONFLICT", message: "Your profile already belongs to another workspace." });
+server/teamInvitations.ts-191-  const method = current[0]?.id ? "PATCH" : "POST";
+server/teamInvitations.ts-192-  const path = current[0]?.id ? `profiles?id=eq.${encodeURIComponent(profileId)}` : "profiles";
+server/teamInvitations.ts-193-  const response = await fetch(`${ENV.supabaseUrl}/rest/v1/${path}`, {
+server/teamInvitations.ts-194-    method,
+server/teamInvitations.ts-195-    headers: { apikey: ENV.supabaseSecretKey, authorization: `Bearer ${ENV.supabaseSecretKey}`, "content-type": "application/json", Prefer: "return=representation" },
+server/teamInvitations.ts-196-    body: JSON.stringify({ ...(current[0]?.id ? {} : { id: profileId, full_name: fullName }), company_id: companyId, role }),
+server/teamInvitations.ts-197-  });
+server/teamInvitations.ts-198-  const rows = await response.json().catch(() => []) as Array<{ id?: string }>;
+server/teamInvitations.ts-199-  if (!response.ok || !rows[0]?.id) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The workspace could not be assigned to your profile." });
+server/teamInvitations.ts-200-}
+server/teamInvitations.ts-201-
+server/teamInvitations.ts-202-export async function acceptTeamInvitation(req: CreateExpressContextOptions["req"], tokenValue: string) {
+server/teamInvitations.ts-203-  const candidate = req.headers["x-supabase-authorization"] || req.headers.authorization;
+server/teamInvitations.ts-204-  const rawToken = Array.isArray(candidate) ? candidate[0] : candidate;
+server/teamInvitations.ts-205-  const token = rawToken?.startsWith("Bearer ") ? rawToken.slice(7) : "";
+server/teamInvitations.ts-206-  if (!token) throw new TRPCError({ code: "UNAUTHORIZED", message: "Sign in to accept this invitation." });
+server/teamInvitations.ts-207-  const db = await requireDb();
+server/teamInvitations.ts:208:  const row = (await db.select().from(teamInvitations).where(eq(teamInvitations.tokenHash, hashInvitationToken(tokenValue))).limit(1))[0];
+server/teamInvitations.ts-209-  if (!row || row.status !== "pending" || isInvitationExpired(row.expiresAt)) throw new TRPCError({ code: "NOT_FOUND", message: "This invitation is invalid or has expired." });
+server/teamInvitations.ts-210-  const identity = await authenticatedIdentity(token);
+server/teamInvitations.ts-211-  if (identity.email !== row.email) throw new TRPCError({ code: "FORBIDDEN", message: "Sign in with the email address that received this invitation." });
+server/teamInvitations.ts-212-  await attachProfileToInvitation(identity.id, row.companyId, row.role, row.fullName);
+server/teamInvitations.ts:213:  await db.update(teamInvitations).set({ status: "accepted", acceptedByProfileId: identity.id }).where(eq(teamInvitations.id, row.id));
+server/teamInvitations.ts-214-  return { companyId: row.companyId, role: row.role, fullName: row.fullName };
+server/teamInvitations.ts-215-}
+--
+server/teamInvitations.test.ts-1-import { describe, expect, it } from "vitest";
+server/teamInvitations.test.ts:2:import { hashInvitationToken, invitationOrigin, isInvitationExpired } from "./teamInvitations";
+server/teamInvitations.test.ts-3-
+server/teamInvitations.test.ts:4:describe("team invitation security helpers", () => {
+server/teamInvitations.test.ts-5-  it("hashes opaque invitation tokens deterministically without exposing the token in storage", () => {
+server/teamInvitations.test.ts-6-    expect(hashInvitationToken("opaque-invitation-token")).toMatch(/^[a-f0-9]{64}$/);
+server/teamInvitations.test.ts-7-    expect(hashInvitationToken("opaque-invitation-token")).toBe(hashInvitationToken("opaque-invitation-token"));
+server/teamInvitations.test.ts-8-    expect(hashInvitationToken("opaque-invitation-token")).not.toContain("opaque-invitation-token");
+server/teamInvitations.test.ts-9-  });
+server/teamInvitations.test.ts-10-
+server/teamInvitations.test.ts-11-  it("treats invitation expiry as an absolute server-side boundary", () => {
+server/teamInvitations.test.ts-12-    expect(isInvitationExpired(new Date("2026-08-14T09:59:59.000Z"), Date.parse("2026-08-14T10:00:00.000Z"))).toBe(true);
+server/teamInvitations.test.ts-13-    expect(isInvitationExpired(new Date("2026-08-14T10:00:01.000Z"), Date.parse("2026-08-14T10:00:00.000Z"))).toBe(false);
+server/teamInvitations.test.ts-14-  });
+server/teamInvitations.test.ts-15-
+server/teamInvitations.test.ts-16-  it("uses the forwarded secure application origin when generating invitation links", () => {
+server/teamInvitations.test.ts-17-    expect(invitationOrigin({ protocol: "http", headers: { host: "internal:3000", "x-forwarded-host": "erp.example.com", "x-forwarded-proto": "https" } } as any)).toBe("https://erp.example.com");
+server/teamInvitations.test.ts-18-  });
+server/teamInvitations.test.ts-19-});
+--
+server/routers.ts-3-import { z } from "zod";
+server/routers.ts-4-import { getSessionCookieOptions } from "./_core/cookies";
+server/routers.ts-5-import { systemRouter } from "./_core/systemRouter";
+server/routers.ts-6-import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+server/routers.ts-7-import { getBearerToken } from "./_core/authHeaders";
+server/routers.ts-8-import { createReportSchedule, deleteReportSchedule, listReportSchedules, sendReportScheduleNow, updateReportSchedule } from "./reportSchedules";
+server/routers.ts-9-import { listAuditLogs, recordAuditLog } from "./auditLogs";
+server/routers.ts-10-import { verifyDatabaseBackupStatus } from "./backupVerification";
+server/routers.ts-11-import { getWebhookConfig, updateWebhookConfig, testWebhookPing, getDeadLetterQueue, listWebhookDeliveryHistory, retryWebhookDelivery } from "./webhooks";
+server/routers.ts-12-import { TRPCError } from "@trpc/server";
+server/routers.ts-13-import { users } from "../drizzle/schema";
+server/routers.ts-14-import { eq } from "drizzle-orm";
+server/routers.ts-15-import { getDb } from "./db";
+server/routers.ts-16-import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
+server/routers.ts-17-import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
+server/routers.ts-18-import { decideActionApproval, requestActionApproval, resolveVerifiedProfile } from "./aiApprovals";
+server/routers.ts-19-import { decideRoleChangeApproval, dismissNotification, listRoleChangeApprovals, markNotificationRead, requestRoleChangeApproval } from "./roleChangeApprovals";
+server/routers.ts-20-import { saveWorkspaceBranding } from "./workspaceBranding";
+server/routers.ts-21-import { getWorkspaceSettings, saveWorkspaceSettings } from "./workspaceSettings";
+server/routers.ts-22-import { dashboardPreferencesInput, getDashboardPreferences, saveDashboardPreferences } from "./dashboardPreferences";
+server/routers.ts:23:import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
+server/routers.ts-24-import { sendWorkspaceEmail } from "./transactionalEmail";
+server/routers.ts-25-import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
+server/routers.ts-26-import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, getSupportWhatsAppProviderReadiness, testSupportWhatsAppProviderConfig, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, searchSupportTickets, updateSupportTicket } from "./supportOperations";
+server/routers.ts-27-import { traFiscalRouter } from "./traFiscalRouter";
+server/routers.ts-28-import { canReadTenantPushDeliveryHistory, listTenantPushDeliveryHistory } from "./notificationHistory";
+server/routers.ts-29-import { getMarketIntelligenceSnapshot, marketIntelligenceConfig } from "./marketIntelligence";
+server/routers.ts-30-import { getMarketGovernanceData, upsertMarketProviderSettings } from "./marketGovernance";
+server/routers.ts-31-import { notifyPasskeyRegistration } from "./passkeyRegistrationNotification";
+server/routers.ts-32-import { dispatchEmailTemplateWorkflowEvent, getEmailTemplateWorkflowStatus, testEmailTemplateWorkflowWebhook } from "./emailTemplateWorkflow";
+server/routers.ts-33-import { assertPayloadContract } from "./schemaDriftChecker";
+server/routers.ts-34-import { CRITICAL_SUPABASE_TABLES, persistSupabaseRow } from "./supabasePersistence";
+server/routers.ts-35-import { archiveHealthcareRecord, createHealthcareRecord, getHealthcareAccess, healthcareArchiveInput, healthcareCreateInput, healthcareListInput, healthcareUpdateInput, listHealthcareRecords, updateHealthcareRecord } from "./healthcareOperations";
+server/routers.ts-36-import { exportHealthcareFhirBundle, getHealthcareClinicianAnalytics, healthcareAnalyticsInput, healthcareFhirExportInput } from "./healthcareInteroperability";
+server/routers.ts-37-import { getReminderSettings, listReminderDeliveries, reminderDeliveryListInput, reminderSettingsInput, requestReminderTest, saveReminderSettings } from "./healthcareReminders";
+server/routers.ts-38-import { getPatientSmsConsentPreferences, patientSmsConsentUpdateInput, updatePatientSmsConsentPreferences } from "./healthcareSelfService";
+server/routers.ts-39-import { clearPatientPortalReference, clearPatientPortalReferenceInput, linkPatientPortalReference, linkPatientPortalReferenceInput, listPortalReferenceReconciliation, portalReferenceListInput } from "./healthcarePortalReconciliation";
+server/routers.ts-40-import { applyPortalReferenceImport, decidePortalReferenceApproval, exportPortalReferenceErrors, getPortalReferenceDailySummary, getPortalReferenceSummarySettings, listPortalReferenceDeliveryHistory, listPortalReferenceWorkflow, portalReferenceApprovalDecisionInput, portalReferenceApprovalRequestInput, portalReferenceAuditSearchInput, portalReferenceCsvInput, portalReferenceDeliveryHistoryInput, portalReferenceErrorExportInput, portalReferenceImportApplyInput, portalReferenceSummarySettingsInput, portalReferenceWorkflowListInput, requestPortalReferenceReplacement, savePortalReferenceSummarySettings, searchPortalReferenceAudit, stagePortalReferenceCsvImport } from "./healthcarePortalReconciliationWorkflow";
+server/routers.ts-41-import { closeMicrofinanceCashSession, createMicrofinanceBorrower, createMicrofinanceCollateral, createMicrofinanceCollection, createMicrofinanceGroup, createMicrofinanceGuarantor, createMicrofinanceProduct, decideMicrofinanceApplication, disburseMicrofinanceLoan, getMicrofinanceCreditScoringSettings, getMicrofinanceEscalationSettings, listMicrofinanceAudit, listMicrofinanceDashboard, listMicrofinanceEscalationHistory, microfinanceApplicationInput, microfinanceBorrowerInput, microfinanceCashCloseInput, microfinanceCashOpenInput, microfinanceCollateralInput, microfinanceCollectionInput, microfinanceCreditScoringSettingsInput, microfinanceDecisionInput, microfinanceDisbursementInput, microfinanceEscalationSettingsInput, microfinanceGroupInput, microfinanceGuarantorInput, microfinanceListInput, microfinanceProductInput, microfinanceRepaymentInput, microfinanceSavingsInput, openMicrofinanceCashSession, recordMicrofinanceRepayment, recordMicrofinanceSavings, saveMicrofinanceCreditScoringSettings, saveMicrofinanceEscalationSettings, submitMicrofinanceApplication } from "./microfinanceOperations";
+server/routers.ts-42-import { getMoneyAgentCustomerSnapshot, getMoneyAgentSnapshot, moneyAgentActionInput, moneyAgentListInput, runMoneyAgentAction } from "./moneyAgentOperations";
+server/routers.ts-43-import { getPropertySnapshot, propertyActionInput, propertyDocumentUploadInput, propertyListInput, runPropertyAction, uploadPropertyDocument } from "./propertyManagementOperations";
+--
+server/routers.ts-873-      cover: z.object({ mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]), base64: z.string().min(1).max(7_000_000) }).nullable().optional(), removeCover: z.boolean().optional(),
+server/routers.ts-874-      loginBackground: z.object({ mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]), base64: z.string().min(1).max(7_000_000) }).nullable().optional(), removeLoginBackground: z.boolean().optional(),
+server/routers.ts-875-      onboardingBackground: z.object({ mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]), base64: z.string().min(1).max(7_000_000) }).nullable().optional(), removeOnboardingBackground: z.boolean().optional(),
+server/routers.ts-876-      idleTimeoutMinutes: z.number().int().min(5).max(120).optional(),
+server/routers.ts-877-      profileData: z.object({
+server/routers.ts-878-        tagline: z.string().max(200).optional(), description: z.string().max(2_000).optional(), businessType: z.string().max(120).optional(), foundedYear: z.string().max(4).optional(), regNumber: z.string().max(160).optional(), postalCode: z.string().max(40).optional(),
+server/routers.ts-879-        facebook: z.string().max(200).optional(), instagram: z.string().max(200).optional(), twitter: z.string().max(200).optional(), linkedin: z.string().max(200).optional(), tiktok: z.string().max(200).optional(), whatsappBusiness: z.string().max(80).optional(),
+server/routers.ts-880-        bankName: z.string().max(160).optional(), bankAccountName: z.string().max(200).optional(), bankAccountNo: z.string().max(120).optional(), bankBranch: z.string().max(200).optional(), bankSwift: z.string().max(80).optional(),
+server/routers.ts-881-        businessHours: z.record(z.string(), z.object({ open: z.string().max(10).optional(), close: z.string().max(10).optional(), closed: z.boolean().optional() })).optional(), coverPhoto: z.string().url().max(2_000).nullable().optional(),
+server/routers.ts-882-        idleTimeoutMinutes: z.number().int().min(5).max(120).optional(), loginBackgroundImage: z.string().url().max(2_000).nullable().optional(), onboardingBackgroundImage: z.string().url().max(2_000).nullable().optional(),
+server/routers.ts-883-        collaborationWorkflowWebhookEnabled: z.boolean().optional(), collaborationWorkflowWebhookUrl: z.string().url().max(2_000).or(z.literal("")).optional(), collaborationWorkflowWebhookSecret: z.string().max(512).optional(),
+server/routers.ts-884-      }),
+server/routers.ts-885-    })).mutation(({ ctx, input }) => saveWorkspaceSettings(ctx.req, input)),
+server/routers.ts-886-  }),
+server/routers.ts-887-
+server/routers.ts-888-  dashboardPreferences: router({
+server/routers.ts-889-    get: protectedProcedure.query(({ ctx }) => getDashboardPreferences(ctx.req)),
+server/routers.ts-890-    save: protectedProcedure.input(dashboardPreferencesInput).mutation(({ ctx, input }) => saveDashboardPreferences(ctx.req, input)),
+server/routers.ts-891-  }),
+server/routers.ts-892-
+server/routers.ts:893:  teamInvitations: router({
+server/routers.ts-894-    list: publicProcedure.query(({ ctx }) => listTeamInvitations(ctx.req)),
+server/routers.ts-895-    create: publicProcedure.input(z.object({ fullName: z.string().min(2).max(120), email: z.string().email().max(320), role: z.string().min(2).max(80) })).mutation(({ ctx, input }) => createTeamInvitation(ctx.req, input)),
+server/routers.ts-896-    resend: publicProcedure.input(z.object({ invitationId: z.string().min(8).max(72) })).mutation(({ ctx, input }) => resendTeamInvitation(ctx.req, input.invitationId)),
+server/routers.ts-897-    revoke: publicProcedure.input(z.object({ invitationId: z.string().min(8).max(72) })).mutation(({ ctx, input }) => revokeTeamInvitation(ctx.req, input.invitationId)),
+server/routers.ts-898-    accept: publicProcedure.input(z.object({ token: z.string().min(32).max(128) })).mutation(({ ctx, input }) => acceptTeamInvitation(ctx.req, input.token)),
+server/routers.ts-899-  }),
+server/routers.ts-900-
+server/routers.ts-901-  transactionalEmail: router({
+server/routers.ts-902-    send: publicProcedure.input(z.object({ to: z.string().min(3).max(6_000), cc: z.string().max(6_000).optional(), bcc: z.string().max(6_000).optional(), subject: z.string().min(1).max(160), body: z.string().min(1).max(12_000) })).mutation(({ ctx, input }) => sendWorkspaceEmail(ctx.req, input)),
+server/routers.ts-903-  }),
+server/routers.ts-904-
+server/routers.ts-905-  support: router({
+server/routers.ts-906-    listTickets: protectedProcedure.query(({ ctx }) => listSupportTickets(ctx.req)),
+server/routers.ts-907-    searchTickets: protectedProcedure.input(z.object({ query: z.string().trim().min(2).max(120) })).query(({ ctx, input }) => searchSupportTickets(ctx.req, input.query)),
+server/routers.ts-908-    draftTicketReply: protectedProcedure.input(z.object({ ticketId: z.string().uuid(), tone: z.enum(["professional", "empathetic", "concise"]).default("professional") })).mutation(({ ctx, input }) => draftSupportTicketReply(ctx.req, input)),
+server/routers.ts-909-    whatsappProviderReadiness: protectedProcedure.query(({ ctx }) => getSupportWhatsAppProviderReadiness(ctx.req)),
+server/routers.ts-910-    testWhatsappProviderConfig: protectedProcedure.input(z.object({ apiKey: z.string().optional(), signingSecret: z.string().optional(), workspaceId: z.string().optional(), channelId: z.string().optional(), deliveryEnabled: z.boolean().optional() })).mutation(({ ctx, input }) => testSupportWhatsAppProviderConfig(ctx.req, input)),
+server/routers.ts-911-    updateWhatsappProviderConfig: protectedProcedure.input(z.object({
+server/routers.ts-912-      apiKey: z.string().optional(),
+server/routers.ts-913-      signingSecret: z.string().optional(),
+--
+client/src/BusinessSphereDashboard.jsx-18544-      {tab === "timetable" && <WorkingTimetable employees={employees} currentUser={currentUser} canManage={canManage} />}
+client/src/BusinessSphereDashboard.jsx-18545-      {tab === "recruitment" && <Recruitment />}
+client/src/BusinessSphereDashboard.jsx-18546-      {tab === "attendance" && <Attendance employees={employees} />}
+client/src/BusinessSphereDashboard.jsx-18547-      {tab === "performance" && <Performance employees={employees} />}
+client/src/BusinessSphereDashboard.jsx-18548-      {tab === "training" && <><Training employees={employees} /><LmsInsightsPanel employees={employees} /></>}
+client/src/BusinessSphereDashboard.jsx-18549-      {tab === "leave" && <LeaveRequests requests={leaveRequests} setRequests={setLeaveRequests} loading={leaveLoading} employees={employees} />}
+client/src/BusinessSphereDashboard.jsx-18550-      {tab === "benefits" && <Benefits employees={employees} />}
+client/src/BusinessSphereDashboard.jsx-18551-      {tab === "payroll" && <Payroll employees={employees} expensesHook={expensesHook} />}
+client/src/BusinessSphereDashboard.jsx-18552-    </div>
+client/src/BusinessSphereDashboard.jsx-18553-  );
+client/src/BusinessSphereDashboard.jsx-18554-}
+client/src/BusinessSphereDashboard.jsx-18555-
+client/src/BusinessSphereDashboard.jsx-18556-function Employees({ employees, setEmployees, loading, canManage }) {
+client/src/BusinessSphereDashboard.jsx-18557-  const [department, setDepartment] = useState("all");
+client/src/BusinessSphereDashboard.jsx-18558-  const [query, setQuery] = useState("");
+client/src/BusinessSphereDashboard.jsx-18559-  const [selected, setSelected] = useState(null);
+client/src/BusinessSphereDashboard.jsx-18560-  const [showForm, setShowForm] = useState(false);
+client/src/BusinessSphereDashboard.jsx-18561-  const [showInvite, setShowInvite] = useState(false);
+client/src/BusinessSphereDashboard.jsx-18562-  const [generatedInvitation, setGeneratedInvitation] = useState(null);
+client/src/BusinessSphereDashboard.jsx-18563-  const bulk = useBulkSelect(employees);
+client/src/BusinessSphereDashboard.jsx:18564:  const invitationListQuery = trpc.teamInvitations.list.useQuery(undefined, { enabled: Boolean(showInvite && IS_CONFIGURED), retry: false, refetchOnWindowFocus: false });
+client/src/BusinessSphereDashboard.jsx:18565:  const createInvitationMutation = trpc.teamInvitations.create.useMutation({
+client/src/BusinessSphereDashboard.jsx-18566-    onSuccess: (result) => {
+client/src/BusinessSphereDashboard.jsx-18567-      setGeneratedInvitation(result.invitation);
+client/src/BusinessSphereDashboard.jsx-18568-      invitationListQuery.refetch();
+client/src/BusinessSphereDashboard.jsx-18569-      if (result.delivered) {
+client/src/BusinessSphereDashboard.jsx-18570-        notify(`Secure invitation sent to ${result.invitation.email}. It expires in seven days.`);
+client/src/BusinessSphereDashboard.jsx-18571-      } else {
+client/src/BusinessSphereDashboard.jsx-18572-        notify(`Invitation was saved, but email delivery failed: ${result.deliveryError || "review the delivery configuration"}.`, "error");
+client/src/BusinessSphereDashboard.jsx-18573-      }
+client/src/BusinessSphereDashboard.jsx-18574-    },
+client/src/BusinessSphereDashboard.jsx-18575-    onError: (error) => notify(error.message || "The secure invitation could not be created.", "error"),
+client/src/BusinessSphereDashboard.jsx-18576-  });
+client/src/BusinessSphereDashboard.jsx-18577-
+client/src/BusinessSphereDashboard.jsx-18578-  function generateInvitation(fullName, email, role) {
+client/src/BusinessSphereDashboard.jsx-18579-    if (!IS_CONFIGURED) {
+client/src/BusinessSphereDashboard.jsx-18580-      notify("Secure invitations require the configured workspace backend; no browser-only invite was created.", "error");
+client/src/BusinessSphereDashboard.jsx-18581-      return;
+client/src/BusinessSphereDashboard.jsx-18582-    }
+client/src/BusinessSphereDashboard.jsx-18583-    createInvitationMutation.mutate({ fullName, email, role });
+client/src/BusinessSphereDashboard.jsx-18584-  }
+client/src/BusinessSphereDashboard.jsx-18585-
+--
+client/src/BusinessSphereDashboard.jsx-18693-              onChange={(e) => setQuery(e.target.value)}
+client/src/BusinessSphereDashboard.jsx-18694-              placeholder="Search name or role..."
+client/src/BusinessSphereDashboard.jsx-18695-              className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
+client/src/BusinessSphereDashboard.jsx-18696-            />
+client/src/BusinessSphereDashboard.jsx-18697-          </div>
+client/src/BusinessSphereDashboard.jsx-18698-          {canManage && <button
+client/src/BusinessSphereDashboard.jsx-18699-            onClick={() => { setShowInvite(!showInvite); setGeneratedInvitation(null); }}
+client/src/BusinessSphereDashboard.jsx-18700-            className="flex items-center gap-1.5 text-[12.5px] font-bold text-[#7C3AED] border border-[#7C3AED]/30 bg-[#F5F3FF] px-3.5 py-2 rounded-lg hover:bg-[#EDE9FE] shrink-0"
+client/src/BusinessSphereDashboard.jsx-18701-          >
+client/src/BusinessSphereDashboard.jsx-18702-            <QrCode size={14}/> Secure Invitation
+client/src/BusinessSphereDashboard.jsx-18703-          </button>}
+client/src/BusinessSphereDashboard.jsx-18704-          <button
+client/src/BusinessSphereDashboard.jsx-18705-            onClick={() => setShowForm(true)}
+client/src/BusinessSphereDashboard.jsx-18706-            className="btn-primary text-white text-[13px] font-medium px-3.5 py-2 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition-colors shrink-0"
+client/src/BusinessSphereDashboard.jsx-18707-          >
+client/src/BusinessSphereDashboard.jsx-18708-            <Plus size={15} /> New Employee
+client/src/BusinessSphereDashboard.jsx-18709-          </button>
+client/src/BusinessSphereDashboard.jsx-18710-        </div>
+client/src/BusinessSphereDashboard.jsx-18711-      </div>
+client/src/BusinessSphereDashboard.jsx-18712-
+client/src/BusinessSphereDashboard.jsx:18713:      {/* ── Secure team invitation panel ── */}
+client/src/BusinessSphereDashboard.jsx-18714-      {canManage && showInvite && (
+client/src/BusinessSphereDashboard.jsx-18715-        <div className="bg-[#F5F3FF] border border-[#C4B5FD] rounded-xl p-4 space-y-4">
+client/src/BusinessSphereDashboard.jsx-18716-          <div className="flex items-center justify-between">
+client/src/BusinessSphereDashboard.jsx-18717-            <div>
+client/src/BusinessSphereDashboard.jsx:18718:              <p className="text-[14px] font-bold text-[#5B21B6]">Secure team invitation</p>
+client/src/BusinessSphereDashboard.jsx-18719-              <p className="text-[12px] text-[#7C3AED]">Invitations are persisted to the workspace and delivered by email. No browser-only invite codes are created.</p>
+client/src/BusinessSphereDashboard.jsx-18720-            </div>
+client/src/BusinessSphereDashboard.jsx-18721-            <button onClick={()=>{setShowInvite(false);setGeneratedInvitation(null);}} className="text-[#7C3AED] hover:text-[#5B21B6]"><X size={16}/></button>
+client/src/BusinessSphereDashboard.jsx-18722-          </div>
+client/src/BusinessSphereDashboard.jsx-18723-          {!IS_CONFIGURED && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">The workspace backend is not configured, so secure invitations are unavailable in this environment.</p>}
+client/src/BusinessSphereDashboard.jsx-18724-          <div className="grid grid-cols-2 gap-3">
+client/src/BusinessSphereDashboard.jsx-18725-            <SecureInvitationForm onGenerate={generateInvitation} pending={createInvitationMutation.isPending} />
+client/src/BusinessSphereDashboard.jsx-18726-          </div>
+client/src/BusinessSphereDashboard.jsx-18727-          {generatedInvitation && (
+client/src/BusinessSphereDashboard.jsx-18728-            <div className="bg-white rounded-xl border-2 border-[#7C3AED] p-4">
+client/src/BusinessSphereDashboard.jsx-18729-              <p className="text-[11px] font-bold text-[#7C3AED] uppercase tracking-wider mb-2">Invitation recorded by the server</p>
+client/src/BusinessSphereDashboard.jsx-18730-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+client/src/BusinessSphereDashboard.jsx-18731-                {[
+client/src/BusinessSphereDashboard.jsx-18732-                  ["Recipient", generatedInvitation.email],
+client/src/BusinessSphereDashboard.jsx-18733-                  ["Role", generatedInvitation.role],
+client/src/BusinessSphereDashboard.jsx-18734-                  ["Status", generatedInvitation.status],
+client/src/BusinessSphereDashboard.jsx-18735-                  ["Expires", new Date(generatedInvitation.expiresAt).toLocaleDateString()],
+client/src/BusinessSphereDashboard.jsx-18736-                ].map(([label, value])=>(
+client/src/BusinessSphereDashboard.jsx-18737-                  <div key={label} className="text-center">
+client/src/BusinessSphereDashboard.jsx-18738-                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">{label}</p>
+--
+client/src/BusinessSphereDashboard.jsx-37452-      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+client/src/BusinessSphereDashboard.jsx-37453-        <div className="px-5 pt-5 pb-3">
+client/src/BusinessSphereDashboard.jsx-37454-          <h2 className="text-[14.5px] font-semibold text-[#111827] mb-1 flex items-center gap-2">
+client/src/BusinessSphereDashboard.jsx-37455-            <span>💼</span> Business Card Designer
+client/src/BusinessSphereDashboard.jsx-37456-          </h2>
+client/src/BusinessSphereDashboard.jsx-37457-          <p className="text-[12.5px] text-slate-500">
+client/src/BusinessSphereDashboard.jsx-37458-            Design, preview, and print professional double-sided business cards for your team.
+client/src/BusinessSphereDashboard.jsx-37459-          </p>
+client/src/BusinessSphereDashboard.jsx-37460-        </div>
+client/src/BusinessSphereDashboard.jsx-37461-        <BusinessCardDesigner company={company}/>
+client/src/BusinessSphereDashboard.jsx-37462-      </section>
+client/src/BusinessSphereDashboard.jsx-37463-
+client/src/BusinessSphereDashboard.jsx-37464-    </div>
+client/src/BusinessSphereDashboard.jsx-37465-  );
+client/src/BusinessSphereDashboard.jsx-37466-}
+client/src/BusinessSphereDashboard.jsx-37467-
+client/src/BusinessSphereDashboard.jsx-37468-function TeamManagement({ currentUser, canManage }) {
+client/src/BusinessSphereDashboard.jsx-37469-  const [showInvite, setShowInvite] = useState(false);
+client/src/BusinessSphereDashboard.jsx-37470-  const [inviteForm, setInviteForm] = useState({ name:"", email:"", role:"Sales Representative" });
+client/src/BusinessSphereDashboard.jsx-37471-  const utils = trpc.useUtils();
+client/src/BusinessSphereDashboard.jsx:37472:  const invitationQuery = trpc.teamInvitations.list.useQuery(undefined, { enabled: IS_CONFIGURED && canManage });
+client/src/BusinessSphereDashboard.jsx:37473:  const createInvitation = trpc.teamInvitations.create.useMutation();
+client/src/BusinessSphereDashboard.jsx:37474:  const resendInvitation = trpc.teamInvitations.resend.useMutation();
+client/src/BusinessSphereDashboard.jsx:37475:  const revokeInvitation = trpc.teamInvitations.revoke.useMutation();
+client/src/BusinessSphereDashboard.jsx-37476-
+client/src/BusinessSphereDashboard.jsx-37477-  const ROLE_OPTIONS = ["Super Administrator","Finance Manager","HR Manager","Sales Manager","Sales Representative","Warehouse Staff","Accountant","Viewer"];
+client/src/BusinessSphereDashboard.jsx-37478-
+client/src/BusinessSphereDashboard.jsx-37479-  const ROLE_COLOR = {
+client/src/BusinessSphereDashboard.jsx-37480-    "Super Administrator": "#7C3AED",
+client/src/BusinessSphereDashboard.jsx-37481-    "Finance Manager":     "#2563EB",
+client/src/BusinessSphereDashboard.jsx-37482-    "HR Manager":          "#059669",
+client/src/BusinessSphereDashboard.jsx-37483-    "Sales Manager":       "#D97706",
+client/src/BusinessSphereDashboard.jsx-37484-    "Sales Representative":"#EA580C",
+client/src/BusinessSphereDashboard.jsx-37485-    "Warehouse Staff":     "#64748B",
+client/src/BusinessSphereDashboard.jsx-37486-    "Accountant":          "#0891B2",
+client/src/BusinessSphereDashboard.jsx-37487-    "Viewer":              "#94A3B8",
+client/src/BusinessSphereDashboard.jsx-37488-  };
+client/src/BusinessSphereDashboard.jsx-37489-
+client/src/BusinessSphereDashboard.jsx-37490-  async function sendInvite() {
+client/src/BusinessSphereDashboard.jsx-37491-    if (!inviteForm.name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteForm.email.trim())) { notify("Enter a teammate name and valid email address.", "error"); return; }
+client/src/BusinessSphereDashboard.jsx-37492-    try {
+client/src/BusinessSphereDashboard.jsx-37493-      const result = await createInvitation.mutateAsync({ fullName: inviteForm.name.trim(), email: inviteForm.email.trim(), role: inviteForm.role });
+client/src/BusinessSphereDashboard.jsx-37494-      setInviteForm({ name:"", email:"", role:"Sales Representative" });
+client/src/BusinessSphereDashboard.jsx-37495-      setShowInvite(false);
+client/src/BusinessSphereDashboard.jsx:37496:      await utils.teamInvitations.list.invalidate();
+client/src/BusinessSphereDashboard.jsx-37497-      notify(result.delivered ? `Invitation sent to ${result.invitation.email}.` : `Invitation created, but email delivery needs attention: ${result.deliveryError}`, result.delivered ? "success" : "error");
+client/src/BusinessSphereDashboard.jsx-37498-    } catch (error) { notify(error?.message || "The invitation could not be created.", "error"); }
+client/src/BusinessSphereDashboard.jsx-37499-  }
+client/src/BusinessSphereDashboard.jsx-37500-
+client/src/BusinessSphereDashboard.jsx-37501-  async function resendInvite(invitationId) {
+client/src/BusinessSphereDashboard.jsx-37502-    try {
+client/src/BusinessSphereDashboard.jsx-37503-      const result = await resendInvitation.mutateAsync({ invitationId });
+client/src/BusinessSphereDashboard.jsx:37504:      await utils.teamInvitations.list.invalidate();
+client/src/BusinessSphereDashboard.jsx-37505-      notify(result.delivered ? "Invitation email resent." : `Invitation updated, but email delivery needs attention: ${result.deliveryError}`, result.delivered ? "success" : "error");
+client/src/BusinessSphereDashboard.jsx-37506-    } catch (error) { notify(error?.message || "The invitation could not be resent.", "error"); }
+client/src/BusinessSphereDashboard.jsx-37507-  }
+client/src/BusinessSphereDashboard.jsx-37508-
+client/src/BusinessSphereDashboard.jsx-37509-  async function revokeInvite(invitationId) {
+client/src/BusinessSphereDashboard.jsx:37510:    try { await revokeInvitation.mutateAsync({ invitationId }); await utils.teamInvitations.list.invalidate(); notify("Invitation revoked."); }
+client/src/BusinessSphereDashboard.jsx-37511-    catch (error) { notify(error?.message || "The invitation could not be revoked.", "error"); }
+client/src/BusinessSphereDashboard.jsx-37512-  }
+client/src/BusinessSphereDashboard.jsx-37513-
+client/src/BusinessSphereDashboard.jsx-37514-  const invitations = invitationQuery.data || [];
+client/src/BusinessSphereDashboard.jsx-37515-  const pending = invitations.filter((invitation) => invitation.status === "pending" || invitation.status === "delivery_failed");
+client/src/BusinessSphereDashboard.jsx-37516-
+client/src/BusinessSphereDashboard.jsx-37517-  return (
+client/src/BusinessSphereDashboard.jsx-37518-    <div className="space-y-4">
+client/src/BusinessSphereDashboard.jsx-37519-      <div className="flex items-center justify-between">
+client/src/BusinessSphereDashboard.jsx-37520-        <div className="flex gap-2 text-[12px] font-medium text-slate-500">
+client/src/BusinessSphereDashboard.jsx-37521-          <span className="bg-green-50 text-green-700 px-2.5 py-0.5 rounded-full font-semibold">1 signed-in member</span>
+client/src/BusinessSphereDashboard.jsx-37522-          <span className="bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">{pending.length} pending</span>
+client/src/BusinessSphereDashboard.jsx-37523-        </div>
+client/src/BusinessSphereDashboard.jsx-37524-        {canManage && <button onClick={()=>setShowInvite(v=>!v)} className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white px-4 py-2 rounded-xl bg-[#16A34A]"><UserPlus size={13}/>Invite Member</button>}
+client/src/BusinessSphereDashboard.jsx-37525-      </div>
+client/src/BusinessSphereDashboard.jsx-37526-
+client/src/BusinessSphereDashboard.jsx-37527-      <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-3"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#0B5D3B] text-[13px] font-bold text-white">{(currentUser?.name || "W").slice(0,1).toUpperCase()}</div><div><p className="text-[12.5px] font-semibold text-slate-800">{currentUser?.name || "Workspace user"}</p><p className="text-[11px] text-slate-500">{currentUser?.role || "Workspace member"}</p></div></div>
+client/src/BusinessSphereDashboard.jsx-37528-
+client/src/BusinessSphereDashboard.jsx-37529-      {showInvite && (
+client/src/BusinessSphereDashboard.jsx-37530-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+--
+client/src/BusinessSphereDashboard.jsx-50156-      )}
+client/src/BusinessSphereDashboard.jsx-50157-    </div>
+client/src/BusinessSphereDashboard.jsx-50158-  );
+client/src/BusinessSphereDashboard.jsx-50159-}
+client/src/BusinessSphereDashboard.jsx-50160-
+client/src/BusinessSphereDashboard.jsx-50161-
+client/src/BusinessSphereDashboard.jsx-50162-function EmployeePortal({ currentUser, company, employees, leaveRequests, canManage }) {
+client/src/BusinessSphereDashboard.jsx-50163-  if (IS_CONFIGURED && !DEMO_OVERRIDE) {
+client/src/BusinessSphereDashboard.jsx-50164-    return <EmployeePortalWorkspace
+client/src/BusinessSphereDashboard.jsx-50165-      currentUser={currentUser}
+client/src/BusinessSphereDashboard.jsx-50166-      configured={IS_CONFIGURED}
+client/src/BusinessSphereDashboard.jsx-50167-      rpc={(procedure, payload) => callRpc(procedure, payload, getStoredAccessToken() || "")}
+client/src/BusinessSphereDashboard.jsx-50168-    />;
+client/src/BusinessSphereDashboard.jsx-50169-  }
+client/src/BusinessSphereDashboard.jsx-50170-
+client/src/BusinessSphereDashboard.jsx-50171-  const co = company || {};
+client/src/BusinessSphereDashboard.jsx-50172-  const TODAY_STR = TODAY.toISOString().slice(0,10);
+client/src/BusinessSphereDashboard.jsx-50173-
+client/src/BusinessSphereDashboard.jsx-50174-  // ── Identity ──────────────────────────────────────────────────────────
+client/src/BusinessSphereDashboard.jsx-50175-  // Employee access is established by the authenticated workspace profile. The
+client/src/BusinessSphereDashboard.jsx:50176:  // secure invitation flow is handled by teamInvitations; no browser-only code
+client/src/BusinessSphereDashboard.jsx-50177-  // or local employee identity is accepted here.
+client/src/BusinessSphereDashboard.jsx-50178-  const [portalView, setPortalView] = useState("identify"); // identify | portal
+client/src/BusinessSphereDashboard.jsx-50179-  const [activeTab, setActiveTab] = useState("dashboard");
+client/src/BusinessSphereDashboard.jsx-50180-
+client/src/BusinessSphereDashboard.jsx-50181-  // Find self in employees list
+client/src/BusinessSphereDashboard.jsx-50182-  const self = useMemo(()=>
+client/src/BusinessSphereDashboard.jsx-50183-    employees.find(e=>e.name.toLowerCase()===currentUser.name.toLowerCase()) ||
+client/src/BusinessSphereDashboard.jsx-50184-    employees.find(e=>e.name.toLowerCase().includes(currentUser.name.split(" ")[0].toLowerCase()))
+client/src/BusinessSphereDashboard.jsx-50185-  , [employees, currentUser.name]);
+client/src/BusinessSphereDashboard.jsx-50186-
+client/src/BusinessSphereDashboard.jsx-50187-  // Auto-identify if we're an employee
+client/src/BusinessSphereDashboard.jsx-50188-  useEffect(()=>{
+client/src/BusinessSphereDashboard.jsx-50189-    if (self || canManage) setPortalView("portal");
+client/src/BusinessSphereDashboard.jsx-50190-  }, [self, canManage]);
+client/src/BusinessSphereDashboard.jsx-50191-
+client/src/BusinessSphereDashboard.jsx-50192-  // ── Attendance / Clock In/Out ─────────────────────────────────────────
+client/src/BusinessSphereDashboard.jsx-50193-  const attendance = useCompanyTable("hr_attendance", attendanceSeed, {
+client/src/BusinessSphereDashboard.jsx-50194-    order:{ col:"attendance_date", ascending:false }, mapRow:mapAttendanceRow,
+client/src/BusinessSphereDashboard.jsx-50195-  });
+client/src/BusinessSphereDashboard.jsx-50196-  const myAttendance = useMemo(()=>
+--
+client/src/BusinessSphereDashboard.jsx-50534-    {id:"training",     label:"Training",         icon:GraduationCap,    badge:0},
+client/src/BusinessSphereDashboard.jsx-50535-    {id:"team",         label:"Team",             icon:Users,            badge:0},
+client/src/BusinessSphereDashboard.jsx-50536-    {id:"noticeboard",  label:"Noticeboard",      icon:Bell,             badge:0},
+client/src/BusinessSphereDashboard.jsx-50537-    {id:"payslip",      label:"Payslip",          icon:Banknote,         badge:0},
+client/src/BusinessSphereDashboard.jsx-50538-    {id:"profile",      label:"Profile",          icon:UserCircle,       badge:0},
+client/src/BusinessSphereDashboard.jsx-50539-  ];
+client/src/BusinessSphereDashboard.jsx-50540-
+client/src/BusinessSphereDashboard.jsx-50541-  // ── Render: authenticated employee access notice ───────────────────────
+client/src/BusinessSphereDashboard.jsx-50542-  if (portalView === "identify") return (
+client/src/BusinessSphereDashboard.jsx-50543-    <div className="min-h-[600px] flex items-center justify-center">
+client/src/BusinessSphereDashboard.jsx-50544-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xl p-8 w-full max-w-md">
+client/src/BusinessSphereDashboard.jsx-50545-        <div className="text-center mb-6">
+client/src/BusinessSphereDashboard.jsx-50546-          <div className="w-16 h-16 rounded-2xl bg-[#0D2214] flex items-center justify-center mx-auto mb-4">
+client/src/BusinessSphereDashboard.jsx-50547-            <LogIn size={28} className="text-[#16A34A}"/>
+client/src/BusinessSphereDashboard.jsx-50548-          </div>
+client/src/BusinessSphereDashboard.jsx-50549-          <h2 className="text-[22px] font-black text-[#111827]">Employee Portal</h2>
+client/src/BusinessSphereDashboard.jsx-50550-          <p className="text-[13px] text-slate-500 mt-1">{co.name||"BusinessSphere"}</p>
+client/src/BusinessSphereDashboard.jsx-50551-        </div>
+client/src/BusinessSphereDashboard.jsx-50552-        <div className="space-y-3 text-center">
+client/src/BusinessSphereDashboard.jsx-50553-          <p className="text-[13px] leading-6 text-slate-600">Employee access is provisioned from a verified workspace profile after accepting a secure invitation email.</p>
+client/src/BusinessSphereDashboard.jsx:50554:          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-left text-[11.5px] leading-5 text-amber-800">Browser-only invite codes are not accepted because they cannot safely persist membership or authenticate the employee.</div>
+client/src/BusinessSphereDashboard.jsx-50555-          {canManage ? (
+client/src/BusinessSphereDashboard.jsx-50556-            <button type="button" onClick={()=>setPortalView("portal")} className="w-full text-[12px] font-semibold text-white py-3 rounded-xl bg-[#16A34A] hover:bg-[#15803D]">Open manager portal</button>
+client/src/BusinessSphereDashboard.jsx-50557-          ) : (
+client/src/BusinessSphereDashboard.jsx:50558:            <p className="text-[12px] text-slate-500">Ask your HR manager to send a secure invitation, then sign in with the invited email address.</p>
+client/src/BusinessSphereDashboard.jsx-50559-          )}
+client/src/BusinessSphereDashboard.jsx-50560-        </div>
+client/src/BusinessSphereDashboard.jsx-50561-        <div className="mt-5 p-3 bg-slate-50 rounded-xl text-center">
+client/src/BusinessSphereDashboard.jsx-50562-          <p className="text-[11.5px] text-slate-500">Managers can send invitations from</p>
+client/src/BusinessSphereDashboard.jsx:50563:          <p className="text-[11.5px] font-bold text-[#16A34A]">HR → Employees → Secure team invitation</p>
+client/src/BusinessSphereDashboard.jsx-50564-        </div>
+client/src/BusinessSphereDashboard.jsx-50565-      </div>
+client/src/BusinessSphereDashboard.jsx-50566-    </div>
+client/src/BusinessSphereDashboard.jsx-50567-  );
+client/src/BusinessSphereDashboard.jsx-50568-
+client/src/BusinessSphereDashboard.jsx-50569-  // ── Render: Employee Portal ───────────────────────────────────────────
+client/src/BusinessSphereDashboard.jsx-50570-  const empName = self?.name||currentUser.name;
+client/src/BusinessSphereDashboard.jsx-50571-  const greeting = new Date().getHours()<12?"Good morning":new Date().getHours()<17?"Good afternoon":"Good evening";
+client/src/BusinessSphereDashboard.jsx-50572-
+client/src/BusinessSphereDashboard.jsx-50573-  return (
+client/src/BusinessSphereDashboard.jsx-50574-    <div className="space-y-5">
+client/src/BusinessSphereDashboard.jsx-50575-      {/* Portal header */}
+client/src/BusinessSphereDashboard.jsx-50576-      <div className="rounded-2xl overflow-hidden relative" style={{background:"linear-gradient(135deg,#0D2214 0%,#1a3a2a 60%,#16A34A 120%)"}}>
+client/src/BusinessSphereDashboard.jsx-50577-        <div className="absolute inset-0 opacity-5" style={{backgroundImage:"repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 50%)",backgroundSize:"20px 20px"}}/>
+client/src/BusinessSphereDashboard.jsx-50578-        <div className="relative px-6 py-5 flex items-center justify-between gap-4 flex-wrap">
+client/src/BusinessSphereDashboard.jsx-50579-          <div>
+client/src/BusinessSphereDashboard.jsx-50580-            <p className="text-[rgba(255,255,255,.6)] text-[12px] mb-0.5">Employee Portal · {co.name||"BusinessSphere"}</p>
+client/src/BusinessSphereDashboard.jsx-50581-            <h1 className="text-white text-[22px] font-black">{greeting}, {empName.split(" ")[0]} 👋</h1>
+client/src/BusinessSphereDashboard.jsx-50582-            {self&&<p className="text-[rgba(255,255,255,.6)] text-[12px] mt-1">{self.role} · {self.department}</p>}
+client/src/BusinessSphereDashboard.jsx-50583-          </div>
+--
+client/src/BusinessSphereDashboard.jsx-51637-              </div>
+client/src/BusinessSphereDashboard.jsx-51638-            </div>
+client/src/BusinessSphereDashboard.jsx-51639-          </section>
+client/src/BusinessSphereDashboard.jsx-51640-        </div>
+client/src/BusinessSphereDashboard.jsx-51641-      )}
+client/src/BusinessSphereDashboard.jsx-51642-    </>
+client/src/BusinessSphereDashboard.jsx-51643-  );
+client/src/BusinessSphereDashboard.jsx-51644-}
+client/src/BusinessSphereDashboard.jsx-51645-
+client/src/BusinessSphereDashboard.jsx-51646-function SmartManager() {
+client/src/BusinessSphereDashboard.jsx-51647-  const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
+client/src/BusinessSphereDashboard.jsx-51648-  // Role-based access and session state initialized first to prevent temporal dead zones
+client/src/BusinessSphereDashboard.jsx-51649-  const [currentUser, setCurrentUser] = useState({ id: null, name: "EzyMP", role: "Super Administrator", customerRef: null });
+client/src/BusinessSphereDashboard.jsx-51650-  const currentRole = roleDefinitionFor(currentUser.role);
+client/src/BusinessSphereDashboard.jsx-51651-  const canManage = currentRole.writeAccess === "full";
+client/src/BusinessSphereDashboard.jsx-51652-
+client/src/BusinessSphereDashboard.jsx-51653-  const [authView, setAuthView] = useState(() => typeof window === "undefined" ? "login" : authScreenFromSearch(window.location.search));
+client/src/BusinessSphereDashboard.jsx-51654-  const [authContextEmail, setAuthContextEmail] = useState("");
+client/src/BusinessSphereDashboard.jsx-51655-  const [recoveryAccessToken, setRecoveryAccessToken] = useState(null);
+client/src/BusinessSphereDashboard.jsx-51656-  const invitationTokenRef = useRef(typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("invite") || "");
+client/src/BusinessSphereDashboard.jsx:51657:  const acceptInvitationMutation = trpc.teamInvitations.accept.useMutation();
+client/src/BusinessSphereDashboard.jsx-51658-  const [session, setSession] = useState(() => (IS_CONFIGURED ? null : { demo: true }));
+client/src/BusinessSphereDashboard.jsx-51659-  const tenantSettingsQuery = trpc.workspaceSettings.get.useQuery(undefined, { enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo), retry: false });
+client/src/BusinessSphereDashboard.jsx-51660-  const tenantIdleTimeoutMinutes = Math.min(120, Math.max(5, Number(tenantSettingsQuery.data?.profileData?.idleTimeoutMinutes) || 30));
+client/src/BusinessSphereDashboard.jsx-51661-  const [idleWarningOpen, setIdleWarningOpen] = useState(false);
+client/src/BusinessSphereDashboard.jsx-51662-  const [idleSecondsRemaining, setIdleSecondsRemaining] = useState(0);
+client/src/BusinessSphereDashboard.jsx-51663-  const lastActivityAtRef = useRef(Date.now());
+client/src/BusinessSphereDashboard.jsx-51664-  const IDLE_TIMEOUT_MS = tenantIdleTimeoutMinutes * 60 * 1000;
+client/src/BusinessSphereDashboard.jsx-51665-  const IDLE_WARNING_MS = Math.min(2 * 60 * 1000, Math.max(60 * 1000, Math.floor(IDLE_TIMEOUT_MS * 0.2)));
+client/src/BusinessSphereDashboard.jsx-51666-  // Always starts true now, in both modes — previously demo mode skipped
+client/src/BusinessSphereDashboard.jsx-51667-  // this state entirely, which meant the branded loading screen below
+client/src/BusinessSphereDashboard.jsx-51668-  // (and its real logo animation) would never actually be seen outside a
+client/src/BusinessSphereDashboard.jsx-51669-  // live Supabase connection, defeating the point of building it. Demo
+client/src/BusinessSphereDashboard.jsx-51670-  // mode still is not waiting on a real network call the way live mode is,
+client/src/BusinessSphereDashboard.jsx-51671-  // so it resolves after a short, honest fixed window representing actual
+client/src/BusinessSphereDashboard.jsx-51672-  // app initialization, not an artificial delay dressed up as one.
+client/src/BusinessSphereDashboard.jsx-51673-  const [authChecking, setAuthChecking] = useState(true);
+client/src/BusinessSphereDashboard.jsx-51674-  // A real, authenticated OAuth user (Google/Microsoft/Apple) who does not
+client/src/BusinessSphereDashboard.jsx-51675-  // have a company yet — genuinely different from "not logged in." Their
+client/src/BusinessSphereDashboard.jsx-51676-  // Supabase Auth session is real; they just haven't finished the company
+client/src/BusinessSphereDashboard.jsx-51677-  // setup step Login/Signup normally requires. Losing this state and
+--
+client/src/BusinessSphereDashboard.jsx-51742-          reportSessionRefreshOutcome("success", "launch_bootstrap");
+client/src/BusinessSphereDashboard.jsx-51743-          token = refreshed.access_token;
+client/src/BusinessSphereDashboard.jsx-51744-          user = await authGetUser(token);
+client/src/BusinessSphereDashboard.jsx-51745-        }
+client/src/BusinessSphereDashboard.jsx-51746-        authenticatedUser = user;
+client/src/BusinessSphereDashboard.jsx-51747-        const loadVerifiedWorkspaceProfile = async () => {
+client/src/BusinessSphereDashboard.jsx-51748-          const profileRows = await sb("profiles").select("*").eq("id", user.id).run();
+client/src/BusinessSphereDashboard.jsx-51749-          const profile = profileRows?.[0];
+client/src/BusinessSphereDashboard.jsx-51750-          if (!profile?.company_id) return profile;
+client/src/BusinessSphereDashboard.jsx-51751-          const companyRows = await sb("companies").select("*").eq("id", profile.company_id).run();
+client/src/BusinessSphereDashboard.jsx-51752-          const company = companyRows?.[0];
+client/src/BusinessSphereDashboard.jsx-51753-          if (!company?.id) {
+client/src/BusinessSphereDashboard.jsx-51754-            const error = new Error("The assigned workspace is not available to this verified account.");
+client/src/BusinessSphereDashboard.jsx-51755-            error.status = 403;
+client/src/BusinessSphereDashboard.jsx-51756-            throw error;
+client/src/BusinessSphereDashboard.jsx-51757-          }
+client/src/BusinessSphereDashboard.jsx-51758-          return { ...profile, companies: company };
+client/src/BusinessSphereDashboard.jsx-51759-        };
+client/src/BusinessSphereDashboard.jsx-51760-        let profile = await loadVerifiedWorkspaceProfile();
+client/src/BusinessSphereDashboard.jsx-51761-        if (invitationTokenRef.current && (!profile || !profile.company_id)) {
+client/src/BusinessSphereDashboard.jsx:51762:          await acceptInvitationMutation.mutateAsync({ token: invitationTokenRef.current });
+client/src/BusinessSphereDashboard.jsx-51763-          invitationTokenRef.current = "";
+client/src/BusinessSphereDashboard.jsx-51764-          const inviteUrl = new URL(window.location.href);
+client/src/BusinessSphereDashboard.jsx-51765-          inviteUrl.searchParams.delete("invite");
+client/src/BusinessSphereDashboard.jsx-51766-          window.history.replaceState(null, "", `${inviteUrl.pathname}${inviteUrl.search}`);
+client/src/BusinessSphereDashboard.jsx-51767-          profile = await loadVerifiedWorkspaceProfile();
+client/src/BusinessSphereDashboard.jsx-51768-        }
+client/src/BusinessSphereDashboard.jsx-51769-        // A pre-existing authenticated profile with no company can only be
+client/src/BusinessSphereDashboard.jsx-51770-        // auto-provisioned when this is the first tenant in the deployment.
+client/src/BusinessSphereDashboard.jsx-51771-        // Otherwise the user must use the explicit create/join organization
+client/src/BusinessSphereDashboard.jsx-51772-        // flow, preserving tenant boundaries and ownership intent.
+client/src/BusinessSphereDashboard.jsx-51773-        if (profile && !profile.company_id) {
+client/src/BusinessSphereDashboard.jsx-51774-          try {
+client/src/BusinessSphereDashboard.jsx-51775-            await callRpc("ensure_current_company", {}, token);
+client/src/BusinessSphereDashboard.jsx-51776-            profile = await loadVerifiedWorkspaceProfile();
+client/src/BusinessSphereDashboard.jsx-51777-          } catch (_bootstrapError) {
+client/src/BusinessSphereDashboard.jsx-51778-            // The normal explicit company setup / join flow below provides a
+client/src/BusinessSphereDashboard.jsx-51779-            // safe resolution whenever an existing tenant prevents bootstrap.
+client/src/BusinessSphereDashboard.jsx-51780-          }
+client/src/BusinessSphereDashboard.jsx-51781-        }
+client/src/BusinessSphereDashboard.jsx-51782-        if (!profile || !profile.company_id || !profile.companies?.id) {
+--
+server/dashboard.integration.test.ts-2-import { afterEach, describe, expect, it, vi } from "vitest";
+server/dashboard.integration.test.ts-3-import { buildDashboardChartSections, buildDashboardExportFilterSummary, canonicalRoleId, createDashboardPdfDocument, filterDashboardChartSections, GENERIC_COMPANY_TABLES, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, roleDefinitionFor, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+server/dashboard.integration.test.ts-4-import { setGuardedPersistenceCompanyId } from "../client/src/lib/guardedPersistenceClient";
+server/dashboard.integration.test.ts-5-
+server/dashboard.integration.test.ts-6-const jsonResponse = (body: unknown, status = 200) => ({
+server/dashboard.integration.test.ts-7-  ok: status >= 200 && status < 300,
+server/dashboard.integration.test.ts-8-  status,
+server/dashboard.integration.test.ts-9-  json: async () => body,
+server/dashboard.integration.test.ts-10-});
+server/dashboard.integration.test.ts-11-
+server/dashboard.integration.test.ts-12-afterEach(() => {
+server/dashboard.integration.test.ts-13-  setGuardedPersistenceCompanyId(null);
+server/dashboard.integration.test.ts-14-  vi.unstubAllGlobals();
+server/dashboard.integration.test.ts-15-  vi.restoreAllMocks();
+server/dashboard.integration.test.ts-16-});
+server/dashboard.integration.test.ts-17-
+server/dashboard.integration.test.ts-18-const appSource = readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8");
+server/dashboard.integration.test.ts-19-const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
+server/dashboard.integration.test.ts-20-const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+server/dashboard.integration.test.ts-21-const salesDetailSource = readFileSync(new URL("../client/src/components/SalesDetailWorkspace.jsx", import.meta.url), "utf8");
+server/dashboard.integration.test.ts:22:const invitationServiceSource = readFileSync(new URL("./teamInvitations.ts", import.meta.url), "utf8");
+server/dashboard.integration.test.ts-23-const publicAuthSource = readFileSync(new URL("../client/src/components/PublicAuthGateway.jsx", import.meta.url), "utf8");
+server/dashboard.integration.test.ts-24-const workspaceAuthMigrationSource = readFileSync(new URL("../supabase_workspace_auth_profile_upsert.sql", import.meta.url), "utf8");
+server/dashboard.integration.test.ts-25-const passwordAccountProvisioningSource = readFileSync(new URL("./passwordAccountProvisioning.ts", import.meta.url), "utf8");
+server/dashboard.integration.test.ts-26-const brandLogoSource = readFileSync(new URL("../client/src/components/BrandLogo.tsx", import.meta.url), "utf8");
+server/dashboard.integration.test.ts-27-const enterpriseAuthSource = readFileSync(new URL("../client/src/components/EnterpriseAuthViews.jsx", import.meta.url), "utf8");
+server/dashboard.integration.test.ts-28-const indexHtmlSource = readFileSync(new URL("../client/index.html", import.meta.url), "utf8");
+server/dashboard.integration.test.ts-29-
+server/dashboard.integration.test.ts-30-describe("BusinessSphere launch and live-data integration", () => {
+server/dashboard.integration.test.ts-31-  it("keeps the preserved dashboard behind the dedicated app route", () => {
+server/dashboard.integration.test.ts-32-    expect(appSource.replace(/\s+/g, ' ')).toContain('const BusinessSphereDashboard = lazy'.replace(/\s+/g, ' '));
+server/dashboard.integration.test.ts-33-    expect(appSource).toContain("<DashboardRouteFallback />");
+server/dashboard.integration.test.ts-34-    expect(appSource).toContain('aria-live="polite"');
+server/dashboard.integration.test.ts-35-    expect(homeSource.match(/href="\/app"/g)?.length).toBeGreaterThanOrEqual(3);
+server/dashboard.integration.test.ts-36-    expect(homeSource.includes("Launch App") || homeSource.includes("launchApp")).toBe(true);
+server/dashboard.integration.test.ts-37-  });
+server/dashboard.integration.test.ts-38-
+server/dashboard.integration.test.ts-39-  it("loads public auth through a smaller route bundle and retains the ERP shell for active sessions or signup", () => {
+server/dashboard.integration.test.ts-40-    expect(appSource).toContain("const PublicAuthGateway = lazy");
+server/dashboard.integration.test.ts-41-    expect(appSource).toContain("function isPublicAuthRequest()");
+server/dashboard.integration.test.ts-42-    expect(appSource).toContain('params.get("auth") !== "signup"');
+--
+server/dashboard.integration.test.ts-59-    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-logo-20260816_98336ac7.png"');
+server/dashboard.integration.test.ts-60-    expect(brandLogoSource).toContain('alt={decorative ? "" : label}');
+server/dashboard.integration.test.ts-61-    expect(brandLogoSource).toContain('width={1536} height={1024}');
+server/dashboard.integration.test.ts-62-    expect(brandLogoSource).toContain('variant?: "full" | "compact"');
+server/dashboard.integration.test.ts-63-    expect(homeSource).toContain('import { BrandLogo } from "../components/BrandLogo"');
+server/dashboard.integration.test.ts-64-    expect(homeSource).toContain('<BrandLogo variant="compact" priority');
+server/dashboard.integration.test.ts-65-    expect(enterpriseAuthSource).toContain('import { BrandLogo } from "./BrandLogo"');
+server/dashboard.integration.test.ts-66-    expect(enterpriseAuthSource).toContain('<BrandLogo variant="full" priority');
+server/dashboard.integration.test.ts-67-    expect(enterpriseAuthSource).toContain('sm-auth-mobile-brand');
+server/dashboard.integration.test.ts-68-    expect(enterpriseAuthSource).toContain('Simamia Biashara Yako. Popote, Wakati Wote.');
+server/dashboard.integration.test.ts-69-    expect(enterpriseAuthSource).toContain('rememberMe');
+server/dashboard.integration.test.ts-70-    expect(dashboardSource).toContain('import { BrandLogo } from "./components/BrandLogo"');
+server/dashboard.integration.test.ts-71-    expect(dashboardSource).toContain('function BrandMark({ size = 80 })');
+server/dashboard.integration.test.ts-72-    expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-9 w-9');
+server/dashboard.integration.test.ts-73-    expect(appSource).toContain('<BrandLogo variant="compact" priority');
+server/dashboard.integration.test.ts-74-    expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/manus-storage/smart-manager-official-logo-20260816_98336ac7.png"');
+server/dashboard.integration.test.ts-75-    expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');
+server/dashboard.integration.test.ts-76-  });
+server/dashboard.integration.test.ts-77-
+server/dashboard.integration.test.ts-78-  it("replaces local team seeds with server-backed invitations whose company and authorization come from the verified profile", () => {
+server/dashboard.integration.test.ts:79:    expect(dashboardSource).toContain("trpc.teamInvitations.list.useQuery");
+server/dashboard.integration.test.ts:80:    expect(dashboardSource).toContain("trpc.teamInvitations.create.useMutation");
+server/dashboard.integration.test.ts-81-    expect(dashboardSource).not.toContain("const TEAM_SEED");
+server/dashboard.integration.test.ts-82-    expect(invitationServiceSource).toContain("const { profile } = await resolveVerifiedProfile(req)");
+server/dashboard.integration.test.ts-83-    expect(invitationServiceSource).toContain("companyId: profile.company_id");
+server/dashboard.integration.test.ts-84-    expect(invitationServiceSource).toContain("hashInvitationToken(token)");
+server/dashboard.integration.test.ts-85-    expect(invitationServiceSource).toContain("Sign in with the email address that received this invitation");
+server/dashboard.integration.test.ts-86-    expect(invitationServiceSource).not.toContain("input.companyId");
+server/dashboard.integration.test.ts-87-  });
+server/dashboard.integration.test.ts-88-
+server/dashboard.integration.test.ts-89-  it("does not retain browser SMTP credentials or offer a false manual-email send state while delivery is disabled", () => {
+server/dashboard.integration.test.ts-90-    expect(dashboardSource).toContain("const emailDeliveryDisabled = true");
+server/dashboard.integration.test.ts-91-    expect(dashboardSource).toContain("Email delivery is disabled");
+server/dashboard.integration.test.ts-92-    expect(dashboardSource).toContain("Email delivery disabled");
+server/dashboard.integration.test.ts-93-    expect(dashboardSource).not.toContain('localStorage.getItem("smtp_cfg")');
+server/dashboard.integration.test.ts-94-    expect(dashboardSource).not.toContain('localStorage.setItem("smtp_cfg"');
+server/dashboard.integration.test.ts-95-    expect(dashboardSource).not.toContain("Email accepted by the delivery provider");
+server/dashboard.integration.test.ts-96-    expect(dashboardSource).not.toContain("Email opened in your mail client");
+server/dashboard.integration.test.ts-97-    expect(dashboardSource).toContain("Payment reminder is ready in Collaboration → Email for secure delivery.");
+server/dashboard.integration.test.ts-98-  });
+server/dashboard.integration.test.ts-99-
+server/dashboard.integration.test.ts-100-  it("uses managed browser-safe Supabase variables instead of a hardcoded project", () => {

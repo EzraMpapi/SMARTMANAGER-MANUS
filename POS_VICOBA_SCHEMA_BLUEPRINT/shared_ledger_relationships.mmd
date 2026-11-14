@@ -1,0 +1,30 @@
+flowchart LR
+  POS[POS sale / return / shift] --> PL[fin_posting_links]
+  COOP[VICOBA account / contribution / loan / dividend] --> PL
+  BANK[Existing Bank/MFI transaction] --> PL
+  AGENT[Money Agent transaction] --> PT[integration_provider_transactions]
+  PT --> PE[integration_provider_events]
+  PT --> PL
+  PL --> JB[fin_journal_batches]
+  JB --> JL[fin_journal_lines]
+  JL --> COA[fin_accounts]
+  JL --> MEMBER[Member or customer subledger reference]
+  JB --> AUDIT[Immutable audit_log / module audit]
+  BANK --> RB[fin_reconciliation_batches]
+  POS --> RB
+  COOP --> RB
+  RB --> RI[fin_reconciliation_items]
+  RI -->|matched| PL
+  RI -->|exception approval| EX[fin_approval_requests]
+  EX --> AUDIT
+  JB --> REPORT[Trial balance / statements / PAR / POS shift reports]
+  MEMBER --> REPORT
+
+  classDef source fill:#E8F5EE,stroke:#16A34A,color:#152033;
+  classDef control fill:#F5EFE2,stroke:#C9A96E,color:#152033;
+  classDef ledger fill:#E7EEF7,stroke:#496A8F,color:#152033;
+  classDef output fill:#F3E8FF,stroke:#8B5CF6,color:#152033;
+  class POS,COOP,BANK,AGENT source;
+  class PT,PE,RB,RI,EX,AUDIT control;
+  class PL,JB,JL,COA,MEMBER ledger;
+  class REPORT output;

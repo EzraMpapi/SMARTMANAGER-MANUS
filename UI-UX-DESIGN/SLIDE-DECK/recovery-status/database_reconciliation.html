@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background: #ffffff;
+            color: #1e293b;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .header {
+            background: #15233d;
+            color: white;
+            padding: 40px 60px;
+            display: flex;
+            align-items: center;
+            border-bottom: 6px solid #1b9e77;
+        }
+        .header h1 {
+            font-size: 42px;
+            font-weight: 700;
+        }
+        /* Reduced content padding to lower overall height */
+        .content {
+            flex: 1;
+            padding: 40px; /* reduced from 60px */
+            display: flex;
+            gap: 40px;
+        }
+        .left-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .right-col {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        /* Shrink inner paddings/margins to compact layout */
+        .summary-box {
+            background: #f8fafc;
+            border-left: 4px solid #1b9e77;
+            padding: 20px; /* reduced from 30px */
+            font-size: 22px;
+            line-height: 1.6;
+            color: #334155;
+            margin-bottom: 20px; /* reduced from 30px */
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th, .data-table td {
+            padding: 16px; /* reduced from 20px */
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 20px;
+        }
+        .data-table th {
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 16px;
+        }
+        .data-table td.value {
+            font-weight: 700;
+            color: #15233d;
+            text-align: right;
+        }
+        .highlight-row {
+            background: #f0fdf4;
+        }
+        .highlight-row td {
+            color: #166534;
+            border-bottom-color: #bbf7d0;
+        }
+        .icon-bullet {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px; /* reduced from 20px */
+            font-size: 20px;
+            color: #475569;
+            line-height: 1.5;
+        }
+        .icon-bullet i {
+            color: #1b9e77;
+            margin-top: 5px;
+            margin-right: 12px; /* slightly reduced */
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header">
+            <h1>Supabase Schema Reconciliation</h1>
+        </div>
+        <div class="content">
+            <div class="left-col">
+                <div class="summary-box">
+                    <strong>Production Verified:</strong> The live production catalog was audited against the current repository state. All declared schema objects are present.
+                </div>
+                <div class="icon-bullet">
+                    <i class="fas fa-check"></i>
+                    <div>Zero-based <code>pg_index</code> vector logic was used for accurate foreign key gap detection.</div>
+                </div>
+                <div class="icon-bullet">
+                    <i class="fas fa-shield-alt"></i>
+                    <div>No speculative Data Definition Language (DDL) commands were executed.</div>
+                </div>
+                <div class="icon-bullet">
+                    <i class="fas fa-file-code"></i>
+                    <div>A safe, reviewable automated optimization script was generated and committed instead.</div>
+                </div>
+            </div>
+            <div class="right-col">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th style="text-align: right;">Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Repository SQL Migration Files</td>
+                            <td class="value">66</td>
+                        </tr>
+                        <tr>
+                            <td>Live Public Tables</td>
+                            <td class="value">279</td>
+                        </tr>
+                        <tr class="highlight-row">
+                            <td><strong>Missing Declared Tables</strong></td>
+                            <td class="value"><strong>0</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Unindexed FK Advisor Findings</td>
+                            <td class="value">622</td>
+                        </tr>
+                        <tr>
+                            <td>Corrected Catalog FK Gaps</td>
+                            <td class="value">630</td>
+                        </tr>
+                        <tr class="highlight-row">
+                            <td><strong>Unapproved DDL Applied</strong></td>
+                            <td class="value"><strong>None</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

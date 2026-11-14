@@ -1,0 +1,122 @@
+{
+  "project_info": {
+    "title": "SMART MANAGER Enterprise Dashboard Redesign",
+    "created": 1787602198.39,
+    "last_updated": 1787602405.39,
+    "total_slides": 10
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "outcome",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "architecture",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "experience",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "overview",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "states",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "files",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "validation",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "safe_steps",
+      "state": "edited",
+      "pageNum": 9
+    },
+    {
+      "id": "decision",
+      "state": "edited",
+      "pageNum": 10
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "SMART MANAGER Enterprise Dashboard Redesign",
+      "summary": "Executive validation review: architecture, design changes, evidence, and safe remaining steps.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "outcome",
+      "title": "Redesign Outcome",
+      "summary": "What was changed in the protected workspace and what was deliberately preserved.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "architecture",
+      "title": "Secure Architecture Preserved",
+      "summary": "The preserved route, session, RBAC, subscription, offline, and company-data boundaries.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "experience",
+      "title": "One Workspace, Responsive by Design",
+      "summary": "The desktop sidebar, mobile overlay, utility top bar, and executive overview information architecture.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "overview",
+      "title": "Confirmed Data, Clear Actions",
+      "summary": "How the executive overview derives metrics, trends, signals, and actions from existing hooks and callbacks.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "states",
+      "title": "Truthful States and Role Safety",
+      "summary": "Loading, partial error, empty, offline, and role-specific protections preserved in the redesign.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "files",
+      "title": "File-Level Change Review",
+      "summary": "Dashboard-scoped changed and added files, with no code removed before usage is proven.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "validation",
+      "title": "Validation Evidence",
+      "summary": "Focused tests, TypeScript, diff hygiene, and the specific visual-validation boundary.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "safe_steps",
+      "title": "Safe Path to Visual Sign-Off",
+      "summary": "The exact non-production sequence required to validate the protected dashboard without touching production data.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "decision",
+      "title": "Decision and Next Gate",
+      "summary": "What is ready now and what requires an approved authenticated or isolated session.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

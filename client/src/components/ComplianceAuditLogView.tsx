@@ -105,26 +105,26 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Backup Status Banner */}
-      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-5 flex items-center justify-between shadow-lg">
+      <div className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-5 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/20 text-emerald-400">
+          <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500/20 text-amber-300">
             <Database size={20} />
           </div>
           <div>
             <h4 className="text-[15px] font-bold text-white flex items-center gap-2">
               Supabase Managed Backup & PITR Status
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300">
-                {backupLoading ? "Checking..." : backupStatus?.status === "healthy" ? "Healthy & Active" : "Operational"}
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${backupLoading ? "bg-slate-500/20 text-slate-300" : backupStatus?.status === "database_reachable" ? "bg-amber-500/20 text-amber-300" : "bg-red-500/20 text-red-300"}`}>
+                {backupLoading ? "Checking..." : backupStatus?.status === "database_reachable" ? "Database reachable; backup unverified" : "Backup status unavailable"}
               </span>
             </h4>
             <p className="text-[12px] text-slate-400">
-              Provider: {backupStatus?.provider || "Supabase PostgreSQL"} • Daily automated snapshots & Point-in-Time Recovery enabled.
+              Provider: {backupStatus?.provider || "Supabase PostgreSQL"} • {backupStatus?.message || "Managed backup and Point-in-Time Recovery settings require verification in the Supabase project dashboard."}
             </p>
           </div>
         </div>
         <button
           onClick={() => refetchBackup()}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600/20 border border-emerald-500/30 px-3 py-2 text-[12px] font-semibold text-emerald-300 hover:bg-emerald-600/30 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600/20 border border-amber-500/30 px-3 py-2 text-[12px] font-semibold text-amber-300 hover:bg-amber-600/30 transition-colors"
         >
           <RefreshCw size={13} /> Verify Backup Health
         </button>

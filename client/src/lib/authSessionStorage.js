@@ -3,6 +3,15 @@ const REFRESH_TOKEN_STORAGE_KEY = "bs_refresh_token";
 const SESSION_ACCESS_TOKEN_STORAGE_KEY = "bs_session_access_token";
 const SESSION_REFRESH_TOKEN_STORAGE_KEY = "bs_session_refresh_token";
 
+// Supabase access tokens are JWTs. Rejecting malformed persisted values here
+// prevents them from being sent as Bearer credentials and avoids the opaque
+// "Expected 3 parts in JWT" failure from the auth provider.
+export function isJwtAccessToken(value) {
+  if (typeof value !== "string" || !value.trim()) return false;
+  const parts = value.trim().split(".");
+  return parts.length === 3 && parts.every((part) => part.length > 0);
+}
+
 /** Stores only a confirmed Supabase session; callers must complete an approved auth ceremony first. */
 export function persistAuthSession(result, remember = true) {
   if (!result?.access_token) return;
@@ -16,4 +25,28 @@ export function persistAuthSession(result, remember = true) {
   inactiveStorage.removeItem(inactiveRefreshKey);
   activeStorage.setItem(activeAccessKey, result.access_token);
   if (result.refresh_token) activeStorage.setItem(activeRefreshKey, result.refresh_token);
+}
+
+export function readStoredAccessToken() {
+  if (typeof window === "undefined") return null;
+  const token = window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) || window.sessionStorage.getItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+  if (!token || isJwtAccessToken(token)) return token;
+  window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  window.sessionStorage.removeItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+  return null;
+}
+
+export function readStoredAuthSession() {
+  if (typeof window === "undefined") return null;
+  const accessToken = readStoredAccessToken();
+  const refreshToken = window.localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY) || window.sessionStorage.getItem(SESSION_REFRESH_TOKEN_STORAGE_KEY);
+  return accessToken && refreshToken ? { access_token: accessToken, refresh_token: refreshToken } : null;
+}
+
+export function clearStoredAuthSession() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+  window.sessionStorage.removeItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+  window.sessionStorage.removeItem(SESSION_REFRESH_TOKEN_STORAGE_KEY);
 }

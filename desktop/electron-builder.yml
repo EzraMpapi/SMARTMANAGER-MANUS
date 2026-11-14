@@ -1,0 +1,24 @@
+appId: tz.smartmanager.desktop
+productName: Smart Manager
+artifactName: Smart-Manager-Setup-${version}.${ext}
+directories:
+  output: release/desktop
+files:
+  - desktop/**
+  - smart-manager-logo.png
+  - package.json
+  - "!node_modules/**"
+extraMetadata:
+  main: desktop/main.mjs
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: smart-manager-logo.png
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Smart Manager

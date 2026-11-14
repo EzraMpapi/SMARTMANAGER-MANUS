@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { ENV } from "./_core/env";
-import { resolveVerifiedProfile } from "./aiApprovals";
+import { canonicalVerifiedRole, resolveVerifiedProfile } from "./aiApprovals";
 import { storagePut } from "./storage";
 import { decodeLogoBase64, isRecognizedLogo, normalizeBrandColor, normalizeOrganizationIndustryFocus } from "./workspaceBranding";
 
@@ -57,7 +57,8 @@ function normalizeIdleTimeoutMinutes(value: unknown) {
 }
 
 function requireSettingsManager(role: string) {
-  if (!MANAGE_SETTINGS_ROLES.has(role)) {
+  const canonicalRole = canonicalVerifiedRole(role);
+  if (!MANAGE_SETTINGS_ROLES.has(canonicalRole)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Only an organization administrator can change company settings." });
   }
 }

@@ -40,15 +40,15 @@ describe("Dashboard report schedules and Supabase-authenticated flow", () => {
 
   it("bridges a validated Supabase bearer token into protected tRPC context", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: "supabase-user-1", email: "test@example.com", user_metadata: { full_name: "Test User" }, app_metadata: { provider: "email" } }) }));
-    const context = await createContext({ req: { headers: { authorization: "Bearer mock-supabase-access-token" } } as any, res: {} as any });
+    const context = await createContext({ req: { headers: { authorization: "Bearer mock.header.signature" } } as any, res: {} as any });
     expect(context.user?.loginMethod).toBe("email");
     expect(context.user?.openId).toBe("sup_supabase-user-1");
   });
 
   it("enforces the requested company through Supabase RLS before schedule persistence", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [{ id: "company-1" }] }));
-    await expect(assertSupabaseCompanyAccess("company-1", "mock-supabase-access-token")).resolves.toBe(true);
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/rest/v1/companies?"), expect.objectContaining({ headers: expect.objectContaining({ authorization: "Bearer mock-supabase-access-token" }) }));
+    await expect(assertSupabaseCompanyAccess("company-1", "mock.header.signature")).resolves.toBe(true);
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/rest/v1/companies?"), expect.objectContaining({ headers: expect.objectContaining({ authorization: "Bearer mock.header.signature" }) }));
   });
 
   it("exercises schedule create, list, pause/resume, sendNow, and delete through the protected router", async () => {
@@ -58,9 +58,9 @@ describe("Dashboard report schedules and Supabase-authenticated flow", () => {
     vi.mocked(updateReportSchedule).mockResolvedValue({ ...schedule, isActive: false } as any);
     vi.mocked(sendReportScheduleNow).mockResolvedValue({ ok: true, scheduleId: 17, format: "pdf" } as any);
     const caller = appRouter.createCaller({
-      req: { headers: { authorization: "Bearer mock-supabase-access-token" } } as any,
+      req: { headers: { authorization: "Bearer mock.header.signature" } } as any,
       res: {} as any,
-      user: { id: 1, openId: "sup_mock-supabase-access-token", name: "Test User", email: "test@example.com", role: "admin", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() } as any,
+      user: { id: 1, openId: "sup_supabase-user-1", name: "Test User", email: "test@example.com", role: "admin", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() } as any,
     });
     const input = {
       companyId: "company-1",
@@ -83,9 +83,9 @@ describe("Dashboard report schedules and Supabase-authenticated flow", () => {
     expect(toggled).toMatchObject({ isActive: false });
     expect(sentNow).toMatchObject({ ok: true, scheduleId: 17 });
     expect(removed).toEqual({ success: true });
-    expect(createReportSchedule).toHaveBeenCalledWith(expect.objectContaining({ openId: "sup_mock-supabase-access-token" }), "mock-supabase-access-token", input);
-    expect(updateReportSchedule).toHaveBeenCalledWith("sup_mock-supabase-access-token", "mock-supabase-access-token", 17, { isActive: false });
-    expect(sendReportScheduleNow).toHaveBeenCalledWith("sup_mock-supabase-access-token", 17);
-    expect(deleteReportSchedule).toHaveBeenCalledWith("sup_mock-supabase-access-token", "mock-supabase-access-token", 17);
+    expect(createReportSchedule).toHaveBeenCalledWith(expect.objectContaining({ openId: "sup_supabase-user-1" }), "mock.header.signature", input);
+    expect(updateReportSchedule).toHaveBeenCalledWith("sup_supabase-user-1", "mock.header.signature", 17, { isActive: false });
+    expect(sendReportScheduleNow).toHaveBeenCalledWith("sup_supabase-user-1", 17);
+    expect(deleteReportSchedule).toHaveBeenCalledWith("sup_supabase-user-1", "mock.header.signature", 17);
   });
 });

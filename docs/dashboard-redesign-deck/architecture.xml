@@ -1,0 +1,39 @@
+<slide id="architecture">
+  <background color="paper"/>
+  <text id="architecture-breadcrumb" x="64" y="44" width="420" height="20" font="caption" size="12" color="muted" wrap="false">02  /  PRESERVED ARCHITECTURE</text>
+  <text id="architecture-title" x="64" y="76" width="980" height="52" font="heading" size="34" color="ink" wrap="false">The new overview sits inside the existing protected path</text>
+  <text id="architecture-intro" x="64" y="132" width="1030" height="32" font="body" size="18" color="muted">The redesign changes workspace composition only; access, authorization, data retrieval, and confirmation remain controlled by established application layers.</text>
+  <shape id="route-node" type="rect" x="64" y="250" width="172" height="162" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="route-rule" type="rect" x="64" y="250" width="172" height="4" fill="accent"/>
+  <icon id="route-icon" name="route" x="90" y="280" width="28" height="28" color="brand"/>
+  <text id="route-title" x="86" y="322" width="126" height="28" font="body" size="18" color="ink" align="center" wrap="false">Protected /app</text>
+  <text id="route-body" x="80" y="360" width="140" height="34" font="caption" size="14" color="muted" align="center">Existing route selection</text>
+  <shape id="route-arrow" type="line" x="236" y="331" width="74" height="0" stroke="accent" stroke-width="3" arrow-end="arrow"/>
+  <shape id="session-node" type="rect" x="310" y="250" width="172" height="162" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="session-rule" type="rect" x="310" y="250" width="172" height="4" fill="accent"/>
+  <icon id="session-icon" name="lock" x="336" y="280" width="28" height="28" color="brand"/>
+  <text id="session-title" x="326" y="322" width="140" height="28" font="body" size="18" color="ink" align="center" wrap="false">Session & auth</text>
+  <text id="session-body" x="324" y="360" width="144" height="34" font="caption" size="14" color="muted" align="center">Existing persistence and recovery</text>
+  <shape id="session-arrow" type="line" x="482" y="331" width="74" height="0" stroke="accent" stroke-width="3" arrow-end="arrow"/>
+  <shape id="shell-node" type="rect" x="556" y="250" width="172" height="162" fill="brand" stroke="brand" stroke-width="1"/>
+  <shape id="shell-rule" type="rect" x="556" y="250" width="172" height="4" fill="accent"/>
+  <icon id="shell-icon" name="layout-dashboard" x="582" y="280" width="28" height="28" color="accent"/>
+  <text id="shell-title" x="568" y="322" width="148" height="28" font="body" size="18" color="#FFFFFF" align="center" wrap="false">Workspace shell</text>
+  <text id="shell-body" x="570" y="360" width="144" height="34" font="caption" size="14" color="#D9E6DF" align="center">Redesigned presentation layer</text>
+  <shape id="shell-arrow" type="line" x="728" y="331" width="74" height="0" stroke="accent" stroke-width="3" arrow-end="arrow"/>
+  <shape id="hooks-node" type="rect" x="802" y="250" width="172" height="162" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="hooks-rule" type="rect" x="802" y="250" width="172" height="4" fill="accent"/>
+  <icon id="hooks-icon" name="database" x="828" y="280" width="28" height="28" color="brand"/>
+  <text id="hooks-title" x="814" y="322" width="148" height="28" font="body" size="18" color="ink" align="center" wrap="false">Company hooks</text>
+  <text id="hooks-body" x="814" y="360" width="148" height="34" font="caption" size="14" color="muted" align="center">Invoices, expenses, CRM, stock</text>
+  <shape id="hooks-arrow" type="line" x="974" y="331" width="74" height="0" stroke="accent" stroke-width="3" arrow-end="arrow"/>
+  <shape id="data-node" type="rect" x="1048" y="250" width="168" height="162" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="data-rule" type="rect" x="1048" y="250" width="168" height="4" fill="accent"/>
+  <icon id="data-icon" name="shield-check" x="1074" y="280" width="28" height="28" color="brand"/>
+  <text id="data-title" x="1060" y="322" width="144" height="28" font="body" size="18" color="ink" align="center" wrap="false">Confirmed data</text>
+  <text id="data-body" x="1062" y="360" width="140" height="34" font="caption" size="14" color="muted" align="center">Supabase, APIs, and guards</text>
+  <shape id="architecture-callout" type="rect" x="64" y="514" width="1152" height="92" fill="#FFFFFF" stroke="hairline" stroke-width="1"/>
+  <shape id="architecture-callout-rule" type="rect" x="64" y="514" width="8" height="92" fill="accent"/>
+  <text id="architecture-callout-text" x="96" y="536" width="1080" height="48" font="body" size="20" color="ink" anchor="middle">No new API, schema, route, or duplicate fetch path was introduced. Existing role, subscription, company-scope, and offline controls continue to decide what can be shown or written.</text>
+  <text id="architecture-page" x="1158" y="657" width="58" height="28" font="caption" size="14" color="muted" align="right" wrap="false">03</text>
+</slide>

@@ -1,0 +1,42 @@
+flowchart TB
+  W03[03 Sales to receipt] --> S[POS sale headers / lines / tenders]
+  W06[06 POS transaction] --> SHIFT[POS shift sessions / cash movements]
+  W13[13 Restaurant order] --> S
+  W08[08 Payment reconciliation] --> REC[Reconciliation batches / items]
+  W16[16 Money Agent] --> PROV[Provider transactions / events]
+  W07[07 Loan lifecycle] --> APP[Coop loan applications]
+  W17[17 VICOBA transaction] --> MEM[Coop members / memberships]
+  W17 --> ACCT[Coop accounts / products]
+  W17 --> GOV[Meetings / resolutions / approvals]
+  APP --> GUAR[Guarantors / collateral]
+  APP --> LOAN[Coop loans / schedules / repayments]
+  MEM --> SHARES[Share classes / holdings]
+  MEM --> CONT[Contribution plans / contributions / welfare]
+  SHIFT --> CASH[POS or cooperative cash sessions]
+  S --> JOURNAL[Journal batch / journal lines]
+  LOAN --> JOURNAL
+  ACCT --> JOURNAL
+  SHARES --> JOURNAL
+  CONT --> JOURNAL
+  CASH --> JOURNAL
+  PROV --> JOURNAL
+  REC --> JOURNAL
+  JOURNAL --> AUDIT[Immutable audit + posting links]
+  JOURNAL --> RPT[Statements / trial balance / PAR / reconciliation reports]
+  W18[18 Reports and settings] --> CFG[Versioned configuration / report runs]
+  CFG --> RPT
+  W01[01 Login and onboarding] --> TENANT[Verified profile / company / RLS]
+  TENANT --> S
+  TENANT --> MEM
+  TENANT --> JOURNAL
+
+  classDef workflow fill:#063B2A,stroke:#16A34A,color:#FFFFFF;
+  classDef source fill:#E8F5EE,stroke:#16A34A,color:#152033;
+  classDef control fill:#F5EFE2,stroke:#C9A96E,color:#152033;
+  classDef ledger fill:#E7EEF7,stroke:#496A8F,color:#152033;
+  classDef output fill:#F3E8FF,stroke:#8B5CF6,color:#152033;
+  class W01,W03,W06,W07,W08,W13,W16,W17,W18 workflow;
+  class S,SHIFT,PROV,APP,MEM,ACCT,GOV,GUAR,LOAN,SHARES,CONT,CASH,REC,CFG source;
+  class TENANT,AUDIT control;
+  class JOURNAL ledger;
+  class RPT output;

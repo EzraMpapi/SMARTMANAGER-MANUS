@@ -1,0 +1,100 @@
+{
+  "project_info": {
+    "title": "Webhook Remediation & Dead-Letter Drainage",
+    "created": 1787672483.959,
+    "last_updated": 1787672687.451,
+    "total_slides": 8
+  },
+  "slides": [
+    {
+      "id": "title_status",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "why_remediation",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "control_plane",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "locking_leases",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "classification",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "two_person_auth",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "drain_procedure",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "status_next_gates",
+      "state": "edited",
+      "pageNum": 8
+    }
+  ],
+  "outline": [
+    {
+      "id": "title_status",
+      "title": "Webhook Remediation & Dead-Letter Drainage",
+      "summary": "Introduce the automated remediation design and clearly state what is applied versus what remains disabled.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "why_remediation",
+      "title": "Why Remediation Exists",
+      "summary": "Explain provider retries, quarantine floods, identity conflicts, and the exactly-once financial safety objective.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "control_plane",
+      "title": "Control-Plane Architecture",
+      "summary": "Show the verified callback-to-evidence-to-classification-to-service-settlement flow and its trust boundaries.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "locking_leases",
+      "title": "Advisory Locking & Bounded Leases",
+      "summary": "Explain provider-account serialization and bounded FOR UPDATE SKIP LOCKED leasing for safe concurrent workers.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "classification",
+      "title": "Classification & Dead-Letter Handling",
+      "summary": "Separate safe retry/reconcile paths from quarantined, conflicted, uncorrelated, and already-settled events.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "two_person_auth",
+      "title": "Two-Person Production Authorization",
+      "summary": "Detail requester, independent approver, three distinct tokens, scope binding, expiry, and one-use consumption.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "drain_procedure",
+      "title": "Drain Procedure & Circuit Breakers",
+      "summary": "Present the staged dry-run, requeue-only, test-tenant, and production workflow with hard stop conditions.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "status_next_gates",
+      "title": "Deployment Status & Next Gates",
+      "summary": "Summarize applied migrations and validation evidence, then state the remaining provider and production gates.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

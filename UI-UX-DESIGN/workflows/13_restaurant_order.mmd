@@ -1,0 +1,19 @@
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#E8F5EE","primaryTextColor":"#152033","primaryBorderColor":"#16A34A","lineColor":"#718096","secondaryColor":"#F5EFE2","tertiaryColor":"#F7FAF8","fontFamily":"DejaVu Sans"}}}%%
+flowchart LR
+  S0([Open table])
+  S1[Take order]
+  S2[Validate menu and stock]
+  S3[Send to kitchen]
+  S4[Serve and bill]
+  S5((Success: closed table + stock))
+  S0 --> S1
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  classDef entry fill:#063B2A,color:#FFFFFF,stroke:#16A34A,stroke-width:2px;
+  classDef step fill:#FFFFFF,color:#152033,stroke:#CBD5E1,stroke-width:1px;
+  classDef result fill:#F5EFE2,color:#152033,stroke:#C9A96E,stroke-width:2px;
+  class S0 entry;
+  class S5 result;
+  %% Owner: Restaurant / POS / Inventory

@@ -1,0 +1,30 @@
+<slide id="pos">
+  <background color="bg-content"/>
+  <shape id="gold-rule" type="line" x="60" y="64" width="150" height="0" stroke="accent" stroke-width="3"/>
+  <text id="slide-title" x="60" y="92" width="800" height="44" font="heading" size="34" color="brand" wrap="false">Sura 08: POS inalinda utaratibu wa kaunta</text>
+  <text id="slide-subtitle" x="60" y="145" width="930" height="46" font="body" size="20" color="muted">Vocabulary ya POS hufundishwa kwa utaratibu bila kuonyesha checkout au payment ya live.</text>
+  <text id="flow-label" x="60" y="238" width="600" height="22" font="caption" size="14" color="muted" wrap="false">MCHORO WA DHANA YA POS</text>
+  <shape id="register-node" type="rect" x="60" y="285" width="150" height="150" fill="surface" stroke="border" stroke-width="1"/>
+  <icon id="register-icon" name="wallet" x="113" y="305" width="42" height="42" color="brand"/>
+  <text id="register-text" x="76" y="365" width="118" height="40" font="body" size="18" color="brand" align="center"><p>Rejista ya</p><p>mauzo</p></text>
+  <shape id="arrow-register-item" type="arrow" x="225" y="340" width="48" height="34" fill="accent" head-ratio="0.32"/>
+  <shape id="item-node" type="rect" x="288" y="285" width="150" height="150" fill="surface" stroke="border" stroke-width="1"/>
+  <icon id="item-icon" name="package" x="341" y="305" width="42" height="42" color="brand"/>
+  <text id="item-text" x="304" y="365" width="118" height="40" font="body" size="18" color="brand" align="center"><p>Bidhaa au</p><p>huduma</p></text>
+  <shape id="arrow-item-check" type="arrow" x="453" y="340" width="48" height="34" fill="accent" head-ratio="0.32"/>
+  <shape id="check-node" type="rect" x="516" y="285" width="150" height="150" fill="surface" stroke="border" stroke-width="1"/>
+  <icon id="check-icon" name="shield-check" x="569" y="305" width="42" height="42" color="brand"/>
+  <text id="check-text" x="532" y="365" width="118" height="40" font="body" size="18" color="brand" align="center"><p>Uthibitishaji</p></text>
+  <shape id="arrow-check-record" type="arrow" x="681" y="340" width="48" height="34" fill="accent" head-ratio="0.32"/>
+  <shape id="record-node" type="rect" x="744" y="285" width="92" height="150" fill="brand"/>
+  <icon id="record-icon" name="file-text" x="769" y="305" width="42" height="42" color="accent"/>
+  <text id="record-text" x="752" y="365" width="76" height="40" font="body" size="14" color="ink-light" align="center"><p>Njia ya</p><p>rekodi</p></text>
+  <shape id="pos-gate" type="rect" x="875" y="220" width="305" height="350" fill="#FFF8E8" stroke="accent" stroke-width="2"/>
+  <icon id="pos-gate-icon" name="lock" x="1004" y="245" width="46" height="46" color="accent"/>
+  <text id="pos-gate-title" x="900" y="315" width="255" height="50" font="body" size="23" color="brand" align="center"><p>POS UI</p><p>bado haijapitishwa</p></text>
+  <text id="pos-gate-body" x="910" y="400" width="235" height="120" font="body" size="18" color="ink-dark" align="center" line-height="1.32"><p>Hakuna checkout, payment, receipt, cash drawer, tax au item data.</p></text>
+  <text id="pos-gate-caption" x="910" y="532" width="235" height="20" font="caption" size="13" color="muted" align="center">Inahitaji safe capture na review.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="border" stroke-width="1"/>
+  <text id="footer-title" x="60" y="675" width="520" height="18" font="caption" color="muted" wrap="false">SMART MANAGER ERP • Sura 07–09 Commercial Foundation</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="18" font="caption" color="muted" align="right" wrap="false">05</text>
+</slide>

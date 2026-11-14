@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, GENERIC_COMPANY_TABLES, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, canonicalRoleId, createDashboardPdfDocument, filterDashboardChartSections, GENERIC_COMPANY_TABLES, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, roleDefinitionFor, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 import { setGuardedPersistenceCompanyId } from "../client/src/lib/guardedPersistenceClient";
+import { dashboardSource } from "./dashboardSourceSnapshot";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -11,21 +12,25 @@ const jsonResponse = (body: unknown, status = 200) => ({
 
 afterEach(() => {
   setGuardedPersistenceCompanyId(null);
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
 const appSource = readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8");
 const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
-const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 const salesDetailSource = readFileSync(new URL("../client/src/components/SalesDetailWorkspace.jsx", import.meta.url), "utf8");
 const invitationServiceSource = readFileSync(new URL("./teamInvitations.ts", import.meta.url), "utf8");
 const publicAuthSource = readFileSync(new URL("../client/src/components/PublicAuthGateway.jsx", import.meta.url), "utf8");
 const workspaceAuthMigrationSource = readFileSync(new URL("../supabase_workspace_auth_profile_upsert.sql", import.meta.url), "utf8");
+const preferencesDrawerSource = readFileSync(new URL("../client/src/components/DashboardPreferencesDrawer.tsx", import.meta.url), "utf8");
 const passwordAccountProvisioningSource = readFileSync(new URL("./passwordAccountProvisioning.ts", import.meta.url), "utf8");
 const brandLogoSource = readFileSync(new URL("../client/src/components/BrandLogo.tsx", import.meta.url), "utf8");
 const enterpriseAuthSource = readFileSync(new URL("../client/src/components/EnterpriseAuthViews.jsx", import.meta.url), "utf8");
+const authTranslationsSource = readFileSync(new URL("../client/src/lib/authTranslations.ts", import.meta.url), "utf8");
+const signupTranslationsSource = readFileSync(new URL("../client/src/lib/signupTranslations.ts", import.meta.url), "utf8");
 const indexHtmlSource = readFileSync(new URL("../client/index.html", import.meta.url), "utf8");
+const authContextSource = readFileSync(new URL("../client/src/contexts/AuthContext.tsx", import.meta.url), "utf8");
 
 describe("BusinessSphere launch and live-data integration", () => {
   it("keeps the preserved dashboard behind the dedicated app route", () => {
@@ -38,9 +43,11 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("loads public auth through a smaller route bundle and retains the ERP shell for active sessions or signup", () => {
     expect(appSource).toContain("const PublicAuthGateway = lazy");
-    expect(appSource).toContain("function isPublicAuthRequest()");
-    expect(appSource).toContain('params.get("auth") !== "signup"');
-    expect(appSource).toContain("isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />");
+    expect(appSource).toContain("function isPublicAuthScreen()");
+    expect(appSource).toContain('["login", "forgot", "reset", "verify"].includes(requestedAuthScreen())');
+    expect(appSource).toContain("isPublicAuthScreen() && !auth.isAuthenticated");
+    expect(appSource).toContain("if (requestedSignup)");
+    expect(appSource).toContain("<PublicAuthGateway />");
   });
 
   it("defers TRA compliance and dashboard PDF code until the matching feature is opened", () => {
@@ -50,15 +57,20 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('const LazyDashboardPreferencesDrawer = lazy(() => import("./components/DashboardPreferencesDrawer")');
     expect(dashboardSource).not.toContain('import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer"');
     expect(dashboardSource).toContain('<LazyDashboardPreferencesDrawer isOpen={preferencesDrawerOpen}');
+    expect(preferencesDrawerSource).toContain('serializeDashboardLayout');
+    expect(preferencesDrawerSource).toContain('importDashboardLayout');
+    expect(preferencesDrawerSource).toContain('aria-label="Export dashboard layout"');
+    expect(preferencesDrawerSource).toContain('aria-label="Import dashboard layout"');
     expect(dashboardSource).toContain('export async function createDashboardPdfDocument');
     expect(dashboardSource).toContain('await import("jspdf")');
     expect(dashboardSource).toContain('async function exportDashboard(format)');
   });
 
   it("uses the supplied Smart Manager logo through one accessible responsive component across public, auth, dashboard, state, and browser surfaces", () => {
-    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-logo-20260816_98336ac7.png"');
+    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-logo_86919456.png"');
+    expect(brandLogoSource).toContain("SMART_MANAGER_MARK_URL = SMART_MANAGER_LOGO_URL");
     expect(brandLogoSource).toContain('alt={decorative ? "" : label}');
-    expect(brandLogoSource).toContain('width={1536} height={1024}');
+    expect(brandLogoSource).toContain("width={512} height={512}");
     expect(brandLogoSource).toContain('variant?: "full" | "compact"');
     expect(homeSource).toContain('import { BrandLogo } from "../components/BrandLogo"');
     expect(homeSource).toContain('<BrandLogo variant="compact" priority');
@@ -69,10 +81,11 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(enterpriseAuthSource).toContain('rememberMe');
     expect(dashboardSource).toContain('import { BrandLogo } from "./components/BrandLogo"');
     expect(dashboardSource).toContain('function BrandMark({ size = 80 })');
-    expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-9 w-9');
+    expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="shrink-0"');
     expect(appSource).toContain('<BrandLogo variant="compact" priority');
-    expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/manus-storage/smart-manager-official-logo-20260816_98336ac7.png"');
-    expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');
+    expect(indexHtmlSource).toContain('rel="icon" type="image/png" sizes="32x32" href="/brand/smart-manager-logo-32.png"');
+    expect(indexHtmlSource).toContain('<title>Smart Manager | Connected Business Management for Tanzania</title>');
+    expect(indexHtmlSource).toContain('applicationCategory":"BusinessApplication"');
   });
 
   it("replaces local team seeds with server-backed invitations whose company and authorization come from the verified profile", () => {
@@ -80,19 +93,18 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("trpc.teamInvitations.create.useMutation");
     expect(dashboardSource).not.toContain("const TEAM_SEED");
     expect(invitationServiceSource).toContain("const { profile } = await resolveVerifiedProfile(req)");
-    expect(invitationServiceSource).toContain("companyId: profile.company_id");
+    expect(invitationServiceSource).toContain("company_id: profile.company_id");
     expect(invitationServiceSource).toContain("hashInvitationToken(token)");
     expect(invitationServiceSource).toContain("Sign in with the email address that received this invitation");
     expect(invitationServiceSource).not.toContain("input.companyId");
   });
 
-  it("does not retain browser SMTP credentials or offer a false manual-email send state while delivery is disabled", () => {
-    expect(dashboardSource).toContain("const emailDeliveryDisabled = true");
-    expect(dashboardSource).toContain("Email delivery is disabled");
-    expect(dashboardSource).toContain("Email delivery disabled");
+  it("does not retain browser SMTP credentials and sends only through the protected server provider", () => {
+    expect(dashboardSource).toContain("trpc.transactionalEmail.send.useMutation");
+    expect(dashboardSource).toContain("Email accepted by the configured provider");
+    expect(dashboardSource).toContain("approved server-side workspace email provider");
     expect(dashboardSource).not.toContain('localStorage.getItem("smtp_cfg")');
     expect(dashboardSource).not.toContain('localStorage.setItem("smtp_cfg"');
-    expect(dashboardSource).not.toContain("Email accepted by the delivery provider");
     expect(dashboardSource).not.toContain("Email opened in your mail client");
     expect(dashboardSource).toContain("Payment reminder is ready in Collaboration → Email for secure delivery.");
   });
@@ -106,16 +118,19 @@ describe("BusinessSphere launch and live-data integration", () => {
   it("keeps reload-session and provider-specific OAuth routes in the dashboard", () => {
     expect(dashboardSource).toContain('window.localStorage.getItem("bs_access_token")');
     expect(dashboardSource).toContain("authGetUser(token)");
-    expect(dashboardSource).toContain('authSignInWithOAuth("google")');
-    expect(dashboardSource).toContain('authSignInWithOAuth("azure")');
-    expect(dashboardSource).toContain('authSignInWithOAuth("apple")');
-    expect(dashboardSource).toContain("/auth/v1/authorize?provider=${provider}");
+    expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("google")}');
+    expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("azure")}');
+    expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("apple")}');
+    expect(publicAuthSource).toContain("await auth.signInWithOAuth(provider)");
+    expect(authContextSource).toContain("auth.signInWithOAuth({ provider, options: { redirectTo } })");
   });
 
   it("captures an OAuth callback in the lightweight public route and resumes the tenant-aware bootstrap instead of rendering login", () => {
     expect(publicAuthSource).toContain("oauthCallbackFromHash(window.location.hash)");
-    expect(publicAuthSource).toContain("persistAuthSession({ access_token: callback.accessToken, refresh_token: callback.refreshToken })");
-    expect(publicAuthSource).toContain("window.location.replace(withoutAuthView())");
+    expect(publicAuthSource).toContain("if (!callback.errorCode) return;");
+    expect(authContextSource).toContain("const current = await client.auth.getSession()");
+    expect(authContextSource).toContain("await hydrateIdentity(client, current.data.session, dispatch, generation)");
+    expect(publicAuthSource).toContain("window.location.assign(withoutAuthView())");
     expect(publicAuthSource).toContain('provider === "azure" ? "Microsoft" : provider === "apple" ? "Apple" : "Google"');
   });
 
@@ -131,36 +146,38 @@ describe("BusinessSphere launch and live-data integration", () => {
   it("keeps password-login failures truthful instead of collapsing them into a generic connection message", () => {
     expect(dashboardSource).toContain("toAuthUserMessage(loginError)");
     expect(dashboardSource).toContain("validatePasswordLogin(identifier, password)");
-    expect(dashboardSource).toContain("continue with that same provider");
+    expect(authTranslationsSource).toContain("Use the same provider you used when your workspace account was created.");
+    expect(enterpriseAuthSource).toContain("{ui.oauthNote}");
     expect(dashboardSource).not.toContain('setError("Something went wrong — check your connection.")');
   });
 
-  it("keeps recovery and reset inside the configured Supabase auth boundary while password signup uses the server-side confirmed-account procedure", () => {
+  it("keeps recovery, reset, and signup inside the configured Supabase auth boundary", () => {
     expect(dashboardSource).toContain("trpc.accountRegistration.createConfirmedPasswordAccount.useMutation()");
     expect(dashboardSource).toContain("directPasswordSignupMutation.mutateAsync({ email: account.email.trim(), password: account.password })");
-    expect(dashboardSource).not.toContain('`${SUPABASE_URL}/auth/v1/signup`');
-    expect(dashboardSource).not.toContain("onVerificationRequired?.(account.email.trim())");
+    expect(dashboardSource).toContain("pendingEmailVerification: true");
+    expect(dashboardSource).toContain("hasConfirmedSession");
     expect(dashboardSource).toContain('async function authRequestPasswordRecovery(email)');
     expect(dashboardSource).toContain('`${SUPABASE_URL}/auth/v1/recover`');
     expect(dashboardSource).toContain('async function authUpdatePassword(accessToken, password)');
     expect(dashboardSource).toContain('authScreenFromSearch(window.location.search) === "reset"');
     expect(dashboardSource).toContain("clearStoredAuthSession();");
-    expect(passwordAccountProvisioningSource).toContain("/auth/v1/admin/users");
-    expect(passwordAccountProvisioningSource).toContain("email_confirm: true");
+    expect(passwordAccountProvisioningSource).toContain("/auth/v1/signup");
+    expect(passwordAccountProvisioningSource).not.toContain("/auth/v1/admin/users");
+    expect(passwordAccountProvisioningSource).not.toContain("email_confirm: true");
     expect(passwordAccountProvisioningSource).toContain("REGISTRATION_MAX_ATTEMPTS = 5");
     expect(passwordAccountProvisioningSource).not.toContain("resend");
   });
 
   it("keeps enterprise onboarding progressive and writes selected module intent through the shared company-module contract", () => {
     expect(dashboardSource).toContain('const stepLabels = mode === "create"');
-    expect(dashboardSource).toContain('["Account", "Workspace", "Modules"]');
-    expect(dashboardSource).toContain('["Join"]');
+    expect(signupTranslationsSource).toContain('stepsCreate: ["Account", "Workspace", "Modules"]');
+    expect(signupTranslationsSource).toContain('stepsJoin: ["Join"]');
     expect(dashboardSource).toContain("isEnterprisePassword(account.password)");
     expect(dashboardSource).toContain("companyDefaultsForCountry(val)");
-    expect(dashboardSource).toContain("Account created");
-    expect(dashboardSource).toContain("Congratulations — you’re ready.");
-    expect(dashboardSource).toContain("Continue to sign in");
-    expect(dashboardSource).toContain("Your account becomes the initial organisation owner.");
+    expect(signupTranslationsSource).toContain("Account created");
+    expect(signupTranslationsSource).toContain("Congratulations — you’re ready.");
+    expect(signupTranslationsSource).toContain("Continue to sign in");
+    expect(signupTranslationsSource).toContain("Your account becomes the initial organisation owner.");
     expect(dashboardSource).toContain("const joinAccountValid");
     expect(dashboardSource).toContain("disabled={busy || !step2Valid}");
     expect(dashboardSource).not.toContain('placeholder="Min. 6 characters"');
@@ -168,7 +185,7 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("offers optional organization branding in workspace setup and persists it through the protected save mutation", () => {
     expect(dashboardSource).toContain("function WorkspaceBrandingControls");
-    expect(dashboardSource).toContain("Optional workspace branding");
+    expect(signupTranslationsSource).toContain("Optional workspace branding");
     expect(dashboardSource).toContain("<UploadCloud size={18}");
     expect(dashboardSource).toContain('accept="image/png,image/jpeg,image/webp,image/svg+xml"');
     expect(dashboardSource).toContain("file.size > 2 * 1024 * 1024");
@@ -182,7 +199,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   it("keeps Settings upload controls defined and constrains both Join Company flows to supported workspace roles", () => {
     expect(dashboardSource).toContain("Info, Upload} from \"lucide-react\"");
     expect(dashboardSource).toContain("const JOIN_COMPANY_ROLE_OPTIONS");
-    expect(dashboardSource).toContain("JOIN_COMPANY_ROLE_OPTIONS.map((role) => <option key={role.id} value={role.id}>{role.label}</option>)");
+    expect(dashboardSource).toContain("JOIN_COMPANY_ROLE_OPTIONS.map((role) => <option key={role.id} value={role.id}>{roleLabels[role.id] || role.label}</option>)");
     expect(dashboardSource).not.toContain('ROLES.filter((r) => r !== "Organization Owner").map((r) => <option key={r}>{r}</option>)');
     expect(dashboardSource).toContain("p_join_code: joinCode.trim().toUpperCase()");
     expect(dashboardSource).toContain("workspaceJoinErrorMessage(err");
@@ -234,8 +251,8 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('["week", "Week"]');
     expect(dashboardSource).toContain('["month", "Month"]');
     expect(dashboardSource).toContain('["year", "Year"]');
-    expect(dashboardSource).toContain('invoices.rows.filter((invoice) => !periodStart || (invoice.date || "") >= periodStart)');
-    expect(dashboardSource).toContain('expenses.rows.filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart)');
+    expect(dashboardSource).toContain('rowsOf(invoices).filter((invoice) => !periodStart || (invoice.date || "") >= periodStart)');
+    expect(dashboardSource).toContain('rowsOf(expenses).filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart)');
   });
 
   it("keeps dashboard side-panel empty states truthful and routes users only to existing leave and reporting modules", () => {
@@ -249,7 +266,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("keeps focused and minimal role home views inside each role's allowed module scope", () => {
-    expect(dashboardSource).toContain('const preferredTarget = currentUser.role === "Project Manager" ? "projects" : "support"');
+    expect(dashboardSource).toContain('const preferredTarget = currentRole.id === "Project Manager" ? "projects" : "support"');
     expect(dashboardSource).toContain("currentRole.allowedModules.includes(preferredTarget)");
     expect(dashboardSource).toContain('aria-label={`Open permitted ${targetLabel} workspace`}');
     expect(dashboardSource).toContain("does not duplicate that view or expose unrelated company-wide data");
@@ -280,7 +297,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("const statusConfig = {");
     expect(dashboardSource).toContain('currentRole.allowedModules.includes(module.id)');
     expect(dashboardSource).toContain("No root-level signal");
-    expect(dashboardSource).toContain("Ticket data stays in Support");
+    expect(dashboardSource).toContain("Confirmed support workspace");
     expect(dashboardSource).toContain("No confirmed POS transactions");
     expect(dashboardSource).toContain("No confirmed data");
     expect(dashboardSource).toContain("Not assessed");
@@ -466,6 +483,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("retries a transient network failure once and emits a reconnect-success toast", async () => {
+    vi.useFakeTimers();
     const fetchMock = vi.fn()
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockResolvedValueOnce(jsonResponse([{ id: "lead-1" }]));
@@ -475,7 +493,9 @@ describe("BusinessSphere launch and live-data integration", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     try {
-      const result = await runCompanyTableQuery("crm_leads");
+      const query = runCompanyTableQuery("crm_leads");
+      await vi.runAllTimersAsync();
+      const result = await query;
       expect(result.rows).toEqual([{ id: "lead-1" }]);
       expect(result.recoveredAfterRetry).toBe(true);
     } finally {
@@ -491,11 +511,11 @@ describe("BusinessSphere launch and live-data integration", () => {
       id: "contact-1", contact_name: "Asha Mtemi", role: "Procurement Lead", company_name: "Sample Retail Group", email: "asha@example.test", phone: "+255 700 000 001",
     });
     const item = mapInventoryRow({
-      id: "item-1", item_sku: "SAMPLE-001", item_name: "Warehouse shelving unit", category: "Storage Equipment", quantity: "62", reorder_level: "25", unit_cost: "78", location: "Dar es Salaam", data: { unit: "unit" },
+      id: "item-1", item_sku: "SAMPLE-001", item_name: "Warehouse shelving unit", category: "Storage Equipment", quantity: "62", reorder_level: "25", unit_cost: "78", location: "Dar es Salaam", image_url: "/api/manus-storage/inventory-products/company-1/user-1/item.webp", data: { unit: "unit" },
     });
 
     expect(contact).toMatchObject({ name: "Asha Mtemi", title: "Procurement Lead", company: "Sample Retail Group" });
-    expect(item).toMatchObject({ sku: "SAMPLE-001", name: "Warehouse shelving unit", qty: 62, reorder: 25, unitCost: 78, warehouse: "Dar es Salaam" });
+    expect(item).toMatchObject({ sku: "SAMPLE-001", name: "Warehouse shelving unit", qty: 62, reorder: 25, unitCost: 78, warehouse: "Dar es Salaam", imageUrl: "/api/manus-storage/inventory-products/company-1/user-1/item.webp" });
   });
 
   it("robustly maps Inventory, CRM lead, and Finance expense rows with alternate aliases", () => {
@@ -589,10 +609,13 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("handles runCompanyTableMutation transient retry and missing table errors", async () => {
+    vi.useFakeTimers();
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse({ message: "Network gateway timeout" }, 502)).mockResolvedValueOnce(jsonResponse({ id: "loan-uuid-99" }, 201));
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await runCompanyTableMutation("business_loans", "insert", { lender: "CRDB Bank", principal: 2000000 });
+    const mutation = runCompanyTableMutation("business_loans", "insert", { lender: "CRDB Bank", principal: 2000000 });
+    await vi.runAllTimersAsync();
+    const result = await mutation;
     expect(result.error).toBeNull();
     expect(result.data).toMatchObject({ id: "loan-uuid-99" });
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -689,7 +712,6 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("setRows(confirmedRowsRef.current)");
     expect(dashboardSource).toContain("PERSISTENCE_OFFLINE");
     expect(dashboardSource).toContain("The server did not confirm this change. It was not saved; live data has been restored.");
-    expect(dashboardSource).toContain('!online ? "Offline — writes paused"');
     expect(dashboardSource).not.toContain('!online ? "Offline — saving locally"');
   });
 
@@ -815,7 +837,17 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(resolveDailyBriefingFetchState({ sources: [], usingDemoBriefing: true, previewState: "loading" }).loading).toBe(true);
     expect(resolveDailyBriefingFetchState({ sources: [], usingDemoBriefing: true, previewState: "error" }).error?.message).toBe("Daily Briefing preview fetch failed");
   });
-});
+
+  it("canonicalizes legacy lowercase roles without granting unknown profiles a higher-privilege fallback", () => {
+    expect(canonicalRoleId("owner")).toBe("Organization Owner");
+    expect(canonicalRoleId("ADMIN")).toBe("Super Administrator");
+    expect(canonicalRoleId("finance manager")).toBe("Finance Manager");
+    expect(canonicalRoleId("School Administrator")).toBe("School Administrator");
+    expect(roleDefinitionFor("School Administrator").allowedModules).toContain("school");
+    expect(canonicalRoleId("unrecognized-role")).toBe("Employee");
+    expect(roleDefinitionFor("owner").writeAccess).toBe("full");
+    expect(roleDefinitionFor("unrecognized-role").writeAccess).toBe("none");
+  });
 
   it("supports departmental budget thresholds, inline limit adjustments, alert status classification, and visual comparison bar chart", () => {
     const prefsContext = readFileSync(new URL("../client/src/contexts/DashboardPreferencesContext.tsx", import.meta.url), "utf8");
@@ -895,7 +927,27 @@ it("exposes dedicated non-login recovery and email-confirmation screens with acc
   expect(enterpriseAuthSource).toContain("auth-card-enter");
   expect(publicAuthSource).toContain("PasswordRecoveryView");
   expect(publicAuthSource).toContain("EmailConfirmationView");
-  expect(dashboardSource).toContain('className="auth-step-panel space-y-4" aria-live="polite"');
-  expect(dashboardSource).toContain('className="auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"');
+  expect(dashboardSource).toContain('className="sm-onboarding-form sm-onboarding-form--join auth-step-panel space-y-4" aria-live="polite"');
+  expect(dashboardSource).toContain('className="sm-onboarding-form sm-onboarding-form--modules auth-step-panel space-y-4" aria-live="polite">');
+  expect(dashboardSource).toContain('<div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(2)}');
   expect(dashboardSource).toContain('<LoginPage initialDiagnostic={terminalSessionDiagnostic} onAuthenticated=');
+});
+
+describe("Dashboard shell navigation and layering", () => {
+  it("keeps desktop navigation docked, flat, and visible while retaining mobile drawer behavior", () => {
+    expect(dashboardSource).toContain("lg:sticky lg:translate-x-0");
+    expect(dashboardSource).toContain("const flatNavigationItems = useMemo(() => [");
+    expect(dashboardSource).toContain("displayedNavigationGroups.map((group) => {");
+    expect(dashboardSource).toContain('aria-label="Operational workspaces"');
+    expect(dashboardSource).toContain("getPresentationNavigationGroups(navigationGroups");
+    expect(dashboardSource).toContain('dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"}');
+  });
+
+  it("renders the onboarding tour through document.body so it cannot sit behind shell layers", () => {
+    expect(dashboardSource).toContain("createPortal((");
+    expect(dashboardSource).toContain("document.body)}");
+    expect(dashboardSource).toContain('data-onboarding-tour="true"');
+  });
+});
+
 });

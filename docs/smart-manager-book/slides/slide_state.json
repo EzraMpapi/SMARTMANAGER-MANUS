@@ -1,0 +1,100 @@
+{
+  "project_info": {
+    "title": "SMART MANAGER ERP",
+    "created": 1787518641.499,
+    "last_updated": 1787519028.543,
+    "total_slides": 8
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "customer_value",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "three_languages",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "operating_model",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "module_ecosystem",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "subscription",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "tier_boundaries",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "closing",
+      "state": "edited",
+      "pageNum": 8
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "SMART MANAGER ERP",
+      "summary": "Trilingual customer-value and subscription pitch for the official enterprise manual.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "customer_value",
+      "title": "One workspace. More control.",
+      "summary": "The five core customer value propositions: connection, visibility, accountability, measurable growth, and safer payment operations.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "three_languages",
+      "title": "One promise, three languages",
+      "summary": "English, Kiswahili, and French messaging for the same product promise and audience.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "operating_model",
+      "title": "From business action to management insight",
+      "summary": "The verified operating model from public entry and onboarding through company scope, protected action, evidence, and reporting.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "module_ecosystem",
+      "title": "A modular operating system for growth",
+      "summary": "Core ERP, industry workspaces, and control-plane capabilities drawn from the verified module inventory.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "subscription",
+      "title": "Start free. Grow with a clear monthly contract.",
+      "summary": "FREE_15 plus six monthly packages with approved TZS pricing and one bonus calendar month.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "tier_boundaries",
+      "title": "Sell the value. State the boundaries.",
+      "summary": "How to explain implemented, partial, UI-only, configuration-required, external-service, and planned surfaces honestly.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "closing",
+      "title": "Your business. Connected. Controlled. Intelligent.",
+      "summary": "Closing call to action: start with the verified core, activate FREE_15, and expand with evidence-led adoption.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

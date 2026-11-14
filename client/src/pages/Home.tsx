@@ -9,6 +9,7 @@ import {
   Headphones,
   HeartPulse,
   Layers3,
+  MessageSquarePlus,
   ShieldCheck,
   Sparkles,
   UsersRound,
@@ -17,22 +18,51 @@ import {
   Moon,
   Globe,
   Fingerprint,
+  Building2,
+  GraduationCap,
+  Pill,
+  Stethoscope,
+  Landmark,
+  PlayCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { AnimatedGoldMesh } from "../components/AnimatedGoldMesh";
 import { BrandLogo } from "../components/BrandLogo";
+// @ts-expect-error The feedback modal intentionally remains JavaScript alongside the TypeScript page.
+import { UserFeedbackModal } from "../components/UserFeedbackModal";
 import { passkeySignInUserMessage, signInWithAccountPasskey } from "../lib/accountPasskeys";
 import { persistAuthSession } from "../lib/authSessionStorage";
 
 const capabilities = [
-  { title: "CRM & Sales", description: "Connect customer records, quotations, invoices, and commercial activity in one operating flow.", icon: UsersRound, tone: "bg-[#C9A96E]/10 text-[#C9A96E]" },
-  { title: "Inventory", description: "Keep stock, valuation, purchasing signals, and fulfillment close to the work that depends on them.", icon: Boxes, tone: "bg-[#16A34A]/10 text-[#16A34A]" },
-  { title: "Finance", description: "Bring receivables, expenses, cash flow, budgets, and reporting into operational context.", icon: WalletCards, tone: "bg-[#C9A96E]/10 text-[#C9A96E]" },
-  { title: "People & HR", description: "Coordinate employee records, attendance, leave, and performance from the same workspace.", icon: HeartPulse, tone: "bg-[#16A34A]/10 text-[#16A34A]" },
-  { title: "Manufacturing", description: "Link work orders, materials, and production steps with the business data around them.", icon: Factory, tone: "bg-[#C9A96E]/10 text-[#C9A96E]" },
-  { title: "Support & Operations", description: "Give teams practical workflows for service, documents, and business controls.", icon: Headphones, tone: "bg-[#16A34A]/10 text-[#16A34A]" },
+  { title: "CRM & Sales", description: "Connect customer records, quotations, invoices, and commercial activity in one operating flow.", icon: UsersRound, tone: "sm-public-icon-tile sm-public-icon-tile--gold bg-[#C9A96E]/10 text-[#C9A96E]" },
+  { title: "Inventory", description: "Keep stock, valuation, purchasing signals, and fulfillment close to the work that depends on them.", icon: Boxes, tone: "sm-public-icon-tile sm-public-icon-tile--emerald bg-[#16A34A]/10 text-[#16A34A]" },
+  { title: "Finance", description: "Bring receivables, expenses, cash flow, budgets, and reporting into operational context.", icon: WalletCards, tone: "sm-public-icon-tile sm-public-icon-tile--gold bg-[#C9A96E]/10 text-[#C9A96E]" },
+  { title: "People & HR", description: "Coordinate employee records, attendance, leave, and performance from the same workspace.", icon: HeartPulse, tone: "sm-public-icon-tile sm-public-icon-tile--emerald bg-[#16A34A]/10 text-[#16A34A]" },
+  { title: "Manufacturing", description: "Link work orders, materials, and production steps with the business data around them.", icon: Factory, tone: "sm-public-icon-tile sm-public-icon-tile--gold bg-[#C9A96E]/10 text-[#C9A96E]" },
+  { title: "Support & Operations", description: "Give teams practical workflows for service, documents, and business controls.", icon: Headphones, tone: "sm-public-icon-tile sm-public-icon-tile--emerald bg-[#16A34A]/10 text-[#16A34A]" },
+];
+
+const useCases = [
+  { title: "Growing businesses", description: "Keep sales, invoices, expenses, inventory, and teams in one operating rhythm.", icon: Building2 },
+  { title: "Pharmacies", description: "Coordinate medicines, batches, expiry visibility, purchasing, dispensing, and sales.", icon: Pill },
+  { title: "Schools", description: "Bring admissions, attendance, fees, academic operations, and parent workflows together.", icon: GraduationCap },
+  { title: "Clinics", description: "Organize appointments, patient records, vitals, billing, and care-team workflows.", icon: Stethoscope },
+  { title: "Microfinance teams", description: "Track borrowers, collections, repayment schedules, savings, and portfolio signals.", icon: Landmark },
+];
+
+const workflowSteps = [
+  ["01", "Capture the opportunity", "Manage a customer, quotation, or sales order with a clear owner and line items."],
+  ["02", "Convert to an invoice", "Turn an accepted quotation or sales order into a traceable invoice without retyping the work."],
+  ["03", "Record and follow payment", "Track paid, partial, unpaid, and overdue balances from the same workspace."],
+  ["04", "See what needs attention", "Use connected dashboards and date-specific reports to act before small issues become expensive."],
+];
+
+const pricingPlans = [
+  { name: "Starter", audience: "For solo operators and small teams", emphasis: "Start with the essentials", features: ["Sales and invoicing", "Expenses and cash visibility", "Secure workspace access"] },
+  { name: "Growth", audience: "For teams ready to operate in one system", emphasis: "Build the connected business", features: ["Everything in Starter", "Inventory and people workflows", "Executive dashboards and reports"] },
+  { name: "Industry", audience: "For pharmacies, schools, clinics, and microfinance", emphasis: "Configure the workflows you depend on", features: ["Specialized industry module", "Role-aware team operations", "Guided setup and onboarding"] },
 ];
 
 const PUBLIC_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
@@ -40,9 +70,10 @@ const PUBLIC_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
-  const { lang, setLang, t } = useLanguage();
+  const { lang, setLang, t, languageOptions } = useLanguage();
   const [passkeyPending, setPasskeyPending] = useState(false);
   const [passkeyError, setPasskeyError] = useState("");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   async function signInWithPublicPasskey() {
     if (!PUBLIC_SUPABASE_URL || !PUBLIC_SUPABASE_ANON_KEY) {
@@ -63,42 +94,48 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0B1120] text-[#F8FAFC]">
+    <div className="sm-public-landing min-h-screen overflow-x-hidden bg-[var(--sm-canvas)] text-[var(--sm-ink)]">
       {/* Navigation */}
-      <header className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10">
+      <header className="sm-public-header relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10">
         <Link href="/" className="flex items-center" aria-label="Smart Manager home"><BrandLogo variant="compact" priority className="h-12 w-12 shadow-lg sm:h-14 sm:w-14" /></Link>
         <div className="flex items-center gap-4">
-          <nav className="hidden items-center gap-8 text-[13px] font-medium text-[#94A3B8] md:flex" aria-label="Main navigation">
+          <nav className="sm-public-nav hidden items-center gap-8 text-[13px] font-medium text-[#94A3B8] md:flex" aria-label="Main navigation">
             <a href="#capabilities" className="transition-colors hover:text-[#C9A96E]">{t("capabilities")}</a>
+            <a href="#workflow" className="transition-colors hover:text-[#C9A96E]">How it works</a>
+            <a href="#industries" className="transition-colors hover:text-[#C9A96E]">Industries</a>
+            <a href="#pricing" className="transition-colors hover:text-[#C9A96E]">Plans</a>
             <a href="#why-smart-manager" className="transition-colors hover:text-[#C9A96E]">{t("whyUs")}</a>
             <a href="#launch" className="transition-colors hover:text-[#C9A96E]">{t("launch")}</a>
+            <button type="button" onClick={() => setFeedbackOpen(true)} className="transition-colors hover:text-[#C9A96E]">Feedback</button>
           </nav>
           
-          <div className="flex items-center gap-2 border-l border-white/10 pl-4">
+          <div className="sm-public-control-group flex items-center gap-2 border-l border-white/10 pl-4">
             <button
               type="button"
               onClick={toggleTheme}
-              className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10"
+              className="sm-public-icon-button grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10"
               title="Toggle theme"
             >
               {theme === "dark" ? <Sun size={15} className="text-[#C9A96E]" /> : <Moon size={15} className="text-[#C9A96E]" />}
             </button>
-            <button
-              type="button"
-              onClick={() => setLang(lang === "en" ? "sw" : "en")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-white/10"
-              title="Switch language"
+            <label
+              className="sm-public-language-control sm-language-control inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-white/10"
+              title={t("switchLanguage")}
             >
               <Globe size={14} className="text-[#16A34A]" />
-              <span>{lang.toUpperCase()}</span>
-            </button>
+              <span className="sm-language-code" aria-hidden="true">{lang.toUpperCase()}</span>
+              <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value as typeof lang)} className="sm-language-select max-w-[92px] appearance-none bg-transparent outline-none">{languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}</select>
+            </label>
           </div>
 
           <div className="flex items-center gap-2">
-            <button type="button" onClick={signInWithPublicPasskey} disabled={passkeyPending} aria-describedby={passkeyError ? "public-passkey-status" : undefined} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#16A34A]/35 bg-[#16A34A]/10 px-3 text-[12px] font-bold text-[#D1FAE5] transition-all hover:bg-[#16A34A]/20 active:scale-[0.97] disabled:cursor-wait disabled:opacity-70" aria-label="Sign in with a passkey">
+            <button type="button" onClick={() => setFeedbackOpen(true)} className="sm-public-secondary-action inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-[12px] font-bold text-white transition-all hover:bg-white/10 active:scale-[0.97]" aria-label="Open feedback form">
+              <MessageSquarePlus size={15} /><span className="hidden lg:inline">Feedback</span>
+            </button>
+            <button type="button" onClick={signInWithPublicPasskey} disabled={passkeyPending} aria-describedby={passkeyError ? "public-passkey-status" : undefined} className="sm-public-passkey-action inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#16A34A]/35 bg-[#16A34A]/10 px-3 text-[12px] font-bold text-[#D1FAE5] transition-all hover:bg-[#16A34A]/20 active:scale-[0.97] disabled:cursor-wait disabled:opacity-70" aria-label="Sign in with a passkey">
               <Fingerprint size={15} /><span className="hidden sm:inline">{passkeyPending ? "Opening…" : "Passkey"}</span>
             </button>
-            <Link href="/app" className="inline-flex items-center gap-2 rounded-lg bg-[#C9A96E] px-5 py-2.5 text-[13px] font-bold text-[#0B1120] shadow-lg transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
+            <Link href="/app" className="sm-public-primary-action inline-flex items-center gap-2 rounded-lg bg-[#C9A96E] px-5 py-2.5 text-[13px] font-bold text-[#0B1120] shadow-lg transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
               {t("launchApp")} <ArrowRight size={14} />
             </Link>
           </div>
@@ -116,41 +153,41 @@ export default function Home() {
           <div className="mx-auto grid max-w-7xl gap-16 px-5 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-10">
             <div className="max-w-2xl">
               <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-[#C9A96E]/20 bg-[#C9A96E]/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.15em] text-[#C9A96E] shadow-sm">
-                <Sparkles size={13} /> Bidhaa ya Kitanzania kwa Wafanyabiashara
+                <Sparkles size={13} /> {t("heroBadge")}
               </div>
               <h1 className="max-w-xl text-5xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl font-heading">
-                Run the work. <span className="text-[#C9A96E]">See the whole business.</span>
+                {t("heroTitle1")} <span className="text-[#C9A96E]">{t("heroTitle2")}</span>
               </h1>
               <p className="mt-8 max-w-xl text-[18px] leading-8 text-[#94A3B8] sm:text-[19px]">
-                Simamia Biashara Yako. Popote, Wakati Wote. Smart Manager brings commercial, financial, and operational workflows together in one noble command center.
+                {t("heroSubtitle")}
               </p>
               <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-                <Link href="/app" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A96E] px-7 py-4 text-[14px] font-bold text-[#0B1120] shadow-[0_15px_30px_rgba(201,169,110,0.15)] transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
+                <Link href="/app" className="sm-public-primary-action inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A96E] px-7 py-4 text-[14px] font-bold text-[#0B1120] shadow-[0_15px_30px_rgba(201,169,110,0.15)] transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
                   Launch Smart Manager <ArrowRight size={16} />
                 </Link>
-                <button type="button" onClick={signInWithPublicPasskey} disabled={passkeyPending} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#16A34A]/35 bg-[#16A34A]/10 px-7 py-4 text-[14px] font-bold text-[#D1FAE5] transition-all hover:bg-[#16A34A]/20 active:scale-[0.97] disabled:cursor-wait disabled:opacity-70">
+                <button type="button" onClick={signInWithPublicPasskey} disabled={passkeyPending} className="sm-public-passkey-action inline-flex items-center justify-center gap-2 rounded-xl border border-[#16A34A]/35 bg-[#16A34A]/10 px-7 py-4 text-[14px] font-bold text-[#D1FAE5] transition-all hover:bg-[#16A34A]/20 active:scale-[0.97] disabled:cursor-wait disabled:opacity-70">
                   <Fingerprint size={16} /> {passkeyPending ? "Opening passkey…" : "Sign in with a passkey"}
                 </button>
-                <a href="#capabilities" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-7 py-4 text-[14px] font-bold text-white transition-all hover:bg-white/10">
-                  Explore capabilities <ChevronRight size={16} />
+                <a href="#capabilities" className="sm-public-secondary-action inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-7 py-4 text-[14px] font-bold text-white transition-all hover:bg-white/10">
+                  {t("exploreCapabilities")} <ChevronRight size={16} />
                 </a>
               </div>
               <p id="public-passkey-status" className="mt-4 min-h-5 max-w-xl text-[13px] text-amber-200" aria-live="polite">{passkeyError}</p>
               <div className="mt-12 flex flex-wrap gap-x-8 gap-y-3 text-[13px] font-medium text-[#64748B]">
-                <span className="inline-flex items-center gap-2"><Check size={16} className="text-[#16A34A]" /> Live operational data</span>
-                <span className="inline-flex items-center gap-2"><Check size={16} className="text-[#16A34A]" /> Connected business modules</span>
-                <span className="inline-flex items-center gap-2"><Check size={16} className="text-[#16A34A]" /> Action-ready workflows</span>
+                <span className="inline-flex items-center gap-2"><Check size={16} className="text-[#16A34A]" /> {t("liveOperationalData")}</span>
+                <span className="inline-flex items-center gap-2"><Check size={16} className="text-[#16A34A]" /> {t("connectedModules")}</span>
+                <span className="inline-flex items-center gap-2"><Check size={16} className="text-[#16A34A]" /> {t("actionReadyWorkflows")}</span>
               </div>
             </div>
 
             {/* Noble Dashboard Preview Card */}
             <div className="relative mx-auto w-full max-w-xl lg:mx-0 lg:justify-self-end">
               <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full border border-[#C9A96E]/10 bg-[#C9A96E]/5 blur-2xl" />
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#131C31] p-3 shadow-2xl sm:p-4 gold-glow">
+              <div className="sm-public-preview relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#131C31] p-3 shadow-2xl sm:p-4 gold-glow">
                 <div className="rounded-[1.4rem] bg-[#0B1120] p-5 sm:p-6">
                   <div className="mb-6 flex items-center justify-between">
-                    <div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full bg-[#16A34A] animate-pulse" /><span className="text-[13px] font-bold text-white font-heading tracking-wide">Business Overview</span></div>
-                    <span className="rounded-md bg-[#16A34A]/10 border border-[#16A34A]/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#16A34A]">Live Workspace</span>
+                    <div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full bg-[#16A34A] animate-pulse" /><span className="text-[13px] font-bold text-white font-heading tracking-wide">{t("businessOverview")}</span></div>
+                    <span className="rounded-md bg-[#16A34A]/10 border border-[#16A34A]/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#16A34A]">{t("liveWorkspace")}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     {["Customers", "Inventory", "Finance"].map((label) => (
@@ -161,14 +198,14 @@ export default function Home() {
                     ))}
                   </div>
                   <div className="mt-5 rounded-xl border border-white/5 bg-[#131C31]/50 p-4">
-                    <div className="mb-4 flex items-center justify-between"><span className="text-[12px] font-bold text-white font-heading">Operational Momentum</span><span className="text-[11px] font-semibold text-[#16A34A]">Live Workflow</span></div>
+                    <div className="mb-4 flex items-center justify-between"><span className="text-[12px] font-bold text-white font-heading">{t("operationalMomentum")}</span><span className="text-[11px] font-semibold text-[#16A34A]">Live Workflow</span></div>
                     <div className="flex h-28 items-end gap-2.5">
                       {[44, 58, 36, 72, 62, 88, 76, 95].map((height, index) => <span key={index} className="flex-1 rounded-t-lg bg-gradient-to-t from-[#16A34A] to-[#22C55E]" style={{ height: `${height}%`, opacity: index === 7 ? 1 : 0.4 }} />)}
                     </div>
                   </div>
                   <div className="mt-5 grid grid-cols-[1fr_auto] gap-4 rounded-xl bg-[#C9A96E]/5 border border-[#C9A96E]/10 p-4">
-                    <div><p className="text-[11px] font-bold text-[#C9A96E] font-heading">Next Best Action</p><p className="mt-1.5 text-[12px] leading-5 text-[#94A3B8]">Review the priorities surfaced by your connected business workflows.</p></div>
-                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#C9A96E] text-[#0B1120] shadow-lg"><ClipboardCheck size={20} /></span>
+                    <div><p className="text-[11px] font-bold text-[#C9A96E] font-heading">{t("nextBestAction")}</p><p className="mt-1.5 text-[12px] leading-5 text-[#94A3B8]">{t("nextBestActionDesc")}</p></div>
+                    <span className="sm-public-icon-tile sm-public-icon-tile--gold grid h-10 w-10 place-items-center rounded-xl bg-[#C9A96E] text-[#0B1120] shadow-lg"><ClipboardCheck size={20} /></span>
                   </div>
                 </div>
               </div>
@@ -180,11 +217,11 @@ export default function Home() {
         <section id="why-smart-manager" className="border-y border-white/5 bg-[#131C31]/30 py-12 sm:py-16">
           <div className="mx-auto grid max-w-7xl gap-8 px-5 sm:grid-cols-3 sm:px-8 lg:px-10">
             {[
-              ["One Workspace", "Centralize customer, inventory, finance, and people workflows in one command center."],
-              ["Live Data Path", "Direct Supabase integration ensures every signal is accurate and action-ready."],
-              ["Built-in Controls", "Role-aware access, audit visibility, and automated reporting for peace of mind."],
+              [t("oneWorkspace"), t("oneWorkspaceDesc")],
+              [t("liveDataPath"), t("liveDataPathDesc")],
+              [t("builtInControls"), t("builtInControlsDesc")],
             ].map(([value, label], index) => (
-              <div key={value} className="relative px-2 sm:px-8 sm:first:pl-0 sm:last:pr-0">
+              <div key={index} className="relative px-2 sm:px-8 sm:first:pl-0 sm:last:pr-0">
                 {index < 2 && <span className="absolute right-0 top-1 hidden h-16 w-px bg-white/5 sm:block" />}
                 <p className="text-[18px] font-extrabold tracking-tight text-white font-heading">{value}</p>
                 <p className="mt-2 max-w-xs text-[14px] leading-6 text-[#94A3B8]">{label}</p>
@@ -196,9 +233,9 @@ export default function Home() {
         {/* Capabilities Section */}
         <section id="capabilities" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10">
           <div className="max-w-2xl">
-            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#C9A96E]">The Noble Ecosystem</p>
-            <h2 className="mt-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">Capabilities that radiate authority.</h2>
-            <p className="mt-6 text-[16px] leading-8 text-[#94A3B8]">Smart Manager keeps core business functions in reach while giving each team the dedicated workflows it needs to move work forward with precision.</p>
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#C9A96E]">{t("ecosystemTitle")}</p>
+            <h2 className="mt-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">{t("ecosystemHeading")}</h2>
+            <p className="mt-6 text-[16px] leading-8 text-[#94A3B8]">{t("ecosystemDesc")}</p>
           </div>
           <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {capabilities.map((capability) => {
@@ -215,30 +252,110 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Sales workflow proof */}
+        <section id="workflow" className="border-y border-white/5 bg-[#0B1120] py-24">
+          <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+            <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+              <div className="max-w-xl">
+                <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#16A34A]">A workflow people can understand</p>
+                <h2 className="mt-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">From the first sale to a paid invoice.</h2>
+                <p className="mt-6 text-[16px] leading-8 text-[#94A3B8]">Show prospects exactly where Smart Manager saves time: one connected path from customer activity to revenue visibility, with the records and ownership needed to follow up.</p>
+                <button type="button" onClick={() => setFeedbackOpen(true)} className="mt-8 inline-flex items-center gap-2 rounded-xl border border-[#16A34A]/30 bg-[#16A34A]/10 px-5 py-3 text-[13px] font-bold text-[#D1FAE5] transition-colors hover:bg-[#16A34A]/20"><PlayCircle size={16} /> Request a live walkthrough</button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {workflowSteps.map(([number, title, description]) => (
+                  <article key={number} className="rounded-2xl border border-white/8 bg-[#131C31] p-5 transition-transform hover:-translate-y-1">
+                    <span className="font-mono text-[12px] font-bold text-[#C9A96E]">{number}</span>
+                    <h3 className="mt-5 text-[16px] font-bold text-white font-heading">{title}</h3>
+                    <p className="mt-2 text-[13px] leading-6 text-[#94A3B8]">{description}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Industry fit */}
+        <section id="industries" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10">
+          <div className="max-w-2xl">
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#C9A96E]">Built around real operating teams</p>
+            <h2 className="mt-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">Start broad. Configure for the business you run.</h2>
+            <p className="mt-6 text-[16px] leading-8 text-[#94A3B8]">Use the core workspace first, then add the industry workflows that match your team. No disconnected demo pages—just a route from the public promise into the product.</p>
+          </div>
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {useCases.map(({ title, description, icon: Icon }) => (
+              <article key={title} className="rounded-2xl border border-white/6 bg-[#131C31] p-5 transition-all hover:-translate-y-1 hover:border-[#C9A96E]/30">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#C9A96E]/10 text-[#C9A96E]"><Icon size={20} /></span>
+                <h3 className="mt-5 text-[15px] font-bold text-white font-heading">{title}</h3>
+                <p className="mt-2 text-[12.5px] leading-5 text-[#94A3B8]">{description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section id="pricing" className="border-y border-white/5 bg-[#131C31]/35 py-24">
+          <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+            <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+              <div className="max-w-2xl"><p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#16A34A]">Simple path to paid adoption</p><h2 className="mt-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">Choose the level of connectedness you need.</h2><p className="mt-5 text-[15px] leading-7 text-[#94A3B8]">Start with a guided conversation so your plan reflects your team size, modules, and onboarding needs. Pricing can evolve with the value you activate.</p></div>
+              <button type="button" onClick={() => setFeedbackOpen(true)} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#C9A96E] px-5 py-3 text-[13px] font-bold text-[#0B1120] shadow-lg transition-colors hover:bg-[#D4B87F]"><MessageSquarePlus size={15} /> Talk about your plan</button>
+            </div>
+            <div className="mt-12 grid gap-5 lg:grid-cols-3">
+              {pricingPlans.map((plan, index) => (
+                <article key={plan.name} className={`relative rounded-2xl border p-6 ${index === 1 ? "border-[#C9A96E]/50 bg-[#C9A96E]/[0.08] shadow-[0_0_36px_rgba(201,169,110,.08)]" : "border-white/8 bg-[#131C31]"}`}>
+                  {index === 1 && <span className="absolute right-5 top-5 rounded-full bg-[#C9A96E] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider text-[#0B1120]">Most popular</span>}
+                  <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#C9A96E]">{plan.name}</p>
+                  <h3 className="mt-5 text-2xl font-extrabold text-white font-heading">{plan.emphasis}</h3>
+                  <p className="mt-2 min-h-10 text-[13px] text-[#94A3B8]">{plan.audience}</p>
+                  <ul className="mt-6 space-y-3 border-t border-white/8 pt-5">{plan.features.map((feature) => <li key={feature} className="flex items-start gap-2 text-[13px] text-[#CBD5E1]"><Check size={15} className="mt-0.5 shrink-0 text-[#16A34A]" />{feature}</li>)}</ul>
+                  <button type="button" onClick={() => setFeedbackOpen(true)} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-[12px] font-bold text-white transition-colors hover:bg-white/10">Discuss {plan.name} <ArrowRight size={14} /></button>
+                </article>
+              ))}
+            </div>
+            <p className="mt-6 text-center text-[11px] text-[#64748B]">Final pricing depends on workspace size, enabled modules, implementation, and support requirements. No pricing claim is hidden behind the product demo.</p>
+          </div>
+        </section>
+
+        {/* Feedback invitation */}
+        <section id="feedback" className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10">
+          <div className="flex flex-col gap-6 rounded-[2rem] border border-[#16A34A]/20 bg-[#16A34A]/[0.06] px-6 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-9">
+            <div className="max-w-2xl">
+              <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#16A34A]">Build with the community</p>
+              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl font-heading">Help us improve Smart Manager.</h2>
+              <p className="mt-3 text-[15px] leading-7 text-[#94A3B8]">Share a bug, request a feature, or tell us what would make your daily work easier. Your feedback goes directly to the product team.</p>
+            </div>
+            <button type="button" onClick={() => setFeedbackOpen(true)} className="sm-public-emerald-action inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#16A34A] px-6 py-3.5 text-[13px] font-bold text-white shadow-lg transition-all hover:bg-[#22C55E] active:scale-[0.97]">
+              <MessageSquarePlus size={16} /> Leave feedback
+            </button>
+          </div>
+        </section>
+
         {/* Call to Action */}
         <section id="launch" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10">
           <div className="relative overflow-hidden rounded-[2.5rem] border border-[#C9A96E]/20 bg-gradient-to-br from-[#131C31] to-[#0B1120] px-8 py-16 text-center sm:px-16 sm:py-20 gold-glow">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(201,169,110,0.05),transparent_70%)]" />
-            <span className="relative z-10 mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#C9A96E] text-[#0B1120] shadow-xl"><Layers3 size={28} /></span>
-            <h2 className="relative z-10 mx-auto mt-8 max-w-2xl text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">Ready to enter the command center?</h2>
-            <p className="relative z-10 mx-auto mt-6 max-w-xl text-[16px] leading-7 text-[#94A3B8]">Launch the Smart Manager ERP dashboard to work with connected modules and live operational data. Salama na Mwaminifu.</p>
+            <span className="sm-public-icon-tile sm-public-icon-tile--gold relative z-10 mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#C9A96E] text-[#0B1120] shadow-xl"><Layers3 size={28} /></span>
+            <h2 className="relative z-10 mx-auto mt-8 max-w-2xl text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">{t("readyCommandCenter")}</h2>
+            <p className="relative z-10 mx-auto mt-6 max-w-xl text-[16px] leading-7 text-[#94A3B8]">{t("readyCommandCenterDesc")}</p>
             <div className="relative z-10 mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href="/app" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A96E] px-8 py-4 text-[15px] font-bold text-[#0B1120] shadow-xl transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
-                Launch Workspace <ArrowRight size={18} />
+                {t("launchWorkspace")} <ArrowRight size={18} />
               </Link>
             </div>
           </div>
         </section>
       </main>
 
+      <UserFeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+
       <footer className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10">
         <div className="flex flex-col items-center justify-between gap-6 border-t border-white/5 pt-12 md:flex-row">
           <BrandLogo variant="compact" className="h-11 w-11" />
-          <div className="flex items-center gap-2 text-[12px] font-medium text-[#64748B]">
+          <div className="sm-public-footer-meta flex items-center gap-2 text-[12px] font-medium text-[#64748B]">
             <img src="https://upload.wikimedia.org/wikipedia/commons/3/38/Flag_of_Tanzania.svg" alt="Tanzania" className="h-3 w-auto rounded-sm" />
-            <span>Imetengenezwa Tanzania</span>
+            <span>{t("madeInTanzania")}</span>
           </div>
-          <p className="text-[12px] font-medium text-[#475569]">© 2026 Smart Manager · Enterprise Business Ecosystem</p>
+          <p className="text-[12px] font-medium text-[#475569]">{t("copyright")}</p>
         </div>
       </footer>
     </div>

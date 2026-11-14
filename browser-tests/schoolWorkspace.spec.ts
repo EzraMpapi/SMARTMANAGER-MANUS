@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "playwright/test";
+import { installManagedAuth } from "./support/authHarness";
 
 function trpcResult(data: unknown) { return { result: { data: { json: data } } }; }
 
@@ -9,8 +10,6 @@ const reports = { learners: { activeStudents: 1, pendingAdmissions: 0, activeEnr
 
 async function mockAuthenticatedSchool(page: Parameters<typeof test>[0]["page"], access = schoolAccess, portal: unknown = null) {
   await page.addInitScript(() => {
-    window.localStorage.setItem("bs_access_token", "e2e-school-access-token");
-    window.localStorage.setItem("bs_refresh_token", "e2e-school-refresh-token");
     window.localStorage.setItem("bs_brief_2026-07-02", "1");
     window.localStorage.setItem("bs_onboarding_tour_school-e2e-user_school-e2e-company", JSON.stringify({ status: "dismissed", completedAt: new Date().toISOString() }));
   });
@@ -34,13 +33,40 @@ async function mockAuthenticatedSchool(page: Parameters<typeof test>[0]["page"],
     });
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responses) });
   });
+  await installManagedAuth(page, {
+    id: "school-e2e-user",
+    email: "school@e2e.invalid",
+    fullName: "School Test",
+    profile: { id: "school-e2e-user", company_id: "school-e2e-company", full_name: "School Test", role: "School Administrator", customer_ref: null },
+    company: { id: "school-e2e-company", name: "Mwanza Academy", category: "education", tax_rate: 18, timezone: "Africa/Dar_es_Salaam" },
+  });
 }
 
 async function openSchoolWorkspace(page: Parameters<typeof test>[0]["page"]) {
-  const closeMenu = page.getByRole("button", { name: "Close menu" });
-  if (await closeMenu.isVisible().catch(() => false)) await closeMenu.click();
-  await page.getByRole("button", { name: "Open menu" }).click();
-  await page.locator("aside nav button").filter({ hasText: "School Management" }).click();
+  const workspaceAside = page.locator("aside").first();
+  const isMobile = await page.evaluate(() => window.innerWidth < 1024);
+  if (isMobile && (await workspaceAside.getAttribute("aria-hidden")) === "true") {
+    const openMenu = page.getByRole("button", { name: "Open menu", exact: true }).last();
+    await expect(openMenu).toBeVisible();
+    await openMenu.click({ force: true });
+    await expect(workspaceAside).toHaveAttribute("aria-hidden", "false");
+  }
+  const schoolNav = page.locator('aside nav button[data-tour-target="school"]');
+  if (await schoolNav.count()) {
+    await expect(schoolNav).toBeVisible();
+    await schoolNav.click({ force: true });
+  } else {
+    const specializedNav = page.locator('aside nav button[aria-controls="navigation-items-specialized"]');
+    if (await specializedNav.count()) {
+      await expect(specializedNav).toBeVisible();
+      if ((await specializedNav.getAttribute("aria-expanded")) !== "true") await specializedNav.click({ force: true });
+      await expect(specializedNav).toHaveAttribute("aria-expanded", "true");
+      await expect(schoolNav).toBeVisible();
+      await schoolNav.click({ force: true });
+    } else {
+      await page.goto("/app?module=school", { waitUntil: "domcontentloaded" });
+    }
+  }
 }
 
 test("loads the School Management Command Center and live learner metrics responsively", async ({ page }, testInfo) => {

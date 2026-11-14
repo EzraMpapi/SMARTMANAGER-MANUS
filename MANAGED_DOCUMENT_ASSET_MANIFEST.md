@@ -1,0 +1,17 @@
+# Managed Documentation Asset Manifest
+
+The oversized documentation images previously stored in the project were preserved outside the repository at `/home/ubuntu/webdev-static-assets/businesssphere-doc-assets/` and uploaded to managed project storage. The source files are not committed to the application repository.
+
+| Former project-local paths | Managed storage path |
+| --- | --- |
+| `docs/smart-manager-book/assets/smart-manager-logo.png` and `docs/smart-manager-book/typst/assets/smart-manager-logo.png` | `/manus-storage/smart-manager-logo_b5445e35.png` |
+| `docs/smart-manager-book/assets/ezra-mpapi-owner.png` and `docs/smart-manager-book/typst/assets/ezra-mpapi-owner.png` | `/manus-storage/ezra-mpapi-owner_19c8cae1.png` |
+| `docs/smart-manager-book/assets/social-banners/smart_manager_simba_bonus_sw_banner_clean.png` | `/manus-storage/smart_manager_simba_bonus_sw_banner_clean_517e8a81.png` |
+| `docs/smart-manager-book/assets/social-banners/smart_manager_simba_sw_banner.png` | `/manus-storage/smart_manager_simba_sw_banner_e637116e.png` |
+| `docs/smart-manager-book/assets/social-banners/smart_manager_twiga_sw_banner.png` | `/manus-storage/smart_manager_twiga_sw_banner_07fe6573.png` |
+
+These are two unique assets represented by four duplicate project-local files. Documentation rebuilds may use the preserved external source copies or the managed paths above. For the portable master-book deliverable, the two approved branding images are intentionally copied under `docs/smart-manager-book/master-book/typst-project/assets/branding/`; they are byte-preserved source assets, not generated replacements. The social-banner and other oversized media assets remain external and must not be restored inside the project.
+
+The source builder defaults to `/home/ubuntu/webdev-static-assets/businesssphere-doc-assets/` and supports an explicit `SMART_MANAGER_BOOK_ASSET_ROOT` override for controlled documentation rebuilds.
+
+The three social-banner images were introduced by a concurrent GitHub merge and had no active textual project references at migration time. Their original bytes are preserved at `/home/ubuntu/webdev-static-assets/smart-manager-social-banners/`; they must not be restored inside the repository.

@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { sdk } from "./_core/sdk";
+import { httpStatusFromError } from "./_core/httpError";
 import { runScheduledDashboardReport } from "./dashboardReports";
 
 export async function scheduledDashboardReportHandler(req: Request, res: Response) {
@@ -10,11 +11,10 @@ export async function scheduledDashboardReportHandler(req: Request, res: Respons
     return res.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    const status = httpStatusFromError(error);
+    if (status < 500) return res.status(status).json({ error: message });
     return res.status(500).json({
-      error: message,
-      stack: error instanceof Error ? error.stack : undefined,
-      context: { url: req.originalUrl, taskUid: req.headers["x-task-uid"] ?? null },
-      timestamp: new Date().toISOString(),
+      error: "Scheduled dashboard report failed.",
     });
   }
 }

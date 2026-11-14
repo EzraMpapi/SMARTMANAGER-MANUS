@@ -1,0 +1,14 @@
+<slide id="cover">
+  <background color="brand"/>
+  <shape id="gold-rule" type="line" x="60" y="74" width="180" height="0" stroke="accent" stroke-width="3"/>
+  <text id="evidence-label" x="100" y="126" width="520" height="22" font="caption" size="14" color="accent" wrap="false">MSINGI WA COMMERCIAL TRAINING • USHAHIDI NA FARAGHA</text>
+  <text id="cover-title" x="100" y="182" width="640" height="150" font="display" size="50" color="ink-light" line-height="1.05"><p>SMART MANAGER ERP</p><p>Sura 07–09: Mauzo, POS na CRM</p></text>
+  <text id="cover-subtitle" x="100" y="372" width="590" height="78" font="body" size="23" color="#E7E4DC" line-height="1.3">Msingi wa mafunzo ya Kiswahili unaoongozwa na ushahidi, muktadha na privacy gate.</text>
+  <text id="cover-scope" x="100" y="510" width="620" height="28" font="body" size="18" color="#C9D3CF" wrap="false">Chapter packs zilizopitiwa; si commercial master video iliyokamilika.</text>
+  <shape id="cast-frame" type="rect" x="875" y="120" width="305" height="470" fill="#0D201C" stroke="accent" stroke-width="2"/>
+  <image id="cast-image" src="https://private-us-east-1.manuscdn.com/sessionFile/clrc1zfRAjd1ZizZGBswnB/sandbox/slides_resource_ip60v2xrksc8vp2gnfxgg-68e88b70-e2b-prod-azure-central-us_1787778724214_na1fn_L2hvbWUvdWJ1bnR1L3NtYXJ0bWFuYWdlci10cmFpbmluZy1hc3NldHMvY2hhcmFjdGVycy9zbWFydC1tYW5hZ2VyLXRyYWluaW5nLWNhc3QtcmVmZXJlbmNl.png?x-oss-process=image/resize,w_1560,h_1560/format,webp&Expires=1789430400&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvY2xyYzF6ZlJBamQxWml6WkdCc3duQi9zYW5kYm94L3NsaWRlc19yZXNvdXJjZV9pcDYwdjJ4cmtzYzh2cDJnbmZ4Z2ctNjhlODhiNzAtZTJiLXByb2QtYXp1cmUtY2VudHJhbC11c18xNzg3Nzc4NzI0MjE0X25hMWZuX0wyaHZiV1V2ZFdKMWJuUjFMM050WVhKMGJXRnVZV2RsY2kxMGNtRnBibWx1WnkxaGMzTmxkSE12WTJoaGNtRmpkR1Z5Y3k5emJXRnlkQzF0WVc1aFoyVnlMWFJ5WVdsdWFXNW5MV05oYzNRdGNtVm1aWEpsYm1ObC5wbmc~eC1vc3MtcHJvY2Vzcz1pbWFnZS9yZXNpemUsd18xNTYwLGhfMTU2MC9mb3JtYXQsd2VicCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc4OTQzMDQwMH19fV19&Key-Pair-Id=K2QY5QTL8JSY6C&Signature=MEUCIQDiktEK5r3rcqHKMslVD9cyoZbHreXQf0-o7NEAOppdgAIgb39oYDtQ7KW~-wqlq8ddIbWNsDrxlRNu7399ZH6Qbck_" x="889" y="134" width="277" height="410" fit="cover"/>
+  <text id="cast-caption" x="889" y="554" width="277" height="20" font="caption" size="12" color="ink-light" align="center" wrap="false">WAHUSIKA WA MAFUNZO YA KUBUNIWA</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="#FFFFFF45" stroke-width="1"/>
+  <text id="footer-title" x="60" y="675" width="520" height="18" font="caption" color="#C9D3CF" wrap="false">SMART MANAGER ERP • Sura 07–09 Commercial Foundation</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="18" font="caption" color="#C9D3CF" align="right" wrap="false">01</text>
+</slide>

@@ -1,0 +1,43 @@
+---
+title: SMART MANAGER — Shared Financial and Data Plane
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#fff7ed'
+    primaryBorderColor: '#ea580c'
+    lineColor: '#64748b'
+---
+flowchart LR
+  subgraph SOURCES["Operational sources"]
+    BANK["Bank & MFI\naccounts · loans · cash"]
+    SACCO["VICOBA / SACCOS\nshares · savings · dividends"]
+    MICRO["Microfinance\nportfolio · collections · PAR"]
+    POS["POS / Sales\nreceipts · returns · credits"]
+    HR["HR / Payroll\npayroll liabilities"]
+    PROCUREMENT["Procurement / Inventory\nstock value · supplier balances"]
+  end
+  POST["Financial posting service\ntransaction validation · idempotency"]
+  JOURNAL["Double-entry GL\njournal batch + debit/credit lines"]
+  BALANCES["Account and subledger balances\nledger · available · outstanding"]
+  RECON["Reconciliation engine\nbank · cash · POS · inventory"]
+  REPORT["Statements and reports\nfinancial · regulatory · management"]
+  AUDIT["Immutable audit evidence\nactor · event · source reference"]
+  BANK --> POST
+  SACCO --> POST
+  MICRO --> POST
+  POS --> POST
+  HR --> POST
+  PROCUREMENT --> POST
+  POST --> JOURNAL --> BALANCES
+  JOURNAL --> RECON --> REPORT
+  POST --> AUDIT
+  RECON --> AUDIT
+  BALANCES --> REPORT
+  classDef source fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+  classDef control fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.8px;
+  classDef result fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
+  classDef audit fill:#fef2f2,stroke:#dc2626,color:#7f1d1d,stroke-width:1.5px;
+  class BANK,SACCO,MICRO,POS,HR,PROCUREMENT source;
+  class POST,JOURNAL,RECON control;
+  class BALANCES,REPORT result;
+  class AUDIT audit;

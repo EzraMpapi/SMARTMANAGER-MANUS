@@ -1,0 +1,1200 @@
+client/src/lib/communityGroups.ts-13-}
+client/src/lib/communityGroups.ts-14-
+client/src/lib/communityGroups.ts-15-export function splitCommunityRepayment(outstandingPrincipal: number, outstandingInterest: number, amount: number) {
+client/src/lib/communityGroups.ts:16:  const total = Math.max(0, Number(amount) || 0);
+client/src/lib/communityGroups.ts:17:  const interestAmount = Math.min(Math.max(0, Number(outstandingInterest) || 0), total);
+client/src/lib/communityGroups.ts:18:  const principalAmount = Math.min(Math.max(0, Number(outstandingPrincipal) || 0), Math.max(0, total - interestAmount));
+client/src/lib/communityGroups.ts:19:  return { interestAmount, principalAmount, penaltyAmount: Math.max(0, total - interestAmount - principalAmount) };
+client/src/lib/communityGroups.ts-20-}
+client/src/lib/communityGroups.ts-21-
+client/src/lib/communityGroups.ts-22-export function calculateCommunityMemberBalance(contributions: number[], savings: Array<{ amount: number; transactionType: string }>, loanDue: number) {
+--
+client/src/lib/supportMetrics.js-17-      return finishedAt - startedAt;
+client/src/lib/supportMetrics.js-18-    })
+client/src/lib/supportMetrics.js-19-    .filter((duration) => duration !== null);
+client/src/lib/supportMetrics.js:20:  const totalHandleMinutes = completedWithTiming.reduce((total, duration) => total + duration, 0) / 60_000;
+client/src/lib/supportMetrics.js-21-
+client/src/lib/supportMetrics.js-22-  return {
+client/src/lib/supportMetrics.js:23:    totalCount: safeTickets.length,
+client/src/lib/supportMetrics.js-24-    openCount: safeTickets.filter((ticket) => ticket?.status === "Open").length,
+client/src/lib/supportMetrics.js-25-    urgentCount: safeTickets.filter((ticket) => !COMPLETED_SUPPORT_STATUSES.has(ticket?.status) && ticket?.priority === "Urgent").length,
+client/src/lib/supportMetrics.js-26-    resolutionRate: safeTickets.length ? Math.round((completed.length / safeTickets.length) * 100) : null,
+client/src/lib/supportMetrics.js-27-    completedWithTimingCount: completedWithTiming.length,
+client/src/lib/supportMetrics.js:28:    avgHandleMinutes: completedWithTiming.length ? Math.round(totalHandleMinutes / completedWithTiming.length) : null,
+client/src/lib/supportMetrics.js-29-  };
+client/src/lib/supportMetrics.js-30-}
+--
+client/src/lib/posTransactionEngine.js-9-    .some((candidate) => normalizePosLookup(candidate).includes(term));
+client/src/lib/posTransactionEngine.js-10-}
+client/src/lib/posTransactionEngine.js-11-
+client/src/lib/posTransactionEngine.js:12:export function calculatePosPaymentSummary(payments, total) {
+client/src/lib/posTransactionEngine.js:13:  const amountDue = Math.max(0, Number(total) || 0);
+client/src/lib/posTransactionEngine.js-14-  const normalized = (Array.isArray(payments) ? payments : []).map((payment) => ({
+client/src/lib/posTransactionEngine.js-15-    id: String(payment?.id || ""),
+client/src/lib/posTransactionEngine.js-16-    method: String(payment?.method || "Cash"),
+--
+client/src/lib/posPendingQueue.js-24-  return safeRecords;
+client/src/lib/posPendingQueue.js-25-}
+client/src/lib/posPendingQueue.js-26-
+client/src/lib/posPendingQueue.js:27:export function createPendingPosSale({ attempt, items, payments, subtotal, tax, total, customerId, customerName, queuedAt = new Date().toISOString() }) {
+client/src/lib/posPendingQueue.js-28-  return {
+client/src/lib/posPendingQueue.js-29-    idempotencyKey: attempt.idempotencyKey,
+client/src/lib/posPendingQueue.js-30-    docNumber: attempt.docNumber,
+client/src/lib/posPendingQueue.js-31-    items,
+client/src/lib/posPendingQueue.js-32-    payments: payments.map((payment) => ({ method: payment.method, amount: Number(payment.amount) || 0 })),
+client/src/lib/posPendingQueue.js:33:    subtotal,
+client/src/lib/posPendingQueue.js:34:    tax,
+client/src/lib/posPendingQueue.js:35:    total,
+client/src/lib/posPendingQueue.js-36-    customerId: customerId || null,
+client/src/lib/posPendingQueue.js-37-    customerName: customerName || "Guest",
+client/src/lib/posPendingQueue.js-38-    status: "pending",
+--
+client/src/lib/onboardingProgress.js-3-export const ONBOARDING_PROGRESS_STORAGE_KEY = "bs_onboarding_progress_v1";
+client/src/lib/onboardingProgress.js-4-
+client/src/lib/onboardingProgress.js-5-const ACCOUNT_FIELDS = ["fullName", "email", "phone"];
+client/src/lib/onboardingProgress.js:6:const COMPANY_FIELDS = ["name", "category", "country", "currency", "timezone", "website", "taxId", "brandColor", "brandAccentColor"];
+client/src/lib/onboardingProgress.js-7-const DEFAULT_COMPANY_PREFERENCES = {
+client/src/lib/onboardingProgress.js-8-  category: "general",
+client/src/lib/onboardingProgress.js-9-  country: "Tanzania",
+--
+client/src/lib/onboardingProgress.js-51-    Object.values(safe.account).some(Boolean)
+client/src/lib/onboardingProgress.js-52-      || safe.company.name
+client/src/lib/onboardingProgress.js-53-      || safe.company.website
+client/src/lib/onboardingProgress.js:54:      || safe.company.taxId
+client/src/lib/onboardingProgress.js-55-      || hasChangedCompanyPreference
+client/src/lib/onboardingProgress.js-56-      || selectedModulesDifferFromDefault
+client/src/lib/onboardingProgress.js-57-      || safe.mode === "join"
+--
+client/src/BusinessSphereDashboard.jsx-1378-  const byDept = {};
+client/src/BusinessSphereDashboard.jsx-1379-  training.rows.forEach((row) => {
+client/src/BusinessSphereDashboard.jsx-1380-    const d = deptOf(row.employee);
+client/src/BusinessSphereDashboard.jsx:1381:    byDept[d] = byDept[d] || { total: 0, done: 0 };
+client/src/BusinessSphereDashboard.jsx:1382:    byDept[d].total += 1;
+client/src/BusinessSphereDashboard.jsx-1383-    if (row.status === "Completed") byDept[d].done += 1;
+client/src/BusinessSphereDashboard.jsx-1384-  });
+client/src/BusinessSphereDashboard.jsx-1385-  const overdue = training.rows.filter((r) => r.mandatory && r.status !== "Completed" && r.dueDate && r.dueDate < t);
+--
+client/src/BusinessSphereDashboard.jsx-1411-        <h3 className="text-[14px] font-semibold text-[#111827] mb-1">Training Progress by Department</h3>
+client/src/BusinessSphereDashboard.jsx-1412-        <p className="text-[11.5px] text-slate-500 mb-3">Real completion rates from real assignments — video is linked, not hosted, and exams need a question model (named future work, not a quiz that grades nothing).</p>
+client/src/BusinessSphereDashboard.jsx-1413-        <div className="space-y-2">
+client/src/BusinessSphereDashboard.jsx:1414:          {Object.entries(byDept).sort((a, b) => b[1].total - a[1].total).map(([dept, s]) => (
+client/src/BusinessSphereDashboard.jsx-1415-            <div key={dept} className="flex items-center gap-3">
+client/src/BusinessSphereDashboard.jsx-1416-              <span className="text-[12px] text-slate-600 w-32 truncate shrink-0">{dept}</span>
+client/src/BusinessSphereDashboard.jsx:1417:              <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${(s.done / s.total) * 100}%`, backgroundColor: s.done === s.total ? "#16A34A" : "#F59E0B" }} /></div>
+client/src/BusinessSphereDashboard.jsx:1418:              <span className="text-[11.5px] font-mono text-slate-500 shrink-0">{s.done}/{s.total}</span>
+client/src/BusinessSphereDashboard.jsx-1419-            </div>
+client/src/BusinessSphereDashboard.jsx-1420-          ))}
+client/src/BusinessSphereDashboard.jsx-1421-          {!training.loading && training.rows.length === 0 && <p className="text-[12px] text-slate-400 text-center py-3">No training assignments yet.</p>}
+--
+client/src/BusinessSphereDashboard.jsx-1448-function mapPayrollRunRow(r) {
+client/src/BusinessSphereDashboard.jsx-1449-  return {
+client/src/BusinessSphereDashboard.jsx-1450-    id: r.id, dbId: r.id,
+client/src/BusinessSphereDashboard.jsx:1451:    period: r.period, employeeCount: r.employee_count, totalAmount: Number(r.total_amount) || 0,
+client/src/BusinessSphereDashboard.jsx-1452-    status: r.status, processedDate: r.processed_date,
+client/src/BusinessSphereDashboard.jsx-1453-  };
+client/src/BusinessSphereDashboard.jsx-1454-}
+--
+client/src/BusinessSphereDashboard.jsx-1708-    id: r.doc_number, dbId: r.id,
+client/src/BusinessSphereDashboard.jsx-1709-    customer: r.customer_name, email: r.customer_email || "",
+client/src/BusinessSphereDashboard.jsx-1710-    items: mapOnlineOrderItems(r.ecommerce_order_items),
+client/src/BusinessSphereDashboard.jsx:1711:    total: Number(r.total) || 0, status: r.status, method: r.payment_method || "", date: r.order_date,
+client/src/BusinessSphereDashboard.jsx-1712-  };
+client/src/BusinessSphereDashboard.jsx-1713-}
+client/src/BusinessSphereDashboard.jsx-1714-
+--
+client/src/BusinessSphereDashboard.jsx-1736-
+client/src/BusinessSphereDashboard.jsx-1737-function mapReturnRow(rr) {
+client/src/BusinessSphereDashboard.jsx-1738-  return {
+client/src/BusinessSphereDashboard.jsx:1739:    id: rr.id, refundTotal: Number(rr.refund_total) || 0, reason: rr.reason,
+client/src/BusinessSphereDashboard.jsx-1740-    date: rr.created_at?.slice(0, 10), items: mapPosItems(rr.pos_return_items),
+client/src/BusinessSphereDashboard.jsx-1741-  };
+client/src/BusinessSphereDashboard.jsx-1742-}
+--
+client/src/BusinessSphereDashboard.jsx-2024-
+client/src/BusinessSphereDashboard.jsx-2025-    // SALES
+client/src/BusinessSphereDashboard.jsx-2026-    const todayInvs   = invRows.filter(i => i.date === today);
+client/src/BusinessSphereDashboard.jsx:2027:    const totalBilled = invRows.reduce((s, i) => s + lineTotal(i.items || []).total, 0);
+client/src/BusinessSphereDashboard.jsx:2028:    const totalCollected = invRows.reduce((s, i) => s + (i.amountPaid || 0), 0);
+client/src/BusinessSphereDashboard.jsx-2029-    const overdueInvs = invRows.filter(i => i.status !== "Paid" && i.dueDate < today);
+client/src/BusinessSphereDashboard.jsx:2030:    const overdueAmt  = overdueInvs.reduce((s, i) => s + lineTotal(i.items||[]).total - (i.amountPaid||0), 0);
+client/src/BusinessSphereDashboard.jsx-2031-    const unpaidInvs  = invRows.filter(i => i.status === "Unpaid" || i.status === "Partial");
+client/src/BusinessSphereDashboard.jsx-2032-
+client/src/BusinessSphereDashboard.jsx-2033-    // INVENTORY
+--
+client/src/BusinessSphereDashboard.jsx-2039-    // FINANCE / EXPENSES
+client/src/BusinessSphereDashboard.jsx-2040-    const expRows  = expenses?.rows || [];
+client/src/BusinessSphereDashboard.jsx-2041-    const todayExp = expRows.filter(e => e.date === today);
+client/src/BusinessSphereDashboard.jsx:2042:    const totalExp = expRows.reduce((s, e) => s + (e.amount || 0), 0);
+client/src/BusinessSphereDashboard.jsx:2043:    const grossPL  = totalCollected - totalExp;
+client/src/BusinessSphereDashboard.jsx-2044-
+client/src/BusinessSphereDashboard.jsx-2045-    // CRM
+client/src/BusinessSphereDashboard.jsx-2046-    const leads    = crm?.rows || [];
+--
+client/src/BusinessSphereDashboard.jsx-2077-    const alerts = (smartAlerts || []).slice(0, 20);
+client/src/BusinessSphereDashboard.jsx-2078-
+client/src/BusinessSphereDashboard.jsx-2079-    return {
+client/src/BusinessSphereDashboard.jsx:2080:      fmt, today, todayInvs, totalBilled, totalCollected, overdueInvs, overdueAmt,
+client/src/BusinessSphereDashboard.jsx:2081:      unpaidInvs, lowStock, outOfStock, stockValue, expRows, todayExp, totalExp,
+client/src/BusinessSphereDashboard.jsx-2082-      grossPL, leads, newLeads, openOpps, pipeVal, activeEmps, onLeave,
+client/src/BusinessSphereDashboard.jsx-2083-      expContracts, wos, overdueWO, subs, subsDue, MRR, alerts,
+client/src/BusinessSphereDashboard.jsx-2084-    };
+--
+client/src/BusinessSphereDashboard.jsx-2129-    );
+client/src/BusinessSphereDashboard.jsx-2130-  }
+client/src/BusinessSphereDashboard.jsx-2131-
+client/src/BusinessSphereDashboard.jsx:2132:  const { fmt, today, todayInvs, totalBilled, totalCollected, overdueInvs, overdueAmt,
+client/src/BusinessSphereDashboard.jsx:2133:    unpaidInvs, lowStock, outOfStock, stockValue, expRows, todayExp, totalExp,
+client/src/BusinessSphereDashboard.jsx-2134-    grossPL, leads, newLeads, openOpps, pipeVal, activeEmps, onLeave,
+client/src/BusinessSphereDashboard.jsx-2135-    expContracts, wos, overdueWO, subs, subsDue, MRR, alerts } = data;
+client/src/BusinessSphereDashboard.jsx-2136-
+--
+client/src/BusinessSphereDashboard.jsx-2168-    </tr>`).join("");
+client/src/BusinessSphereDashboard.jsx-2169-
+client/src/BusinessSphereDashboard.jsx-2170-    const overdueRows = overdueInvs.slice(0,10).map((inv,i)=>{
+client/src/BusinessSphereDashboard.jsx:2171:      const bal = lineTotal(inv.items||[]).total-(inv.amountPaid||0);
+client/src/BusinessSphereDashboard.jsx-2172-      const days= Math.ceil((new Date(today)-new Date(inv.dueDate))/86400000);
+client/src/BusinessSphereDashboard.jsx-2173-      return `<tr style="background:${i%2===0?"#fff":"#FEF2F2"}">
+client/src/BusinessSphereDashboard.jsx-2174-        <td style="padding:7px 12px;font-size:11.5px;font-family:monospace;font-weight:700">${inv.id}</td>
+--
+client/src/BusinessSphereDashboard.jsx-2244-
+client/src/BusinessSphereDashboard.jsx-2245-        <!-- KPI SUMMARY -->
+client/src/BusinessSphereDashboard.jsx-2246-        <div class="kpi-grid">
+client/src/BusinessSphereDashboard.jsx:2247:          <div class="kpi"><div class="kpi-label">Total AR Billed</div><div class="kpi-value" style="color:${ACCENT}">TZS ${fmt(totalBilled)}k</div><div class="kpi-sub">${(invoices?.rows||[]).length} invoices</div></div>
+client/src/BusinessSphereDashboard.jsx:2248:          <div class="kpi"><div class="kpi-label">Total Collected</div><div class="kpi-value" style="color:#2563EB">TZS ${fmt(totalCollected)}k</div><div class="kpi-sub">${Math.round(totalBilled>0?totalCollected/totalBilled*100:0)}% collection rate</div></div>
+client/src/BusinessSphereDashboard.jsx-2249-          <div class="kpi"><div class="kpi-label">Overdue AR</div><div class="kpi-value" style="color:${overdueAmt>0?"#EF4444":"#16A34A"}">TZS ${fmt(overdueAmt)}k</div><div class="kpi-sub">${overdueInvs.length} invoices overdue</div></div>
+client/src/BusinessSphereDashboard.jsx-2250-          <div class="kpi"><div class="kpi-label">Gross P&L</div><div class="kpi-value" style="color:${grossPL>=0?"#16A34A":"#EF4444"}">${grossPL>=0?"+":""}TZS ${fmt(Math.abs(grossPL))}k</div><div class="kpi-sub">Collected − Expenses</div></div>
+client/src/BusinessSphereDashboard.jsx-2251-          <div class="kpi"><div class="kpi-label">Inventory Value</div><div class="kpi-value">TZS ${fmt(stockValue)}k</div><div class="kpi-sub">${(inventory?.rows||[]).length} SKUs</div></div>
+--
+client/src/BusinessSphereDashboard.jsx-2390-          {/* KPI tiles */}
+client/src/BusinessSphereDashboard.jsx-2391-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-100">
+client/src/BusinessSphereDashboard.jsx-2392-            {[
+client/src/BusinessSphereDashboard.jsx:2393:              {l:"Total AR Billed",   v:fmtCur(data.totalBilled),   col:"#16A34A", sub:(invoices?.rows||[]).length+" invoices"},
+client/src/BusinessSphereDashboard.jsx:2394:              {l:"Collected",         v:fmtCur(data.totalCollected), col:"#2563EB", sub:Math.round(data.totalBilled>0?data.totalCollected/data.totalBilled*100:0)+"% rate"},
+client/src/BusinessSphereDashboard.jsx-2395-              {l:"Overdue AR",        v:fmtCur(data.overdueAmt),    col:data.overdueAmt>0?"#EF4444":"#16A34A", sub:data.overdueInvs.length+" invoices"},
+client/src/BusinessSphereDashboard.jsx-2396-              {l:"Gross P&L",         v:(data.grossPL>=0?"+":"")+fmtCur(Math.abs(data.grossPL)), col:data.grossPL>=0?"#16A34A":"#EF4444", sub:"Collected − Expenses"},
+client/src/BusinessSphereDashboard.jsx-2397-              {l:"Inventory Value",   v:fmtCur(data.stockValue),    col:"#111827", sub:(inventory?.rows||[]).length+" SKUs"},
+--
+client/src/BusinessSphereDashboard.jsx-2485-                  </tr></thead>
+client/src/BusinessSphereDashboard.jsx-2486-                  <tbody>
+client/src/BusinessSphereDashboard.jsx-2487-                    {overdueInvs.slice(0,8).map((inv,i)=>{
+client/src/BusinessSphereDashboard.jsx:2488:                      const bal  = lineTotal(inv.items||[]).total-(inv.amountPaid||0);
+client/src/BusinessSphereDashboard.jsx-2489-                      const days = Math.ceil((new Date(TODAY_STR)-new Date(inv.dueDate))/86400000);
+client/src/BusinessSphereDashboard.jsx-2490-                      return (
+client/src/BusinessSphereDashboard.jsx-2491-                        <tr key={inv.id} className={i%2===0?"bg-white":"bg-[#FEF2F2]/50"}>
+--
+client/src/BusinessSphereDashboard.jsx-2610-  if (!inv || !visible) return null;
+client/src/BusinessSphereDashboard.jsx-2611-
+client/src/BusinessSphereDashboard.jsx-2612-  const co      = company || window.__smartManagerCompany || {};
+client/src/BusinessSphereDashboard.jsx:2613:  const { subtotal, tax, total } = lineTotal(inv.items || []);
+client/src/BusinessSphereDashboard.jsx-2614-  const fmt     = (n) => new Intl.NumberFormat("en-US").format(Math.round(n));
+client/src/BusinessSphereDashboard.jsx-2615-
+client/src/BusinessSphereDashboard.jsx-2616-  // Find customer contact info from CRM
+--
+client/src/BusinessSphereDashboard.jsx-2631-    `📋 *Invoice:*  ${inv.id}`,
+client/src/BusinessSphereDashboard.jsx-2632-    `📅 *Date:*     ${inv.date}`,
+client/src/BusinessSphereDashboard.jsx-2633-    `📆 *Due:*      ${inv.dueDate || "On receipt"}`,
+client/src/BusinessSphereDashboard.jsx:2634:    `💰 *Amount:*   TZS ${fmt(total)}`,
+client/src/BusinessSphereDashboard.jsx-2635-    ``,
+client/src/BusinessSphereDashboard.jsx-2636-    inv.items?.slice(0, 3).map(it =>
+client/src/BusinessSphereDashboard.jsx-2637-      `  • ${it.name}  ×${it.qty}  @ TZS ${fmt(it.rate)}`
+--
+client/src/BusinessSphereDashboard.jsx-2648-  ].filter(l => l !== null).join("\n");
+client/src/BusinessSphereDashboard.jsx-2649-
+client/src/BusinessSphereDashboard.jsx-2650-  // ── Email body ───────────────────────────────────────────────────────
+client/src/BusinessSphereDashboard.jsx:2651:  const emailSubject = `Invoice ${inv.id} from ${co.name || "BusinessSphere"} — TZS ${fmt(total)}`;
+client/src/BusinessSphereDashboard.jsx-2652-  const emailBody    = [
+client/src/BusinessSphereDashboard.jsx-2653-    `Dear ${inv.customer},`,
+client/src/BusinessSphereDashboard.jsx-2654-    ``,
+--
+client/src/BusinessSphereDashboard.jsx-2657-    `Invoice No:  ${inv.id}`,
+client/src/BusinessSphereDashboard.jsx-2658-    `Issue Date:  ${inv.date}`,
+client/src/BusinessSphereDashboard.jsx-2659-    `Due Date:    ${inv.dueDate || "On receipt"}`,
+client/src/BusinessSphereDashboard.jsx:2660:    `Amount:      TZS ${fmt(total)} (incl. 18% VAT)`,
+client/src/BusinessSphereDashboard.jsx-2661-    ``,
+client/src/BusinessSphereDashboard.jsx-2662-    `Items:`,
+client/src/BusinessSphereDashboard.jsx-2663-    ...(inv.items || []).map(it => `  ${it.name}  ×${it.qty}  TZS ${fmt((it.qty||1)*(it.rate||0))}`),
+--
+client/src/BusinessSphereDashboard.jsx-2684-    if (!phone) {
+client/src/BusinessSphereDashboard.jsx-2685-      // No phone — open WA Center pre-loaded
+client/src/BusinessSphereDashboard.jsx-2686-      waBus.push({ templateId: "invoice", vars: {
+client/src/BusinessSphereDashboard.jsx:2687:        docId: inv.id, amount: fmt(total), dueDate: inv.dueDate || "On receipt", ref: inv.id,
+client/src/BusinessSphereDashboard.jsx-2688-      }});
+client/src/BusinessSphereDashboard.jsx-2689-      notify("Open Collaboration → WhatsApp to send — no phone number found for this customer");
+client/src/BusinessSphereDashboard.jsx-2690-      setSent(s => ({ ...s, whatsapp: true }));
+--
+client/src/BusinessSphereDashboard.jsx-2713-  }
+client/src/BusinessSphereDashboard.jsx-2714-
+client/src/BusinessSphereDashboard.jsx-2715-  function copyPayLink() {
+client/src/BusinessSphereDashboard.jsx:2716:    const link = `https://pay.${(co.website || "businesssphere.co.tz").replace(/^https?:\/\//,"")}/${inv.id}?amount=${Math.round(total)}&customer=${encodeURIComponent(inv.customer)}`;
+client/src/BusinessSphereDashboard.jsx-2717-    if (navigator.clipboard) navigator.clipboard.writeText(link);
+client/src/BusinessSphereDashboard.jsx-2718-    setSent(s => ({ ...s, link: true }));
+client/src/BusinessSphereDashboard.jsx-2719-    notify(`Payment link copied — Ref: ${inv.id}`);
+--
+client/src/BusinessSphereDashboard.jsx-2795-                <span className="text-[10px] font-mono text-[rgba(255,255,255,.5)]">{inv.id}</span>
+client/src/BusinessSphereDashboard.jsx-2796-              </div>
+client/src/BusinessSphereDashboard.jsx-2797-              <p className="text-white font-black text-[17px] leading-tight">{inv.customer}</p>
+client/src/BusinessSphereDashboard.jsx:2798:              <p className="text-[#16A34A] font-mono font-bold text-[15px] mt-0.5">TZS {fmt(total)}</p>
+client/src/BusinessSphereDashboard.jsx-2799-            </div>
+client/src/BusinessSphereDashboard.jsx-2800-            <div className="text-right">
+client/src/BusinessSphereDashboard.jsx-2801-              <p className="text-[rgba(255,255,255,.4)] text-[10px] mb-0.5">Due</p>
+--
+client/src/BusinessSphereDashboard.jsx-2903-
+client/src/BusinessSphereDashboard.jsx-2904-  if (!receipt) return null;
+client/src/BusinessSphereDashboard.jsx-2905-
+client/src/BusinessSphereDashboard.jsx:2906:  const total = lineTotal(receipt.items || []).total;
+client/src/BusinessSphereDashboard.jsx-2907-  const refPart = receipt.reference ? " (Ref: " + receipt.reference + ")" : "";
+client/src/BusinessSphereDashboard.jsx-2908-  const msg = encodeURIComponent(
+client/src/BusinessSphereDashboard.jsx-2909-    "✅ Receipt — " + receipt.invoiceId + "\n\nDear " + receipt.customer + ",\n\nPayment of TZS " + money(Math.round(receipt.amount)) + "k received on " + receipt.date + " via " + receipt.method + refPart + ".\n\nThank you for your business!\n\n— SmartManager"
+--
+client/src/BusinessSphereDashboard.jsx-2933-  function printReceipt() {
+client/src/BusinessSphereDashboard.jsx-2934-    const co = window.__smartManagerCompany || {};
+client/src/BusinessSphereDashboard.jsx-2935-    const fmt = (n) => new Intl.NumberFormat("en-US").format(Math.round(n));
+client/src/BusinessSphereDashboard.jsx:2936:    const subtotalVal = (receipt.items||[]).reduce((s,it)=>s+(it.qty||1)*(it.rate||0),0);
+client/src/BusinessSphereDashboard.jsx:2937:    const taxVal = subtotalVal * 0.18;
+client/src/BusinessSphereDashboard.jsx-2938-    const itemRows = (receipt.items || []).map((it) =>
+client/src/BusinessSphereDashboard.jsx-2939-      "<tr><td style=\"padding:7px 10px;border-bottom:1px solid #F3F4F6\">" + it.name + "</td>" +
+client/src/BusinessSphereDashboard.jsx-2940-      "<td style=\"padding:7px 10px;border-bottom:1px solid #F3F4F6;text-align:center;font-family:monospace\">" + (it.qty||1) + "</td>" +
+--
+client/src/BusinessSphereDashboard.jsx-2943-    ).join("");
+client/src/BusinessSphereDashboard.jsx-2944-    const logoHtml = co.logo
+client/src/BusinessSphereDashboard.jsx-2945-      ? "<img src=\"" + co.logo + "\" style=\"height:44px;object-fit:contain;filter:brightness(0) invert(1)\" alt=\"logo\"/>"
+client/src/BusinessSphereDashboard.jsx:2946:      : "<svg width=\"36\" height=\"42\" viewBox=\"0 0 120 140\"><polygon points=\"60,6 114,33 114,107 60,134 6,107 6,33\" fill=\"rgba(255,255,255,.9)\"/><text x=\"60\" y=\"78\" text-anchor=\"middle\" dominant-baseline=\"middle\" fill=\"#16A34A\" font-size=\"52\" font-weight=\"900\" font-family=\"sans-serif\">S</text></svg>";
+client/src/BusinessSphereDashboard.jsx-2947-    const detailStrip = [co.address ? "📍 " + co.address + (co.city ? ", " + co.city : "") : "",
+client/src/BusinessSphereDashboard.jsx-2948-      co.phone ? "📞 " + co.phone : "", co.email ? "✉️ " + co.email : "", co.tin ? "TIN: " + co.tin : ""]
+client/src/BusinessSphereDashboard.jsx-2949-      .filter(Boolean).map((s) => "<span>" + s + "</span>").join("  ·  ");
+--
+client/src/BusinessSphereDashboard.jsx-2975-            "<th style=\"padding:8px 10px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#6B7280\">Amount</th>" +
+client/src/BusinessSphereDashboard.jsx-2976-          "</tr></thead><tbody>" + itemRows + "</tbody></table>" +
+client/src/BusinessSphereDashboard.jsx-2977-        "<div style=\"border-top:1px solid #E5E7EB;padding-top:12px;margin-bottom:16px\">" +
+client/src/BusinessSphereDashboard.jsx:2978:          "<div style=\"display:flex;justify-content:space-between;font-size:11.5px;color:#6B7280;margin-bottom:4px\"><span>Subtotal</span><span>TZS " + fmt(subtotalVal) + "k</span></div>" +
+client/src/BusinessSphereDashboard.jsx:2979:          "<div style=\"display:flex;justify-content:space-between;font-size:11.5px;color:#6B7280;margin-bottom:10px\"><span>VAT (18%)</span><span>TZS " + fmt(taxVal) + "k</span></div>" +
+client/src/BusinessSphereDashboard.jsx-2980-          "<div style=\"display:flex;justify-content:space-between;padding:12px 16px;background:#052614;border-radius:10px\">" +
+client/src/BusinessSphereDashboard.jsx:2981:            "<span style=\"font-size:14px;font-weight:800;color:white\">TOTAL PAID</span>" +
+client/src/BusinessSphereDashboard.jsx-2982-            "<span style=\"font-size:18px;font-weight:900;color:#4ADE80\">TZS " + fmt(receipt.amount) + "k</span>" +
+client/src/BusinessSphereDashboard.jsx-2983-          "</div>" +
+client/src/BusinessSphereDashboard.jsx-2984-        "</div>" +
+--
+client/src/BusinessSphereDashboard.jsx-3194-  },
+client/src/BusinessSphereDashboard.jsx-3195-  {
+client/src/BusinessSphereDashboard.jsx-3196-    id: "Finance Manager", category: "Department Head",
+client/src/BusinessSphereDashboard.jsx:3197:    description: "Sees every module for company-wide financial oversight; day-to-day work — invoicing, payables, ledger, tax — happens in Finance, Reports, and Procurement spend.",
+client/src/BusinessSphereDashboard.jsx-3198-    allowedModules: ALL_MODULE_IDS, primaryModules: ["finance", "reports", "analytics", "procurement", "notifications"], writeAccess: "full",
+client/src/BusinessSphereDashboard.jsx-3199-  },
+client/src/BusinessSphereDashboard.jsx-3200-  {
+--
+client/src/BusinessSphereDashboard.jsx-3517-        inv.dueDate && new Date(inv.dueDate) < today
+client/src/BusinessSphereDashboard.jsx-3518-      );
+client/src/BusinessSphereDashboard.jsx-3519-      if (overdue.length > 0) {
+client/src/BusinessSphereDashboard.jsx:3520:        const total = overdue.reduce((s, inv) => s + (inv.totalAmount || inv.total || 0), 0);
+client/src/BusinessSphereDashboard.jsx-3521-        alerts.push({
+client/src/BusinessSphereDashboard.jsx-3522-          id: "inv-overdue", module: "sales", priority: "high",
+client/src/BusinessSphereDashboard.jsx-3523-          category: "Finance",
+client/src/BusinessSphereDashboard.jsx-3524-          icon: "💸",
+client/src/BusinessSphereDashboard.jsx-3525-          title: overdue.length + " Overdue Invoice" + (overdue.length > 1 ? "s" : ""),
+client/src/BusinessSphereDashboard.jsx:3526:          detail: "TZS " + money(total) + "k unpaid · Oldest: " +
+client/src/BusinessSphereDashboard.jsx-3527-            (overdue.sort((a,b) => new Date(a.dueDate)-new Date(b.dueDate))[0]?.customer || "Unknown"),
+client/src/BusinessSphereDashboard.jsx-3528-          action: "View Sales → Invoices",
+client/src/BusinessSphereDashboard.jsx-3529-        });
+--
+client/src/BusinessSphereDashboard.jsx-3959-async function recordPayment(invoicesHook, invoiceDocumentId, payment, actor) {
+client/src/BusinessSphereDashboard.jsx-3960-  const inv = invoicesHook.rows.find((d) => d.id === invoiceDocumentId);
+client/src/BusinessSphereDashboard.jsx-3961-  if (!inv) return null;
+client/src/BusinessSphereDashboard.jsx:3962:  const { total } = lineTotal(inv.items);
+client/src/BusinessSphereDashboard.jsx-3963-  const normalizedReference = String(payment.reference || "").trim().toLowerCase();
+client/src/BusinessSphereDashboard.jsx-3964-  if (normalizedReference && (inv.payments || []).some((existing) => String(existing.reference || "").trim().toLowerCase() === normalizedReference)) {
+client/src/BusinessSphereDashboard.jsx-3965-    notify("This payment reference is already recorded for the invoice. No duplicate payment was written.", "error");
+client/src/BusinessSphereDashboard.jsx-3966-    return null;
+client/src/BusinessSphereDashboard.jsx-3967-  }
+client/src/BusinessSphereDashboard.jsx:3968:  const newAmountPaid = Math.min(total, (inv.amountPaid || 0) + payment.amount);
+client/src/BusinessSphereDashboard.jsx:3969:  const newStatus = newAmountPaid >= total ? "Paid" : "Partial";
+client/src/BusinessSphereDashboard.jsx-3970-  const paymentRecord = { id: `PMT-${Date.now()}`, amount: payment.amount, method: payment.method, date: payment.date, reference: payment.reference || null };
+client/src/BusinessSphereDashboard.jsx-3971-  const patch = { amountPaid: newAmountPaid, status: newStatus, payments: [paymentRecord, ...(inv.payments || [])] };
+client/src/BusinessSphereDashboard.jsx-3972-
+--
+client/src/BusinessSphereDashboard.jsx-4026-}
+client/src/BusinessSphereDashboard.jsx-4027-
+client/src/BusinessSphereDashboard.jsx-4028-// Was a hardcoded Tanzania-only constant (0.18, "standard VAT") — the
+client/src/BusinessSphereDashboard.jsx:4029:// exact kind of claim that does not survive an audit against "multiple tax
+client/src/BusinessSphereDashboard.jsx-4030-// systems." Now a real, per-company configurable rate, set from
+client/src/BusinessSphereDashboard.jsx:4031:// companies.tax_rate (Settings, section 46) rather than baked in. A
+client/src/BusinessSphereDashboard.jsx-4032-// mutable module value rather than a prop threaded through the dozen-plus
+client/src/BusinessSphereDashboard.jsx-4033-// call sites below is a deliberate, bounded choice: every one of those
+client/src/BusinessSphereDashboard.jsx-4034-// call sites computes this fresh during render, not from a cached value,
+--
+client/src/BusinessSphereDashboard.jsx-4037-// invoice line, and refund calculation to accept a new prop individually.
+client/src/BusinessSphereDashboard.jsx-4038-// Still expressed as a fraction (0.18) to avoid touching the arithmetic
+client/src/BusinessSphereDashboard.jsx-4039-// at every call site — only the source of truth changed, not the math.
+client/src/BusinessSphereDashboard.jsx:4040:let TAX_RATE = 0.18;
+client/src/BusinessSphereDashboard.jsx:4041:function setActiveTaxRate(ratePercent) {
+client/src/BusinessSphereDashboard.jsx:4042:  TAX_RATE = (Number(ratePercent) || 18) / 100;
+client/src/BusinessSphereDashboard.jsx-4043-}
+client/src/BusinessSphereDashboard.jsx-4044-
+client/src/BusinessSphereDashboard.jsx-4045-// Real IANA timezone identifiers — genuinely recognized by every
+--
+client/src/BusinessSphereDashboard.jsx-4068-  }
+client/src/BusinessSphereDashboard.jsx-4069-}
+client/src/BusinessSphereDashboard.jsx-4070-
+client/src/BusinessSphereDashboard.jsx:4071:function lineTotal(items) {
+client/src/BusinessSphereDashboard.jsx:4072:  // Each line: qty × rate × (1 - discount/100). Per-line discount is optional
+client/src/BusinessSphereDashboard.jsx:4073:  // (0 when not set) so existing callers that pass no discount field are unaffected.
+client/src/BusinessSphereDashboard.jsx:4074:  const subtotal = items.reduce((s, i) => {
+client/src/BusinessSphereDashboard.jsx-4075-    const base = (Number(i.qty) || 0) * (Number(i.rate) || 0);
+client/src/BusinessSphereDashboard.jsx:4076:    const disc = Math.min(100, Math.max(0, Number(i.discount) || 0));
+client/src/BusinessSphereDashboard.jsx-4077-    return s + base * (1 - disc / 100);
+client/src/BusinessSphereDashboard.jsx-4078-  }, 0);
+client/src/BusinessSphereDashboard.jsx:4079:  const tax = Math.round(subtotal * TAX_RATE);
+client/src/BusinessSphereDashboard.jsx:4080:  return { subtotal, tax, total: subtotal + tax };
+client/src/BusinessSphereDashboard.jsx-4081-}
+client/src/BusinessSphereDashboard.jsx-4082-
+client/src/BusinessSphereDashboard.jsx-4083-// A real number-to-words converter, not a lookup table — built after
+--
+client/src/BusinessSphereDashboard.jsx-4421-  },
+client/src/BusinessSphereDashboard.jsx-4422-];
+client/src/BusinessSphereDashboard.jsx-4423-
+client/src/BusinessSphereDashboard.jsx:4424:function poTotal(items) {
+client/src/BusinessSphereDashboard.jsx-4425-  return items.reduce((s, it) => s + it.qty * it.cost, 0);
+client/src/BusinessSphereDashboard.jsx-4426-}
+client/src/BusinessSphereDashboard.jsx-4427-
+--
+client/src/BusinessSphereDashboard.jsx-4626-/* ------------------------------- PAYROLL DATA -------------------------------- */
+client/src/BusinessSphereDashboard.jsx-4627-
+client/src/BusinessSphereDashboard.jsx-4628-const payrollRunsSeed = [
+client/src/BusinessSphereDashboard.jsx:4629:  { id: "PR-2026-05", period: "May 2026", employeeCount: 7, totalAmount: 12800, status: "Processed", processedDate: "2026-05-28" },
+client/src/BusinessSphereDashboard.jsx:4630:  { id: "PR-2026-06", period: "June 2026", employeeCount: 7, totalAmount: 12800, status: "Processed", processedDate: "2026-06-27" },
+client/src/BusinessSphereDashboard.jsx-4631-];
+client/src/BusinessSphereDashboard.jsx-4632-
+client/src/BusinessSphereDashboard.jsx-4633-/* ------------------------------- MANUFACTURING DATA -------------------------------- */
+--
+client/src/BusinessSphereDashboard.jsx-4894-
+client/src/BusinessSphereDashboard.jsx-4895-// Maps each real alert type already computed by useBusinessAlerts (see the
+client/src/BusinessSphereDashboard.jsx-4896-// Notification Center) to which channels should receive it — reusing the
+client/src/BusinessSphereDashboard.jsx:4897:// exact alert taxonomy already live in the app rather than inventing a
+client/src/BusinessSphereDashboard.jsx-4898-// second one.
+client/src/BusinessSphereDashboard.jsx-4899-const ALERT_ROUTING_TYPES = [
+client/src/BusinessSphereDashboard.jsx-4900-  { id: "out-of-stock", label: "Out of stock" },
+--
+client/src/BusinessSphereDashboard.jsx-4975-
+client/src/BusinessSphereDashboard.jsx-4976-const MOBILE_MONEY_PROVIDERS = ["M-Pesa", "Airtel Money", "Tigo Pesa", "HaloPesa"];
+client/src/BusinessSphereDashboard.jsx-4977-
+client/src/BusinessSphereDashboard.jsx:4978:const TAX_AUTHORITY_NOTE = "No tax authority in East Africa exposes a generic public API a third-party app can integrate with — filing systems like TRA's require certified, business-specific credentials issued directly to the taxpayer. The real, honest capability here is preparation: the VAT Summary already built in Finance computes exactly the number a filing needs.";
+client/src/BusinessSphereDashboard.jsx-4979-
+client/src/BusinessSphereDashboard.jsx-4980-const signaturesSeed = [];
+client/src/BusinessSphereDashboard.jsx-4981-
+--
+client/src/BusinessSphereDashboard.jsx-4987-// against it, rather than being stuck with whatever KPIs a developer
+client/src/BusinessSphereDashboard.jsx-4988-// hardcoded onto a dashboard.
+client/src/BusinessSphereDashboard.jsx-4989-const KPI_METRICS = [
+client/src/BusinessSphereDashboard.jsx:4990:  { id: "revenue", label: "Revenue Collected", unit: "TZS 000", compute: (d) => d.invoices.rows.reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0) },
+client/src/BusinessSphereDashboard.jsx:4991:  { id: "profit", label: "Net Profit", unit: "TZS 000", compute: (d) => { const rev = d.invoices.rows.reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0); return rev - d.expenses.rows.reduce((s, e) => s + e.amount, 0); } },
+client/src/BusinessSphereDashboard.jsx:4992:  { id: "receivables", label: "Outstanding Receivables", unit: "TZS 000", compute: (d) => d.invoices.rows.filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0) },
+client/src/BusinessSphereDashboard.jsx-4993-  { id: "stock_value", label: "Stock Value", unit: "TZS 000", compute: (d) => d.inventory.rows.reduce((s, it) => s + it.qty * it.unitCost, 0) },
+client/src/BusinessSphereDashboard.jsx-4994-  { id: "pipeline_value", label: "Open Pipeline Value", unit: "TZS 000", compute: (d) => d.crm.rows.filter((l) => l.stage !== "Won" && l.stage !== "Lost").reduce((s, l) => s + l.value, 0) },
+client/src/BusinessSphereDashboard.jsx-4995-  { id: "headcount", label: "Active Employees", unit: "people", compute: (d) => d.employees.rows.filter((e) => e.status === "Active").length },
+--
+client/src/BusinessSphereDashboard.jsx-5053-  { id: "none", label: "No condition — always run", evaluate: () => ({ met: true, detail: "No condition set" }) },
+client/src/BusinessSphereDashboard.jsx-5054-  { id: "overdue-count-gt", label: "Only if overdue invoices exceed…", unit: "invoices", evaluate: (data, v) => { const todayStr = TODAY.toISOString().slice(0, 10); const n = data.invoices.rows.filter((i) => i.status !== "Paid" && i.dueDate && i.dueDate < todayStr).length; return { met: n > Number(v), detail: `${n} overdue invoice(s) vs threshold ${v}` }; } },
+client/src/BusinessSphereDashboard.jsx-5055-  { id: "low-stock-count-gt", label: "Only if low-stock items exceed…", unit: "items", evaluate: (data, v) => { const n = data.inventory.rows.filter((it) => it.qty <= it.reorder).length; return { met: n > Number(v), detail: `${n} item(s) at/below reorder vs threshold ${v}` }; } },
+client/src/BusinessSphereDashboard.jsx:5056:  { id: "unpaid-expenses-gt", label: "Only if unpaid expenses exceed… (TZS 000)", unit: "TZS k", evaluate: (data, v) => { const total = data.expenses.rows.filter((e) => e.status !== "Paid").reduce((s, e) => s + e.amount, 0); return { met: total > Number(v), detail: `TZS ${money(Math.round(total))}k unpaid vs threshold ${money(Number(v))}k` }; } },
+client/src/BusinessSphereDashboard.jsx-5057-];
+client/src/BusinessSphereDashboard.jsx-5058-
+client/src/BusinessSphereDashboard.jsx-5059-// Five step types, deliberately not more — each one wraps a function this
+--
+client/src/BusinessSphereDashboard.jsx-5122-    description: "A monthly reminder plus a real financial snapshot to reference before filing — preparation only. See Finance's own VAT Summary for the actual computed figure and section 25's note on why real TRA filing needs credentials this app does not hold.",
+client/src/BusinessSphereDashboard.jsx-5123-    trigger: "manual",
+client/src/BusinessSphereDashboard.jsx-5124-    steps: [
+client/src/BusinessSphereDashboard.jsx:5125:      { id: "s1", type: "notify_slack", config: { message: "VAT return is due soon — check Finance > Tax for this period's summary." } },
+client/src/BusinessSphereDashboard.jsx-5126-      { id: "s2", type: "generate_report", config: { reportType: "Profit & Loss" } },
+client/src/BusinessSphereDashboard.jsx-5127-      { id: "s3", type: "log_audit", config: { note: "VAT filing preparation reminder sent" } },
+client/src/BusinessSphereDashboard.jsx-5128-    ],
+--
+client/src/BusinessSphereDashboard.jsx-5317-};
+client/src/BusinessSphereDashboard.jsx-5318-
+client/src/BusinessSphereDashboard.jsx-5319-const onlineOrdersSeed = [
+client/src/BusinessSphereDashboard.jsx:5320:  { id: "WEB-5521", customer: "Rehema Chuma", email: "rehema.c@gmail.com", items: [{ name: "Salon styling chair", qty: 2, price: 284 }], total: 568, status: "Processing", method: "Mobile Money", date: "2026-07-02" },
+client/src/BusinessSphereDashboard.jsx:5321:  { id: "WEB-5520", customer: "Baraka Mnyika", email: "b.mnyika@outlook.com", items: [{ name: "Warehouse shelving unit", qty: 4, price: 105 }], total: 420, status: "Shipped", method: "Card", date: "2026-07-01" },
+client/src/BusinessSphereDashboard.jsx:5322:  { id: "WEB-5519", customer: "Zainab Ally", email: "zainab.ally@yahoo.com", items: [{ name: "Pharmacy display unit", qty: 1, price: 864 }], total: 864, status: "Delivered", method: "Card", date: "2026-06-29" },
+client/src/BusinessSphereDashboard.jsx:5323:  { id: "WEB-5518", customer: "Omary Kassim", email: "o.kassim@gmail.com", items: [{ name: "Fleet GPS tracking unit", qty: 3, price: 159 }], total: 477, status: "Payment Pending", method: "Mobile Money", date: "2026-06-28" },
+client/src/BusinessSphereDashboard.jsx:5324:  { id: "WEB-5517", customer: "Neema Godwin", email: "neema.godwin@gmail.com", items: [{ name: "Cold storage racking system", qty: 1, price: 3483 }], total: 3483, status: "Delivered", method: "Bank Transfer", date: "2026-06-24" },
+client/src/BusinessSphereDashboard.jsx:5325:  { id: "WEB-5516", customer: "Hassan Iddi", email: "hassan.iddi@gmail.com", items: [{ name: "Backwash basin", qty: 2, price: 378 }], total: 756, status: "Cancelled", method: "Card", date: "2026-06-22" },
+client/src/BusinessSphereDashboard.jsx-5326-];
+client/src/BusinessSphereDashboard.jsx-5327-
+client/src/BusinessSphereDashboard.jsx-5328-const STOREFRONT_TREND = [
+--
+client/src/BusinessSphereDashboard.jsx-5332-
+client/src/BusinessSphereDashboard.jsx-5333-/* -------------------------------- DOCUMENTS DATA --------------------------------- */
+client/src/BusinessSphereDashboard.jsx-5334-
+client/src/BusinessSphereDashboard.jsx:5335:const DOC_FOLDERS = ["Contracts", "Invoices", "Receipts", "Employee Files", "Tax Documents", "Licenses", "Purchase Orders"];
+client/src/BusinessSphereDashboard.jsx-5336-
+client/src/BusinessSphereDashboard.jsx-5337-// Real OCR via Tesseract.js — a genuine, production-grade, client-side
+client/src/BusinessSphereDashboard.jsx-5338-// OCR engine (WebAssembly, runs entirely in the browser, no server or paid
+--
+client/src/BusinessSphereDashboard.jsx-5379-  { id: "DOC-01", name: "Baraka Hotels — Supply Agreement.pdf", type: "pdf", folder: "Contracts", size: "1.2 MB", uploadedBy: "J. Batenga", date: "2026-06-24", linkedRecord: "QT-1042", content: "Supply agreement between BEIRAHISI HARDWARE and Baraka Hotels & Resorts for construction materials, effective 1 June 2026. Payment terms: net 30 days. Delivery: Dar es Salaam metro area within 5 business days of order confirmation.", versions: [] },
+client/src/BusinessSphereDashboard.jsx-5380-  { id: "DOC-02", name: "Meridian Logistics — Service Contract.pdf", type: "pdf", folder: "Contracts", size: "0.9 MB", uploadedBy: "S. Kileo", date: "2026-06-15", linkedRecord: "SO-2117", content: "Service contract covering GPS tracking unit installation and annual monitoring subscription for Meridian Logistics' fleet, 24 units, renewable annually.", versions: [] },
+client/src/BusinessSphereDashboard.jsx-5381-  { id: "DOC-03", name: "June Payroll Summary.xlsx", type: "xlsx", folder: "Employee Files", size: "340 KB", uploadedBy: "F. Salim", date: "2026-06-27", linkedRecord: null, content: "", versions: [] },
+client/src/BusinessSphereDashboard.jsx:5382:  { id: "DOC-04", name: "Q2 VAT Return.pdf", type: "pdf", folder: "Tax Documents", size: "610 KB", uploadedBy: "F. Salim", date: "2026-06-20", linkedRecord: null, content: "Quarterly VAT return for Q2 2026, output tax computed at 18% on taxable sales, filed with the Tanzania Revenue Authority.", versions: [{ version: 1, date: "2026-06-18", size: "598 KB", note: "Initial draft before final reconciliation" }] },
+client/src/BusinessSphereDashboard.jsx-5383-  { id: "DOC-05", name: "Business License — Renewal 2026.pdf", type: "pdf", folder: "Licenses", size: "1.8 MB", uploadedBy: "EzyMP", date: "2026-05-30", linkedRecord: null, content: "Business operating license renewal, City of Dar es Salaam, valid through 31 May 2027. License category: General wholesale and hardware trading.", versions: [] },
+client/src/BusinessSphereDashboard.jsx-5384-  { id: "DOC-06", name: "Grace Mmbaga — Employment Contract.docx", type: "docx", folder: "Employee Files", size: "88 KB", uploadedBy: "F. Salim", date: "2026-06-01", linkedRecord: "EMP-104", content: "Employment contract for Grace Mmbaga, Operations role, permanent contract effective 1 June 2026, probation period 3 months.", versions: [] },
+client/src/BusinessSphereDashboard.jsx-5385-  { id: "DOC-07", name: "Coastal Construction — Purchase Order.pdf", type: "pdf", folder: "Purchase Orders", size: "0.5 MB", uploadedBy: "M. Fundi", date: "2026-06-22", linkedRecord: "QT-1041", content: "", versions: [] },
+client/src/BusinessSphereDashboard.jsx-5386-  { id: "DOC-08", name: "Warehouse Floor Plan.png", type: "png", folder: "Licenses", size: "2.1 MB", uploadedBy: "D. Chen", date: "2026-05-12", linkedRecord: null, content: "", versions: [] },
+client/src/BusinessSphereDashboard.jsx:5387:  { id: "DOC-09", name: "Annual Financial Statement 2025.xlsx", type: "xlsx", folder: "Tax Documents", size: "780 KB", uploadedBy: "F. Salim", date: "2026-04-18", linkedRecord: null, content: "", versions: [] },
+client/src/BusinessSphereDashboard.jsx-5388-];
+client/src/BusinessSphereDashboard.jsx-5389-
+client/src/BusinessSphereDashboard.jsx-5390-/* -------------------------------- MARKETING DATA --------------------------------- */
+--
+client/src/BusinessSphereDashboard.jsx-5403-// Campaigns target a live CRM segment by industry — "sent to" counts are
+client/src/BusinessSphereDashboard.jsx-5404-// computed against real pipeline data, not stored as a stale snapshot.
+client/src/BusinessSphereDashboard.jsx-5405-const campaignsSeed = [
+client/src/BusinessSphereDashboard.jsx:5406:  { id: "CMP-118", name: "Cold Chain Solutions — June Promo", type: "Email", status: "Sent", segment: "Agriculture", sentDate: "2026-06-20", openRate: 42, clickRate: 11 },
+client/src/BusinessSphereDashboard.jsx-5407-  { id: "CMP-117", name: "Hardware Restock Reminder", type: "SMS", status: "Sent", segment: "Construction", sentDate: "2026-06-15", openRate: 68, clickRate: 9 },
+client/src/BusinessSphereDashboard.jsx-5408-  { id: "CMP-116", name: "New Hospitality Fixtures Launch", type: "Email", status: "Sent", segment: "Hospitality", sentDate: "2026-06-08", openRate: 51, clickRate: 15 },
+client/src/BusinessSphereDashboard.jsx:5409:  { id: "CMP-115", name: "Mid-Year Wholesale Discount", type: "Email", status: "Scheduled", segment: "Wholesale", sentDate: "2026-07-10", openRate: null, clickRate: null },
+client/src/BusinessSphereDashboard.jsx-5410-  { id: "CMP-114", name: "Salon Equipment Flash Sale", type: "SMS", status: "Scheduled", segment: "Retail", sentDate: "2026-07-08", openRate: null, clickRate: null },
+client/src/BusinessSphereDashboard.jsx-5411-  { id: "CMP-113", name: "Q3 Logistics Partner Outreach", type: "Email", status: "Draft", segment: "Logistics", sentDate: null, openRate: null, clickRate: null },
+client/src/BusinessSphereDashboard.jsx-5412-];
+--
+client/src/BusinessSphereDashboard.jsx-6028-    const invRows = invoices.rows.filter((inv) => !periodStart || (inv.date || "") >= periodStart);
+client/src/BusinessSphereDashboard.jsx-6029-    const expRows = expenses.rows.filter((e) => !periodStart || (e.date || e.expenseDate || "") >= periodStart);
+client/src/BusinessSphereDashboard.jsx-6030-    const revenue = invRows.reduce((s, inv) => {
+client/src/BusinessSphereDashboard.jsx:6031:      const { total } = lineTotal(inv.items);
+client/src/BusinessSphereDashboard.jsx:6032:      return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0));
+client/src/BusinessSphereDashboard.jsx-6033-    }, 0);
+client/src/BusinessSphereDashboard.jsx:6034:    const expenseTotal = expRows.reduce((s, e) => s + e.amount, 0);
+client/src/BusinessSphereDashboard.jsx:6035:    const profit = revenue - expenseTotal;
+client/src/BusinessSphereDashboard.jsx-6036-    const outstanding = invoices.rows.filter((inv) => inv.status !== "Paid");
+client/src/BusinessSphereDashboard.jsx:6037:    const pendingCash = outstanding.reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
+client/src/BusinessSphereDashboard.jsx:6038:    return { revenue, expenseTotal, profit, pendingCash, outstandingCount: outstanding.length };
+client/src/BusinessSphereDashboard.jsx-6039-  }, [invoices.rows, expenses.rows, periodStart]);
+client/src/BusinessSphereDashboard.jsx-6040-
+client/src/BusinessSphereDashboard.jsx-6041-  const financeKpis = [
+client/src/BusinessSphereDashboard.jsx-6042-    { label: "Revenue Collected", value: `TZS ${money(Math.round(financials.revenue))}k`, delta: PERIOD_LABELS[period], up: true, icon: CircleDollarSign },
+client/src/BusinessSphereDashboard.jsx:6043:    { label: "Expenses", value: `TZS ${money(Math.round(financials.expenseTotal))}k`, delta: PERIOD_LABELS[period], up: false, icon: Wallet },
+client/src/BusinessSphereDashboard.jsx-6044-    { label: "Profit", value: `TZS ${money(Math.round(financials.profit))}k`, delta: financials.profit >= 0 ? "Net positive" : "Net negative", up: financials.profit >= 0, icon: financials.profit >= 0 ? TrendingUp : TrendingDown },
+client/src/BusinessSphereDashboard.jsx-6045-    { label: "Cash Flow", value: `TZS ${money(Math.round(financials.pendingCash))}k`, delta: `${financials.outstandingCount} invoices pending`, up: false, icon: Landmark },
+client/src/BusinessSphereDashboard.jsx-6046-  ];
+--
+client/src/BusinessSphereDashboard.jsx-6056-  const topCustomers = useMemo(() => {
+client/src/BusinessSphereDashboard.jsx-6057-    const map = {};
+client/src/BusinessSphereDashboard.jsx-6058-    invoices.rows.forEach((inv) => {
+client/src/BusinessSphereDashboard.jsx:6059:      const { total } = lineTotal(inv.items);
+client/src/BusinessSphereDashboard.jsx:6060:      map[inv.customer] = (map[inv.customer] || 0) + total;
+client/src/BusinessSphereDashboard.jsx-6061-    });
+client/src/BusinessSphereDashboard.jsx-6062-    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([customer, value]) => ({ customer, value }));
+client/src/BusinessSphereDashboard.jsx-6063-  }, [invoices.rows]);
+--
+client/src/BusinessSphereDashboard.jsx-6100-      { bucket: "31–60 days", items: unpaid.filter((invoice) => invoice.dueDate && (todayMs - new Date(invoice.dueDate).getTime()) > 30 * 86400000 && (todayMs - new Date(invoice.dueDate).getTime()) <= 60 * 86400000) },
+client/src/BusinessSphereDashboard.jsx-6101-      { bucket: "60+ days", items: unpaid.filter((invoice) => invoice.dueDate && (todayMs - new Date(invoice.dueDate).getTime()) > 60 * 86400000) },
+client/src/BusinessSphereDashboard.jsx-6102-    ];
+client/src/BusinessSphereDashboard.jsx:6103:    return buckets.map(({ bucket, items }) => ({ bucket, invoice_count: items.length, amount_tzs_k: Math.round(items.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total - (invoice.amountPaid || 0), 0) / 1000) }));
+client/src/BusinessSphereDashboard.jsx-6104-  }, [invoices.rows]);
+client/src/BusinessSphereDashboard.jsx-6105-
+client/src/BusinessSphereDashboard.jsx-6106-  const exportDateMatches = useCallback((row) => {
+--
+client/src/BusinessSphereDashboard.jsx-6122-  const filteredExportSections = useMemo(() => {
+client/src/BusinessSphereDashboard.jsx-6123-    const exportInvoices = filteredExportRows.invoices;
+client/src/BusinessSphereDashboard.jsx-6124-    const exportExpenses = filteredExportRows.expenses;
+client/src/BusinessSphereDashboard.jsx:6125:    const exportRevenue = exportInvoices.reduce((sum, invoice) => sum + (invoice.status === "Paid" ? lineTotal(invoice.items || []).total : (invoice.amountPaid || 0)), 0);
+client/src/BusinessSphereDashboard.jsx:6126:    const exportExpenseTotal = exportExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+client/src/BusinessSphereDashboard.jsx-6127-    const exportPipelineByStage = STAGES.map((stage) => ({ stage, deal_count: filteredExportRows.crm.filter((lead) => lead.stage === stage).length }));
+client/src/BusinessSphereDashboard.jsx-6128-    const exportStockByCategory = Object.entries(filteredExportRows.inventory.reduce((map, item) => ({ ...map, [item.category]: (map[item.category] || 0) + item.qty * item.unitCost }), {})).map(([category, value]) => ({ category, stock_value_tzs_k: Math.round(value) }));
+client/src/BusinessSphereDashboard.jsx-6129-    const exportWorkOrdersByStatus = ["Planned", "In Progress", "Completed", "Cancelled"].map((status) => ({ status, order_count: filteredExportRows.workOrders.filter((workOrder) => workOrder.status === status).length }));
+client/src/BusinessSphereDashboard.jsx:6130:    const customerTotals = {};
+client/src/BusinessSphereDashboard.jsx:6131:    exportInvoices.forEach((invoice) => { customerTotals[invoice.customer] = (customerTotals[invoice.customer] || 0) + lineTotal(invoice.items || []).total; });
+client/src/BusinessSphereDashboard.jsx:6132:    const exportTopCustomers = Object.entries(customerTotals).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([customer, value]) => ({ customer, billed_value_tzs_k: value }));
+client/src/BusinessSphereDashboard.jsx-6133-    const exportUnpaid = exportInvoices.filter((invoice) => invoice.status !== "Paid");
+client/src/BusinessSphereDashboard.jsx-6134-    const exportAging = [
+client/src/BusinessSphereDashboard.jsx-6135-      { bucket: "Current", items: exportUnpaid.filter((invoice) => !invoice.dueDate || new Date(invoice.dueDate) >= TODAY) },
+client/src/BusinessSphereDashboard.jsx-6136-      { bucket: "1–30 days", items: exportUnpaid.filter((invoice) => invoice.dueDate && (TODAY - new Date(invoice.dueDate)) > 0 && (TODAY - new Date(invoice.dueDate)) <= 30 * 86400000) },
+client/src/BusinessSphereDashboard.jsx-6137-      { bucket: "31–60 days", items: exportUnpaid.filter((invoice) => invoice.dueDate && (TODAY - new Date(invoice.dueDate)) > 30 * 86400000 && (TODAY - new Date(invoice.dueDate)) <= 60 * 86400000) },
+client/src/BusinessSphereDashboard.jsx-6138-      { bucket: "60+ days", items: exportUnpaid.filter((invoice) => invoice.dueDate && (TODAY - new Date(invoice.dueDate)) > 60 * 86400000) },
+client/src/BusinessSphereDashboard.jsx:6139:    ].map(({ bucket, items }) => ({ bucket, invoice_count: items.length, amount_tzs_k: Math.round(items.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total - (invoice.amountPaid || 0), 0) / 1000) }));
+client/src/BusinessSphereDashboard.jsx-6140-    const trendMonths = Array.from({ length: 6 }, (_, index) => { const date = new Date(TODAY); date.setMonth(date.getMonth() - 5 + index); return date.toISOString().slice(0, 7); });
+client/src/BusinessSphereDashboard.jsx-6141-    const exportTrend = trendMonths.map((month) => {
+client/src/BusinessSphereDashboard.jsx-6142-      const revenue = exportInvoices.filter((invoice) => invoice.date?.startsWith(month)).reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
+--
+client/src/BusinessSphereDashboard.jsx-6146-    const sections = buildDashboardChartSections({
+client/src/BusinessSphereDashboard.jsx-6147-      kpis: [
+client/src/BusinessSphereDashboard.jsx-6148-        { metric: "Revenue Collected", value: `TZS ${money(Math.round(exportRevenue))}k`, detail: exportInvoices.length + " invoices" },
+client/src/BusinessSphereDashboard.jsx:6149:        { metric: "Expenses", value: `TZS ${money(Math.round(exportExpenseTotal))}k`, detail: exportExpenses.length + " expenses" },
+client/src/BusinessSphereDashboard.jsx:6150:        { metric: "Profit", value: `TZS ${money(Math.round(exportRevenue - exportExpenseTotal))}k`, detail: "Collected − Expenses" },
+client/src/BusinessSphereDashboard.jsx-6151-        { metric: "Pipeline", value: `TZS ${money(Math.round(filteredExportRows.crm.filter((lead) => !["Won", "Lost"].includes(lead.stage)).reduce((sum, lead) => sum + (lead.value || 0), 0) / 1000))}k`, detail: filteredExportRows.crm.length + " leads" },
+client/src/BusinessSphereDashboard.jsx-6152-      ],
+client/src/BusinessSphereDashboard.jsx-6153-      revenueExpenseTrend: exportTrend,
+--
+client/src/BusinessSphereDashboard.jsx-6541-                  </span>
+client/src/BusinessSphereDashboard.jsx-6542-                </div>
+client/src/BusinessSphereDashboard.jsx-6543-                <p className="text-[11.5px] text-slate-500 mt-0.5">
+client/src/BusinessSphereDashboard.jsx:6544:                  {lastScheduleSentAt ? `Last email digest delivered successfully on ${new Date(lastScheduleSentAt).toLocaleString()}` : hasActiveSchedules ? 'Scheduled weekly email dispatches are active and monitoring tenant tax records.' : 'Configure automated report schedules in the Reports module to enable weekly compliance email dispatches.'}
+client/src/BusinessSphereDashboard.jsx-6545-                </p>
+client/src/BusinessSphereDashboard.jsx-6546-              </div>
+client/src/BusinessSphereDashboard.jsx-6547-            </div>
+--
+client/src/BusinessSphereDashboard.jsx-6704-	          {(() => {
+client/src/BusinessSphereDashboard.jsx-6705-	            const invRows = invoices.rows.filter((invoice) => !periodStart || (invoice.date || "") >= periodStart);
+client/src/BusinessSphereDashboard.jsx-6706-	            const expRows = expenses.rows.filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart);
+client/src/BusinessSphereDashboard.jsx:6707:            const totalBilled = invRows.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total, 0);
+client/src/BusinessSphereDashboard.jsx:6708:            const totalCollected = invRows.reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
+client/src/BusinessSphereDashboard.jsx:6709:            const totalExpenses = expRows.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+client/src/BusinessSphereDashboard.jsx:6710:            const grossProfit = totalCollected - totalExpenses;
+client/src/BusinessSphereDashboard.jsx-6711-            const overdueInvs = invRows.filter((invoice) => invoice.status !== "Paid" && invoice.dueDate < TODAY.toISOString().slice(0, 10));
+client/src/BusinessSphereDashboard.jsx:6712:            const overdueAmt = overdueInvs.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total - (invoice.amountPaid || 0), 0);
+client/src/BusinessSphereDashboard.jsx-6713-            const inventoryValue = inventory.rows.reduce((sum, item) => sum + (item.qty || 0) * (item.unitCost || 0), 0);
+client/src/BusinessSphereDashboard.jsx-6714-            const lowStock = inventory.rows.filter((item) => item.qty <= item.reorder && item.reorder > 0).length;
+client/src/BusinessSphereDashboard.jsx-6715-            const stockOut = inventory.rows.filter((item) => item.qty <= 0).length;
+--
+client/src/BusinessSphereDashboard.jsx-6723-            const hasFinanceData = invRows.length > 0 || expRows.length > 0;
+client/src/BusinessSphereDashboard.jsx-6724-            const periodText = PERIOD_LABELS[period].toLowerCase();
+client/src/BusinessSphereDashboard.jsx-6725-            const cards = [
+client/src/BusinessSphereDashboard.jsx:6726:              { label: "AR Billed", value: formatMoney(totalBilled), color: "#4ADE80", context: invRows.length ? `${invRows.length} invoice${invRows.length === 1 ? "" : "s"} in ${periodText}` : `No invoices in ${periodText}`, action: "Open receivables", onClick: () => onQuickAction("finance", { tab: "receivables" }) },
+client/src/BusinessSphereDashboard.jsx:6727:              { label: "Collected", value: formatMoney(totalCollected), color: "#60A5FA", context: totalBilled > 0 ? `${Math.round((totalCollected / totalBilled) * 100)}% of billed value collected` : `No invoices to collect in ${periodText}`, action: "Open receivables", onClick: () => onQuickAction("finance", { tab: "receivables" }) },
+client/src/BusinessSphereDashboard.jsx-6728-              { label: "Overdue AR", value: formatMoney(overdueAmt), color: overdueAmt > 0 ? "#F87171" : "#4ADE80", context: overdueInvs.length ? `${overdueInvs.length} invoice${overdueInvs.length === 1 ? "" : "s"} overdue` : "No overdue invoices", action: "Review receivables", onClick: () => onQuickAction("finance", { tab: "receivables" }) },
+client/src/BusinessSphereDashboard.jsx-6729-              { label: "Gross P&L", value: `${grossProfit >= 0 ? "+" : "−"}${formatMoney(Math.abs(grossProfit))}`, color: grossProfit >= 0 ? "#4ADE80" : "#F87171", context: hasFinanceData ? "Collected less expenses" : `No invoice or expense entries in ${periodText}`, action: "Open finance", onClick: () => onNavigate("finance") },
+client/src/BusinessSphereDashboard.jsx-6730-              { label: "Inventory", value: formatMoney(inventoryValue), color: "#C4B5FD", context: inventory.rows.length ? `${inventory.rows.length} stocked SKU${inventory.rows.length === 1 ? "" : "s"}` : "No stock items recorded", action: "Open inventory", onClick: () => onNavigate("inventory") },
+--
+client/src/BusinessSphereDashboard.jsx-6857-          </div>
+client/src/BusinessSphereDashboard.jsx-6858-        </div>
+client/src/BusinessSphereDashboard.jsx-6859-
+client/src/BusinessSphereDashboard.jsx:6860:        {/* Latest Tax Compliance Audit Widget */}
+client/src/BusinessSphereDashboard.jsx-6861-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden p-5 flex flex-col justify-between">
+client/src/BusinessSphereDashboard.jsx-6862-          <div>
+client/src/BusinessSphereDashboard.jsx-6863-            <div className="flex items-center justify-between mb-3">
+client/src/BusinessSphereDashboard.jsx-6864-              <div className="flex items-center gap-2">
+client/src/BusinessSphereDashboard.jsx-6865-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 font-bold text-xs">🏛️</span>
+client/src/BusinessSphereDashboard.jsx-6866-                <div>
+client/src/BusinessSphereDashboard.jsx:6867:                  <h3 className="text-[13.5px] font-bold text-slate-900">Latest Tax Compliance Audit</h3>
+client/src/BusinessSphereDashboard.jsx-6868-                  <p className="text-[10.5px] text-slate-400">Automated recurring subsidiary & tenant check</p>
+client/src/BusinessSphereDashboard.jsx-6869-                </div>
+client/src/BusinessSphereDashboard.jsx-6870-              </div>
+--
+client/src/BusinessSphereDashboard.jsx-6994-                  {label:"31–60 days", days:60,  col:"#F97316", items:unpaid.filter(i=>i.dueDate&&(todayMs-new Date(i.dueDate).getTime())>30*86400000&&(todayMs-new Date(i.dueDate).getTime())<=60*86400000)},
+client/src/BusinessSphereDashboard.jsx-6995-                  {label:"60+ days",   days:999, col:"#EF4444", items:unpaid.filter(i=>i.dueDate&&(todayMs-new Date(i.dueDate).getTime())>60*86400000)},
+client/src/BusinessSphereDashboard.jsx-6996-                ];
+client/src/BusinessSphereDashboard.jsx:6997:                const totalAR = unpaid.reduce((s,i)=>s+lineTotal(i.items||[]).total-(i.amountPaid||0),0);
+client/src/BusinessSphereDashboard.jsx-6998-                return (
+client/src/BusinessSphereDashboard.jsx-6999-                  <div className="space-y-3">
+client/src/BusinessSphereDashboard.jsx-7000-                    {buckets.map(b=>{
+client/src/BusinessSphereDashboard.jsx:7001:                      const amt = b.items.reduce((s,i)=>s+lineTotal(i.items||[]).total-(i.amountPaid||0),0);
+client/src/BusinessSphereDashboard.jsx:7002:                      const pct = totalAR>0?Math.round(amt/totalAR*100):0;
+client/src/BusinessSphereDashboard.jsx-7003-                      return (
+client/src/BusinessSphereDashboard.jsx-7004-                        <div key={b.label}>
+client/src/BusinessSphereDashboard.jsx-7005-                          <div className="flex items-center justify-between text-[12px] mb-1">
+--
+client/src/BusinessSphereDashboard.jsx-7014-                      );
+client/src/BusinessSphereDashboard.jsx-7015-                    })}
+client/src/BusinessSphereDashboard.jsx-7016-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+client/src/BusinessSphereDashboard.jsx:7017:                      <span className="text-[12px] font-bold text-[#111827]">Total AR Outstanding</span>
+client/src/BusinessSphereDashboard.jsx:7018:                      <span className="text-[13px] font-black text-[#EF4444]">TZS {money(Math.round(totalAR/1000))}k</span>
+client/src/BusinessSphereDashboard.jsx-7019-                    </div>
+client/src/BusinessSphereDashboard.jsx-7020-                  </div>
+client/src/BusinessSphereDashboard.jsx-7021-                );
+--
+client/src/BusinessSphereDashboard.jsx-7035-        const vatTrendData = rawMonths.map(mo=>{
+client/src/BusinessSphereDashboard.jsx-7036-          const periodInv = invoices.rows.filter(i=>!periodStart || (i.date||"") >= periodStart);
+client/src/BusinessSphereDashboard.jsx-7037-          const moInv = periodInv.filter(i=>i.date?.startsWith(mo));
+client/src/BusinessSphereDashboard.jsx:7038:          const taxableGross = moInv.reduce((s,i)=>s+lineTotal(i.items||[]).total,0);
+client/src/BusinessSphereDashboard.jsx:7039:          const outputVat = taxableGross * 0.18;
+client/src/BusinessSphereDashboard.jsx-7040-          return {
+client/src/BusinessSphereDashboard.jsx-7041-            rawMo: mo,
+client/src/BusinessSphereDashboard.jsx-7042-            mo: new Date(mo+"-01").toLocaleDateString("en",{month:"short"}),
+client/src/BusinessSphereDashboard.jsx:7043:            taxable: Math.round(taxableGross / 1000),
+client/src/BusinessSphereDashboard.jsx-7044-            vat: Math.round(outputVat / 1000)
+client/src/BusinessSphereDashboard.jsx-7045-          };
+client/src/BusinessSphereDashboard.jsx-7046-        });
+client/src/BusinessSphereDashboard.jsx:7047:        const hasVatData = vatTrendData.some(d=>d.taxable>0||d.vat>0);
+client/src/BusinessSphereDashboard.jsx-7048-        if (!hasVatData) return null;
+client/src/BusinessSphereDashboard.jsx-7049-        return (
+client/src/BusinessSphereDashboard.jsx-7050-          <div className="order-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 mt-4">
+client/src/BusinessSphereDashboard.jsx-7051-            <div className="flex items-center justify-between mb-3">
+client/src/BusinessSphereDashboard.jsx-7052-              <div>
+client/src/BusinessSphereDashboard.jsx-7053-                <h3 className="text-[14px] font-bold text-[#111827]">VAT Return Trends — {PERIOD_LABELS[period]}</h3>
+client/src/BusinessSphereDashboard.jsx:7054:                <p className="text-[11.5px] text-slate-400">Taxable turnover vs Output VAT (18%) computed from verified invoices over the selected date range. Click any month bar or point to inspect itemized fiscal receipts.</p>
+client/src/BusinessSphereDashboard.jsx-7055-              </div>
+client/src/BusinessSphereDashboard.jsx-7056-              <div className="flex items-center gap-2 text-[12px] font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200">
+client/src/BusinessSphereDashboard.jsx-7057-                <span>TRA VFD Ready</span>
+--
+client/src/BusinessSphereDashboard.jsx-7069-                <YAxis tick={{fontSize:10,fill:"#94A3B8"}} axisLine={false} tickLine={false}/>
+client/src/BusinessSphereDashboard.jsx-7070-                <Tooltip contentStyle={{borderRadius:10,border:"1px solid #EEF1F4",fontSize:12}} formatter={(v,n)=>[`TZS ${money(v)}k`,n]}/>
+client/src/BusinessSphereDashboard.jsx-7071-                <Legend iconSize={9} iconType="circle"/>
+client/src/BusinessSphereDashboard.jsx:7072:                <Bar dataKey="taxable" name="Taxable Turnover" fill="#34D399" radius={[4,4,0,0]} barSize={24} cursor="pointer" onClick={(d)=>{ if (d && d.rawMo) setDrillDownMonth(d.rawMo); }}/>
+client/src/BusinessSphereDashboard.jsx-7073-                <Line type="monotone" dataKey="vat" name="Output VAT (18%)" stroke="#059669" strokeWidth={2.5} dot={{r:4,fill:"#059669",cursor:"pointer"}} activeDot={{r:6,onClick:(e,payload)=>{ if (payload && payload.payload && payload.payload.rawMo) setDrillDownMonth(payload.payload.rawMo); }}}/>
+client/src/BusinessSphereDashboard.jsx-7074-              </ComposedChart>
+client/src/BusinessSphereDashboard.jsx-7075-            </ResponsiveContainer>
+--
+client/src/BusinessSphereDashboard.jsx-7090-                  <h3 className="text-[16px] font-bold text-slate-900 dark:text-white">Itemized Fiscal Receipts — {drillDownMonth}</h3>
+client/src/BusinessSphereDashboard.jsx-7091-                  <span className="rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[11px] font-bold uppercase">TRA VFD Audited</span>
+client/src/BusinessSphereDashboard.jsx-7092-                </div>
+client/src/BusinessSphereDashboard.jsx:7093:                <p className="text-[12px] text-slate-500">Verified invoices and taxable turnover records contributing to the monthly VAT return for {drillDownMonth}.</p>
+client/src/BusinessSphereDashboard.jsx-7094-              </div>
+client/src/BusinessSphereDashboard.jsx-7095-              <div className="flex items-center gap-2">
+client/src/BusinessSphereDashboard.jsx-7096-                <select
+--
+client/src/BusinessSphereDashboard.jsx-7116-                  onClick={() => {
+client/src/BusinessSphereDashboard.jsx-7117-                    const monthInvoices = invoices.rows.filter(i => (i.date || "").startsWith(drillDownMonth));
+client/src/BusinessSphereDashboard.jsx-7118-                    const filtered = monthInvoices.filter(inv => {
+client/src/BusinessSphereDashboard.jsx:7119:                      const { total } = lineTotal(inv.items || []);
+client/src/BusinessSphereDashboard.jsx-7120-                      const q = drillDownSearch.toLowerCase().trim();
+client/src/BusinessSphereDashboard.jsx-7121-                      const vendor = (inv.customerName || inv.clientName || "").toLowerCase();
+client/src/BusinessSphereDashboard.jsx-7122-                      const invNum = String(inv.invoiceNumber || inv.id || "").toLowerCase();
+client/src/BusinessSphereDashboard.jsx-7123-                      const matchesSearch = !q || vendor.includes(q) || invNum.includes(q);
+client/src/BusinessSphereDashboard.jsx:7124:                      const minOk = drillDownMinAmount === "" || isNaN(Number(drillDownMinAmount)) || total >= Number(drillDownMinAmount);
+client/src/BusinessSphereDashboard.jsx:7125:                      const maxOk = drillDownMaxAmount === "" || isNaN(Number(drillDownMaxAmount)) || total <= Number(drillDownMaxAmount);
+client/src/BusinessSphereDashboard.jsx-7126-                      return matchesSearch && minOk && maxOk;
+client/src/BusinessSphereDashboard.jsx-7127-                    });
+client/src/BusinessSphereDashboard.jsx-7128-                    const csvRows = [
+client/src/BusinessSphereDashboard.jsx-7129-                      ["Invoice Number", "Customer / Vendor", "Date", "Gross Amount (TZS)", "Output VAT 18% (TZS)", "Status"],
+client/src/BusinessSphereDashboard.jsx-7130-                      ...filtered.map(i => {
+client/src/BusinessSphereDashboard.jsx:7131:                        const { total } = lineTotal(i.items || []);
+client/src/BusinessSphereDashboard.jsx-7132-                        return [
+client/src/BusinessSphereDashboard.jsx-7133-                          `"${i.invoiceNumber || i.id}"`,
+client/src/BusinessSphereDashboard.jsx-7134-                          `"${i.customerName || i.clientName || "Walk-in"}"`,
+client/src/BusinessSphereDashboard.jsx-7135-                          `"${i.date || "N/A"}"`,
+client/src/BusinessSphereDashboard.jsx:7136:                          total,
+client/src/BusinessSphereDashboard.jsx:7137:                          (total * 0.18).toFixed(2),
+client/src/BusinessSphereDashboard.jsx-7138-                          `"${i.status || "Issued"}"`
+client/src/BusinessSphereDashboard.jsx-7139-                        ];
+client/src/BusinessSphereDashboard.jsx-7140-                      })
+--
+client/src/BusinessSphereDashboard.jsx-7166-              {(() => {
+client/src/BusinessSphereDashboard.jsx-7167-                const monthInvoices = invoices.rows.filter(i => (i.date || "").startsWith(drillDownMonth));
+client/src/BusinessSphereDashboard.jsx-7168-                const filteredInvoices = monthInvoices.filter(inv => {
+client/src/BusinessSphereDashboard.jsx:7169:                  const { total } = lineTotal(inv.items || []);
+client/src/BusinessSphereDashboard.jsx-7170-                  const q = drillDownSearch.toLowerCase().trim();
+client/src/BusinessSphereDashboard.jsx-7171-                  const vendor = (inv.customerName || inv.clientName || "").toLowerCase();
+client/src/BusinessSphereDashboard.jsx-7172-                  const invNum = String(inv.invoiceNumber || inv.id || "").toLowerCase();
+client/src/BusinessSphereDashboard.jsx-7173-                  const matchesSearch = !q || vendor.includes(q) || invNum.includes(q);
+client/src/BusinessSphereDashboard.jsx:7174:                  const minOk = drillDownMinAmount === "" || isNaN(Number(drillDownMinAmount)) || total >= Number(drillDownMinAmount);
+client/src/BusinessSphereDashboard.jsx:7175:                  const maxOk = drillDownMaxAmount === "" || isNaN(Number(drillDownMaxAmount)) || total <= Number(drillDownMaxAmount);
+client/src/BusinessSphereDashboard.jsx-7176-                  return matchesSearch && minOk && maxOk;
+client/src/BusinessSphereDashboard.jsx-7177-                });
+client/src/BusinessSphereDashboard.jsx:7178:                const totalGross = filteredInvoices.reduce((s, i) => s + lineTotal(i.items || []).total, 0);
+client/src/BusinessSphereDashboard.jsx:7179:                const totalVat = totalGross * 0.18;
+client/src/BusinessSphereDashboard.jsx-7180-                const fxRate = drillDownCurrency === "USD" ? 2600 : drillDownCurrency === "EUR" ? 2800 : 1;
+client/src/BusinessSphereDashboard.jsx-7181-                const fmtCur = (val) => {
+client/src/BusinessSphereDashboard.jsx-7182-                  const converted = val / fxRate;
+--
+client/src/BusinessSphereDashboard.jsx-7192-                        const d=new Date(drillDownMonth+"-01"); d.setMonth(d.getMonth()-5+i);
+client/src/BusinessSphereDashboard.jsx-7193-                        return d.toISOString().slice(0,7);
+client/src/BusinessSphereDashboard.jsx-7194-                      });
+client/src/BusinessSphereDashboard.jsx:7195:                      const historicalTotals = allMonths.map(m => invoices.rows.filter(i=>(i.date||"").startsWith(m)).reduce((s,i)=>s+lineTotal(i.items||[]).total*0.18,0));
+client/src/BusinessSphereDashboard.jsx:7196:                      const avgVat = historicalTotals.reduce((a,b)=>a+b,0) / (historicalTotals.length || 1);
+client/src/BusinessSphereDashboard.jsx-7197-                      const thresholdPercent = vatAnomalySettingsQuery.data?.thresholdPercent ?? 50;
+client/src/BusinessSphereDashboard.jsx-7198-                      const alertsEnabled = vatAnomalySettingsQuery.data?.enabled !== false;
+client/src/BusinessSphereDashboard.jsx:7199:                      const hasSpike = alertsEnabled && totalVat >= avgVat * (1 + thresholdPercent / 100) && avgVat > 0;
+client/src/BusinessSphereDashboard.jsx-7200-                      if (!hasSpike) return null;
+client/src/BusinessSphereDashboard.jsx-7201-                      return (
+client/src/BusinessSphereDashboard.jsx-7202-                        <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/40 p-3.5 text-[12.5px] text-amber-800 dark:text-amber-300 flex items-start gap-3">
+client/src/BusinessSphereDashboard.jsx-7203-                          <span className="text-base">⚠️</span>
+client/src/BusinessSphereDashboard.jsx-7204-                          <div>
+client/src/BusinessSphereDashboard.jsx-7205-                            <p className="font-bold">Compliance Variance Alert — Significant Output VAT Spike</p>
+client/src/BusinessSphereDashboard.jsx:7206:                            <p className="text-[11.5px] mt-0.5">Output VAT for {drillDownMonth} (TZS {totalVat.toLocaleString()}) exceeds the 6-month historical average (TZS {Math.round(avgVat).toLocaleString()}) by at least {thresholdPercent}%. Ensure all high-value B2B transactions are supported by TRA VFD electronic tax stamps and digital Z-reports.</p>
+client/src/BusinessSphereDashboard.jsx-7207-                          </div>
+client/src/BusinessSphereDashboard.jsx-7208-                        </div>
+client/src/BusinessSphereDashboard.jsx-7209-                      );
+--
+client/src/BusinessSphereDashboard.jsx-7255-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+client/src/BusinessSphereDashboard.jsx-7256-                      <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
+client/src/BusinessSphereDashboard.jsx-7257-                        <p className="text-[11px] font-bold uppercase text-slate-500">Filtered Turnover ({filteredInvoices.length}/{monthInvoices.length})</p>
+client/src/BusinessSphereDashboard.jsx:7258:                        <p className="text-xl font-extrabold font-mono text-slate-900 dark:text-white">TZS {totalGross.toLocaleString()}</p>
+client/src/BusinessSphereDashboard.jsx-7259-                      </div>
+client/src/BusinessSphereDashboard.jsx-7260-                      <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
+client/src/BusinessSphereDashboard.jsx-7261-                        <p className="text-[11px] font-bold uppercase text-slate-500">Filtered Output VAT (18%)</p>
+client/src/BusinessSphereDashboard.jsx:7262:                        <p className="text-xl font-extrabold font-mono text-emerald-600">TZS {totalVat.toLocaleString()}</p>
+client/src/BusinessSphereDashboard.jsx-7263-                      </div>
+client/src/BusinessSphereDashboard.jsx-7264-                      <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
+client/src/BusinessSphereDashboard.jsx-7265-                        <p className="text-[11px] font-bold uppercase text-slate-500">Audit Status</p>
+--
+client/src/BusinessSphereDashboard.jsx-7281-                        </thead>
+client/src/BusinessSphereDashboard.jsx-7282-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200">
+client/src/BusinessSphereDashboard.jsx-7283-                          {filteredInvoices.map(inv => {
+client/src/BusinessSphereDashboard.jsx:7284:                            const { total } = lineTotal(inv.items || []);
+client/src/BusinessSphereDashboard.jsx:7285:                            const vat = total * 0.18;
+client/src/BusinessSphereDashboard.jsx-7286-                            const isSelected = selectedDrillDownInvoice && (selectedDrillDownInvoice.id === inv.id || selectedDrillDownInvoice.invoiceNumber === inv.invoiceNumber);
+client/src/BusinessSphereDashboard.jsx-7287-                            return (
+client/src/BusinessSphereDashboard.jsx-7288-                              <tr
+--
+client/src/BusinessSphereDashboard.jsx-7301-                                </td>
+client/src/BusinessSphereDashboard.jsx-7302-                                <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{inv.customerName || inv.clientName || "Walk-in Customer"}</td>
+client/src/BusinessSphereDashboard.jsx-7303-                                <td className="px-4 py-3 font-mono text-slate-500">{inv.date || "N/A"}</td>
+client/src/BusinessSphereDashboard.jsx:7304:                                <td className="px-4 py-3 font-mono font-bold">{fmtCur(total)}</td>
+client/src/BusinessSphereDashboard.jsx-7305-                                <td className="px-4 py-3 font-mono font-semibold text-emerald-600">{fmtCur(vat)}</td>
+client/src/BusinessSphereDashboard.jsx-7306-                                <td className="px-4 py-3">
+client/src/BusinessSphereDashboard.jsx-7307-                                  <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${inv.status === 'Paid' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:text-amber-300'}`}>
+--
+client/src/BusinessSphereDashboard.jsx-7397-                    </div>
+client/src/BusinessSphereDashboard.jsx-7398-                    <div>
+client/src/BusinessSphereDashboard.jsx-7399-                      <p className="text-[11px] font-bold uppercase text-slate-400">Gross Amount (TZS)</p>
+client/src/BusinessSphereDashboard.jsx:7400:                      <p className="font-mono font-bold text-slate-900 dark:text-white mt-0.5">TZS {lineTotal(selectedDrillDownInvoice.items || []).total.toLocaleString()}</p>
+client/src/BusinessSphereDashboard.jsx-7401-                    </div>
+client/src/BusinessSphereDashboard.jsx-7402-                  </div>
+client/src/BusinessSphereDashboard.jsx-7403-
+--
+client/src/BusinessSphereDashboard.jsx-7421-
+client/src/BusinessSphereDashboard.jsx-7422-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/30 p-3 text-[12px] text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+client/src/BusinessSphereDashboard.jsx-7423-                    <span>🛡️</span>
+client/src/BusinessSphereDashboard.jsx:7424:                    <span>TRA VFD Cryptographic Stamp Verified · 18% Output VAT: TZS {(lineTotal(selectedDrillDownInvoice.items || []).total * 0.18).toLocaleString()}</span>
+client/src/BusinessSphereDashboard.jsx-7425-                  </div>
+client/src/BusinessSphereDashboard.jsx-7426-                </>
+client/src/BusinessSphereDashboard.jsx-7427-              )}
+--
+client/src/BusinessSphereDashboard.jsx-7523-          {(() => {
+client/src/BusinessSphereDashboard.jsx-7524-            const custData = Object.entries(
+client/src/BusinessSphereDashboard.jsx-7525-              invoices.rows.reduce((m,inv)=>{
+client/src/BusinessSphereDashboard.jsx:7526:                const val=lineTotal(inv.items||[]).total;
+client/src/BusinessSphereDashboard.jsx-7527-                m[inv.customer]=(m[inv.customer]||0)+val;
+client/src/BusinessSphereDashboard.jsx-7528-                return m;
+client/src/BusinessSphereDashboard.jsx-7529-              },{})
+--
+client/src/BusinessSphereDashboard.jsx-7594-              name:s, count:crm.rows.filter(l=>l.stage===s).length, value:Math.round(crm.rows.filter(l=>l.stage===s).reduce((sum,l)=>sum+(l.value||0),0)/1000),
+client/src/BusinessSphereDashboard.jsx-7595-              fill:STAGE_COLORS[s],
+client/src/BusinessSphereDashboard.jsx-7596-            })).filter(d=>d.count>0);
+client/src/BusinessSphereDashboard.jsx:7597:            const totalPipelineValue = stageData.reduce((sum, stage) => sum + stage.value, 0);
+client/src/BusinessSphereDashboard.jsx:7598:            const metricKey = totalPipelineValue > 0 ? "value" : "count";
+client/src/BusinessSphereDashboard.jsx-7599-            if (!stageData.length) return <EmptyState icon={Users} title="No active pipeline yet" hint="Create a confirmed lead to begin visualizing deal stages. Potential value appears once it is recorded on a lead." actionLabel="Open Leads" onAction={()=>onQuickAction("crm",{tab:"leads"})} tips={["Capture the next customer opportunity in CRM, then update its stage as the conversation progresses."]} sourceNote="Source: confirmed CRM lead records only."/>;
+client/src/BusinessSphereDashboard.jsx-7600-            return (
+client/src/BusinessSphereDashboard.jsx-7601-              <ResponsiveContainer width="100%" height={155}>
+--
+client/src/BusinessSphereDashboard.jsx-7838-    const thisM = todayStr.slice(0, 7);
+client/src/BusinessSphereDashboard.jsx-7839-    const lastM = `${TODAY.getFullYear()}-${String(TODAY.getMonth()).padStart(2, "0")}`;
+client/src/BusinessSphereDashboard.jsx-7840-    const revOf = (m) =>
+client/src/BusinessSphereDashboard.jsx:7841:      invoices.rows.filter((i) => monthOf(i.date) === m).reduce((s, i) => s + lineTotal(i.items).total, 0) +
+client/src/BusinessSphereDashboard.jsx-7842-      (posTransactions?.rows || []).filter((t) => monthOf(t.date) === m).reduce((s, t) => s + t.items.reduce((ts, it) => ts + it.qty * it.price, 0), 0);
+client/src/BusinessSphereDashboard.jsx-7843-    const rThis = revOf(thisM), rLast = revOf(lastM);
+client/src/BusinessSphereDashboard.jsx-7844-    const momPct = rLast === 0 ? (rThis > 0 ? 1 : 0.5) : Math.max(0, Math.min(1, rThis / rLast));
+--
+client/src/BusinessSphereDashboard.jsx-7874-      </div>
+client/src/BusinessSphereDashboard.jsx-7875-      {(() => {
+client/src/BusinessSphereDashboard.jsx-7876-        const m = todayStr.slice(0, 7);
+client/src/BusinessSphereDashboard.jsx:7877:        const rev = invoices.rows.filter((i) => (i.date || "").startsWith(m)).reduce((s, i) => s + lineTotal(i.items).total, 0)
+client/src/BusinessSphereDashboard.jsx-7878-          + (posTransactions?.rows || []).filter((t) => (t.date || "").startsWith(m)).reduce((s, t) => s + t.items.reduce((ts, it) => ts + it.qty * it.price, 0), 0);
+client/src/BusinessSphereDashboard.jsx-7879-        const exp = expenses.rows.filter((e) => (e.date || "").startsWith(m)).reduce((s, e) => s + e.amount, 0);
+client/src/BusinessSphereDashboard.jsx-7880-        const profit = rev - exp;
+--
+client/src/BusinessSphereDashboard.jsx-7944-// complaints live in support tickets not yet threaded here — real
+client/src/BusinessSphereDashboard.jsx-7945-// future work, not empty timeline rows pretending.
+client/src/BusinessSphereDashboard.jsx-7946-// CX Pulse — NPS and CSAT computed with the real industry formulas
+client/src/BusinessSphereDashboard.jsx:7947:// against real feedback rows. NPS = %promoters(9–10) minus
+client/src/BusinessSphereDashboard.jsx-7948-// %detractors(0–6), a −100..+100 number comparable against any
+client/src/BusinessSphereDashboard.jsx-7949-// benchmark; CSAT = mean of 1–5. Company-wide always; the selected
+client/src/BusinessSphereDashboard.jsx-7950-// customer's own responses shown when they exist. No responses = no
+--
+client/src/BusinessSphereDashboard.jsx-7963-      <div><p className="text-[10.5px] text-slate-400">NPS (all customers)</p><p className="text-[18px] font-mono font-bold" style={{ color: nps === null ? "#94A3B8" : nps >= 30 ? "#16A34A" : nps >= 0 ? "#F59E0B" : "#EF4444" }}>{nps === null ? "—" : nps > 0 ? `+${nps}` : nps}</p></div>
+client/src/BusinessSphereDashboard.jsx-7964-      <div><p className="text-[10.5px] text-slate-400">CSAT (1–5)</p><p className="text-[18px] font-mono font-bold text-[#111827]">{csat ?? "—"}</p></div>
+client/src/BusinessSphereDashboard.jsx-7965-      <div><p className="text-[10.5px] text-slate-400">Responses</p><p className="text-[18px] font-mono font-bold text-[#111827]">{npsRows.length + csatRows.length}</p></div>
+client/src/BusinessSphereDashboard.jsx:7966:      <p className="text-[10.5px] text-slate-400 flex-1 min-w-[200px]">{npsRows.length === 0 ? "No responses yet — the portal asks customers directly; no number is invented from zero data." : `Real formulas: %promoters − %detractors. ${customer ? mineCount + " response(s) from " + customer + "." : ""}`}</p>
+client/src/BusinessSphereDashboard.jsx-7967-    </div>
+client/src/BusinessSphereDashboard.jsx-7968-  );
+client/src/BusinessSphereDashboard.jsx-7969-}
+--
+client/src/BusinessSphereDashboard.jsx-8027-    const invs = invoices.rows.filter((i) => i.customer === customer);
+client/src/BusinessSphereDashboard.jsx-8028-    const events = [];
+client/src/BusinessSphereDashboard.jsx-8029-    invs.forEach((i) => {
+client/src/BusinessSphereDashboard.jsx:8030:      events.push({ date: i.date, kind: "Invoice", detail: `${i.id} issued — TZS ${money(Math.round(lineTotal(i.items).total))}k (${i.status})` });
+client/src/BusinessSphereDashboard.jsx-8031-      (i.payments || []).forEach((p) => events.push({ date: p.date, kind: "Payment", detail: `TZS ${money(Math.round(p.amount))}k received on ${i.id}${p.method ? " · " + p.method : ""}` }));
+client/src/BusinessSphereDashboard.jsx-8032-    });
+client/src/BusinessSphereDashboard.jsx-8033-    interactions.rows.filter((x) => x.customer === customer).forEach((x) => {
+client/src/BusinessSphereDashboard.jsx-8034-      events.push({ date: x.date, kind: x.channel, detail: `${x.direction === "inbound" ? "←" : "→"} ${x.summary}` });
+client/src/BusinessSphereDashboard.jsx-8035-    });
+client/src/BusinessSphereDashboard.jsx-8036-    events.sort((a, b) => (a.date < b.date ? 1 : -1));
+client/src/BusinessSphereDashboard.jsx:8037:    const revenue = invs.reduce((s, i) => s + lineTotal(i.items).total, 0);
+client/src/BusinessSphereDashboard.jsx:8038:    const totalRev = invoices.rows.reduce((s, i) => s + lineTotal(i.items).total, 0) || 1;
+client/src/BusinessSphereDashboard.jsx:8039:    const revPts = Math.round(Math.min(1, (revenue / totalRev) * 4) * 40); // 25% of all revenue = full marks
+client/src/BusinessSphereDashboard.jsx-8040-    const lastDate = events.length ? events.map((e) => e.date).sort().slice(-1)[0] : null;
+client/src/BusinessSphereDashboard.jsx-8041-    const daysSince = lastDate ? Math.floor((TODAY - new Date(lastDate)) / 86400000) : 999;
+client/src/BusinessSphereDashboard.jsx-8042-    const recPts = Math.round(Math.max(0, 1 - daysSince / 180) * 30); // fades to 0 over 6 months
+--
+client/src/BusinessSphereDashboard.jsx-8047-    return { events: events.slice(0, 20), revenue, invCount: invs.length,
+client/src/BusinessSphereDashboard.jsx-8048-      score: revPts + recPts + relPts,
+client/src/BusinessSphereDashboard.jsx-8049-      factors: [
+client/src/BusinessSphereDashboard.jsx:8050:        { label: "Revenue weight", pts: revPts, max: 40, note: `TZS ${money(Math.round(revenue))}k across ${invs.length} invoice(s) — ${((revenue / totalRev) * 100).toFixed(1)}% of all revenue` },
+client/src/BusinessSphereDashboard.jsx-8051-        { label: "Recency", pts: recPts, max: 30, note: lastDate ? `last activity ${daysSince} day(s) ago` : "no activity recorded" },
+client/src/BusinessSphereDashboard.jsx-8052-        { label: "Payment reliability", pts: relPts, max: 30, note: unpaid.length === 0 ? "nothing outstanding" : `${overdue.length} of ${unpaid.length} unpaid invoice(s) overdue` },
+client/src/BusinessSphereDashboard.jsx-8053-      ] };
+--
+client/src/BusinessSphereDashboard.jsx-8663-          return out;
+client/src/BusinessSphereDashboard.jsx-8664-        }).filter((r) => Object.values(r).some((v) => String(v).trim() !== ""));
+client/src/BusinessSphereDashboard.jsx-8665-
+client/src/BusinessSphereDashboard.jsx:8666:        setRows({ data: mapped, matchedFields: Object.keys(headerMap).length, totalFields: config.fields.length });
+client/src/BusinessSphereDashboard.jsx-8667-      } catch (_e) {
+client/src/BusinessSphereDashboard.jsx-8668-        setError("Couldn't read this file — make sure it's a real .xlsx, .xls, or .csv export.");
+client/src/BusinessSphereDashboard.jsx-8669-      }
+--
+client/src/BusinessSphereDashboard.jsx-8718-            <>
+client/src/BusinessSphereDashboard.jsx-8719-              <div className="bg-slate-50 rounded-lg p-3">
+client/src/BusinessSphereDashboard.jsx-8720-                <p className="text-[12.5px] font-medium text-[#111827]">{fileName}</p>
+client/src/BusinessSphereDashboard.jsx:8721:                <p className="text-[11.5px] text-slate-500 mt-0.5">{rows.data.length} rows found · {rows.matchedFields} of {rows.totalFields} fields auto-matched from your file's headers</p>
+client/src/BusinessSphereDashboard.jsx-8722-              </div>
+client/src/BusinessSphereDashboard.jsx-8723-              <div>
+client/src/BusinessSphereDashboard.jsx-8724-                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wide mb-2">Preview (first 5 rows)</p>
+--
+client/src/BusinessSphereDashboard.jsx-8993-    return map;
+client/src/BusinessSphereDashboard.jsx-8994-  }, [opportunities]);
+client/src/BusinessSphereDashboard.jsx-8995-
+client/src/BusinessSphereDashboard.jsx:8996:  const totals = useMemo(() => ({
+client/src/BusinessSphereDashboard.jsx-8997-    pipeline: opportunities.filter(l => !["Won","Lost"].includes(l.stage)).reduce((s,o)=>s+o.value,0),
+client/src/BusinessSphereDashboard.jsx-8998-    won:      opportunities.filter(l => l.stage==="Won").reduce((s,o)=>s+o.value,0),
+client/src/BusinessSphereDashboard.jsx-8999-    lost:     opportunities.filter(l => l.stage==="Lost").reduce((s,o)=>s+o.value,0),
+--
+client/src/BusinessSphereDashboard.jsx-9045-      {/* KPIs */}
+client/src/BusinessSphereDashboard.jsx-9046-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+client/src/BusinessSphereDashboard.jsx-9047-        {[
+client/src/BusinessSphereDashboard.jsx:9048:          ["Pipeline Value", "TZS "+money(totals.pipeline)+"k", "#7C3AED"],
+client/src/BusinessSphereDashboard.jsx:9049:          ["Won",            "TZS "+money(totals.won)+"k",      "#16A34A"],
+client/src/BusinessSphereDashboard.jsx:9050:          ["Lost",           "TZS "+money(totals.lost)+"k",     "#EF4444"],
+client/src/BusinessSphereDashboard.jsx:9051:          ["Win Rate",       totals.winRate+"%",                 "#D97706"],
+client/src/BusinessSphereDashboard.jsx-9052-        ].map(([l,v,col]) => (
+client/src/BusinessSphereDashboard.jsx-9053-          <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4">
+client/src/BusinessSphereDashboard.jsx-9054-            <p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p>
+--
+client/src/BusinessSphereDashboard.jsx-9067-        })).filter(d => d.count > 0);
+client/src/BusinessSphereDashboard.jsx-9068-
+client/src/BusinessSphereDashboard.jsx-9069-        const outcomeData = [
+client/src/BusinessSphereDashboard.jsx:9070:          { name:"Won",  value:totals.won,  fill:"#16A34A" },
+client/src/BusinessSphereDashboard.jsx:9071:          { name:"Lost", value:totals.lost, fill:"#EF4444" },
+client/src/BusinessSphereDashboard.jsx:9072:          { name:"Open", value:totals.pipeline, fill:"#7C3AED" },
+client/src/BusinessSphereDashboard.jsx-9073-        ].filter(d => d.value > 0);
+client/src/BusinessSphereDashboard.jsx-9074-
+client/src/BusinessSphereDashboard.jsx-9075-        if (!stageData.length && !outcomeData.length) return null;
+--
+client/src/BusinessSphereDashboard.jsx-9111-                    </div>
+client/src/BusinessSphereDashboard.jsx-9112-                  ))}
+client/src/BusinessSphereDashboard.jsx-9113-                  <div className="pt-2 border-t border-slate-100">
+client/src/BusinessSphereDashboard.jsx:9114:                    <p className="text-[11.5px] text-slate-400">Win Rate: <strong className="text-[#16A34A]">{totals.winRate}%</strong></p>
+client/src/BusinessSphereDashboard.jsx-9115-                  </div>
+client/src/BusinessSphereDashboard.jsx-9116-                </div>
+client/src/BusinessSphereDashboard.jsx-9117-              </div>
+--
+client/src/BusinessSphereDashboard.jsx-9159-          {STAGES.map(stage => {
+client/src/BusinessSphereDashboard.jsx-9160-            const cfg   = STAGE_CFG[stage];
+client/src/BusinessSphereDashboard.jsx-9161-            const cards = byStage[stage] || [];
+client/src/BusinessSphereDashboard.jsx:9162:            const total = cards.reduce((s,o)=>s+o.value,0);
+client/src/BusinessSphereDashboard.jsx-9163-            const isOver = overStage === stage;
+client/src/BusinessSphereDashboard.jsx-9164-            return (
+client/src/BusinessSphereDashboard.jsx-9165-              <div key={stage}
+--
+client/src/BusinessSphereDashboard.jsx-9177-                    </div>
+client/src/BusinessSphereDashboard.jsx-9178-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{background:cfg.col}}>{cards.length}</span>
+client/src/BusinessSphereDashboard.jsx-9179-                  </div>
+client/src/BusinessSphereDashboard.jsx:9180:                  {total > 0 && (
+client/src/BusinessSphereDashboard.jsx:9181:                    <p className="text-[10.5px] font-semibold mt-1" style={{color:cfg.label}}>TZS {money(total)}k</p>
+client/src/BusinessSphereDashboard.jsx-9182-                  )}
+client/src/BusinessSphereDashboard.jsx-9183-                </div>
+client/src/BusinessSphereDashboard.jsx-9184-                {/* Cards */}
+--
+client/src/BusinessSphereDashboard.jsx-9227-
+client/src/BusinessSphereDashboard.jsx-9228-// this is a view, not a table.
+client/src/BusinessSphereDashboard.jsx-9229-/* ─────────────────────────── TOP BUYERS ─────────────────────────────
+client/src/BusinessSphereDashboard.jsx:9230:   Full loyalty ranking — tiers, discount rates, congratulations,
+client/src/BusinessSphereDashboard.jsx-9231-   annual product history PDF, and CSV/Excel export.
+client/src/BusinessSphereDashboard.jsx-9232-─────────────────────────────────────────────────────────────────────── */
+client/src/BusinessSphereDashboard.jsx-9233-
+client/src/BusinessSphereDashboard.jsx:9234:// Loyalty tier config — thresholds are annual spend in TZS thousands
+client/src/BusinessSphereDashboard.jsx:9235:const LOYALTY_TIERS = [
+client/src/BusinessSphereDashboard.jsx-9236-  {
+client/src/BusinessSphereDashboard.jsx-9237-    id:"platinum", label:"Platinum", emoji:"💎",
+client/src/BusinessSphereDashboard.jsx:9238:    min:5000, discount:15, color:"#7C3AED", bg:"#F5F3FF", border:"#DDD6FE",
+client/src/BusinessSphereDashboard.jsx-9239-    congrats:"You are our most valued partner. Your extraordinary commitment drives our growth — we are deeply grateful.",
+client/src/BusinessSphereDashboard.jsx-9240-  },
+client/src/BusinessSphereDashboard.jsx-9241-  {
+client/src/BusinessSphereDashboard.jsx-9242-    id:"gold", label:"Gold", emoji:"🥇",
+client/src/BusinessSphereDashboard.jsx:9243:    min:2000, discount:10, color:"#D97706", bg:"#FFFBEB", border:"#FDE68A",
+client/src/BusinessSphereDashboard.jsx:9244:    congrats:"Excellent loyalty! You are among our top customers — your business is hugely appreciated.",
+client/src/BusinessSphereDashboard.jsx-9245-  },
+client/src/BusinessSphereDashboard.jsx-9246-  {
+client/src/BusinessSphereDashboard.jsx-9247-    id:"silver", label:"Silver", emoji:"🥈",
+client/src/BusinessSphereDashboard.jsx:9248:    min:800, discount:7, color:"#6B7280", bg:"#F9FAFB", border:"#E5E7EB",
+client/src/BusinessSphereDashboard.jsx-9249-    congrats:"Great partnership! Your consistent business helps us serve you even better.",
+client/src/BusinessSphereDashboard.jsx-9250-  },
+client/src/BusinessSphereDashboard.jsx-9251-  {
+client/src/BusinessSphereDashboard.jsx-9252-    id:"bronze", label:"Bronze", emoji:"🥉",
+client/src/BusinessSphereDashboard.jsx:9253:    min:200, discount:5, color:"#92400E", bg:"#FEF3C7", border:"#FCD34D",
+client/src/BusinessSphereDashboard.jsx-9254-    congrats:"Thank you for trusting us! We value every purchase and look forward to growing together.",
+client/src/BusinessSphereDashboard.jsx-9255-  },
+client/src/BusinessSphereDashboard.jsx-9256-  {
+client/src/BusinessSphereDashboard.jsx-9257-    id:"member", label:"Member", emoji:"⭐",
+client/src/BusinessSphereDashboard.jsx:9258:    min:0, discount:2, color:"#2563EB", bg:"#EFF6FF", border:"#BFDBFE",
+client/src/BusinessSphereDashboard.jsx:9259:    congrats:"Welcome to our family! Every purchase earns you points toward higher loyalty tiers.",
+client/src/BusinessSphereDashboard.jsx-9260-  },
+client/src/BusinessSphereDashboard.jsx-9261-];
+client/src/BusinessSphereDashboard.jsx-9262-
+client/src/BusinessSphereDashboard.jsx-9263-function getTier(annualSpend) {
+client/src/BusinessSphereDashboard.jsx:9264:  return LOYALTY_TIERS.find(t => annualSpend >= t.min) || LOYALTY_TIERS[LOYALTY_TIERS.length-1];
+client/src/BusinessSphereDashboard.jsx-9265-}
+client/src/BusinessSphereDashboard.jsx-9266-
+client/src/BusinessSphereDashboard.jsx-9267-function TopBuyers({ leads, invoices, company }) {
+--
+client/src/BusinessSphereDashboard.jsx-9283-      const yearInvs = allInvs.filter(inv => (inv.date || "").startsWith(yearFilter));
+client/src/BusinessSphereDashboard.jsx-9284-
+client/src/BusinessSphereDashboard.jsx-9285-      // Annual spend
+client/src/BusinessSphereDashboard.jsx:9286:      const annualSpend = yearInvs.reduce((s, inv) => s + lineTotal(inv.items).total, 0);
+client/src/BusinessSphereDashboard.jsx-9287-
+client/src/BusinessSphereDashboard.jsx-9288-      // Lifetime spend
+client/src/BusinessSphereDashboard.jsx:9289:      const lifetimeSpend = allInvs.reduce((s, inv) => s + lineTotal(inv.items).total, 0);
+client/src/BusinessSphereDashboard.jsx-9290-
+client/src/BusinessSphereDashboard.jsx-9291-      // Product breakdown for the year
+client/src/BusinessSphereDashboard.jsx-9292-      const productMap = {};
+--
+client/src/BusinessSphereDashboard.jsx-9295-          const key = it.name || "Unknown";
+client/src/BusinessSphereDashboard.jsx-9296-          if (!productMap[key]) productMap[key] = { name:key, qty:0, revenue:0, invoices:0 };
+client/src/BusinessSphereDashboard.jsx-9297-          productMap[key].qty     += Number(it.qty) || 0;
+client/src/BusinessSphereDashboard.jsx:9298:          productMap[key].revenue += (Number(it.qty)||0)*(Number(it.rate)||0)*(1-Math.min(1,Math.max(0,(Number(it.discount)||0)/100)));
+client/src/BusinessSphereDashboard.jsx-9299-          productMap[key].invoices++;
+client/src/BusinessSphereDashboard.jsx-9300-        });
+client/src/BusinessSphereDashboard.jsx-9301-      });
+--
+client/src/BusinessSphereDashboard.jsx-9304-      // Payment behaviour
+client/src/BusinessSphereDashboard.jsx-9305-      const paidInvs = yearInvs.filter(inv => inv.status === "Paid");
+client/src/BusinessSphereDashboard.jsx-9306-      const outstanding = yearInvs.filter(inv => inv.status !== "Paid")
+client/src/BusinessSphereDashboard.jsx:9307:        .reduce((s,inv) => s+(lineTotal(inv.items).total-(inv.amountPaid||0)), 0);
+client/src/BusinessSphereDashboard.jsx-9308-
+client/src/BusinessSphereDashboard.jsx-9309-      const tier = getTier(annualSpend / 1000); // compare in TZS thousands
+client/src/BusinessSphereDashboard.jsx-9310-
+--
+client/src/BusinessSphereDashboard.jsx-9339-    ).join("");
+client/src/BusinessSphereDashboard.jsx-9340-
+client/src/BusinessSphereDashboard.jsx-9341-    const invoiceRows = cust.yearInvs.map((inv, i) => {
+client/src/BusinessSphereDashboard.jsx:9342:      const total = lineTotal(inv.items).total;
+client/src/BusinessSphereDashboard.jsx-9343-      const statusColor = {Paid:"#16A34A",Unpaid:"#F59E0B",Overdue:"#EF4444",Partial:"#3B82F6"}[inv.status]||"#6B7280";
+client/src/BusinessSphereDashboard.jsx-9344-      return `<tr style="background:${i%2===0?"#fff":"#F8FAFB"}">
+client/src/BusinessSphereDashboard.jsx-9345-        <td style="padding:7px 12px;font-size:11.5px;font-family:monospace;font-weight:600">${inv.id}</td>
+--
+client/src/BusinessSphereDashboard.jsx-9348-        <td style="padding:7px 12px;text-align:center;font-size:11px">
+client/src/BusinessSphereDashboard.jsx-9349-          <span style="background:${statusColor}18;color:${statusColor};padding:2px 8px;border-radius:12px;font-size:10.5px;font-weight:700">${inv.status}</span>
+client/src/BusinessSphereDashboard.jsx-9350-        </td>
+client/src/BusinessSphereDashboard.jsx:9351:        <td style="padding:7px 12px;text-align:right;font-family:monospace;font-weight:600;font-size:12px">TZS ${fmt(total)}k</td>
+client/src/BusinessSphereDashboard.jsx-9352-      </tr>`;
+client/src/BusinessSphereDashboard.jsx-9353-    }).join("");
+client/src/BusinessSphereDashboard.jsx-9354-
+--
+client/src/BusinessSphereDashboard.jsx-9420-        <div class="congrats-band">
+client/src/BusinessSphereDashboard.jsx-9421-          <div class="congrats-title">${tier.emoji} ${tier.label} Tier — Congratulations, ${(cust.company||cust.contact).split(" ")[0]}!</div>
+client/src/BusinessSphereDashboard.jsx-9422-          <div class="congrats-text">${tier.congrats}</div>
+client/src/BusinessSphereDashboard.jsx:9423:          <div class="disc-pill">🏷 Your Loyalty Discount: ${tier.discount}% off all future orders</div>
+client/src/BusinessSphereDashboard.jsx-9424-        </div>
+client/src/BusinessSphereDashboard.jsx-9425-
+client/src/BusinessSphereDashboard.jsx-9426-        <!-- KPIs -->
+--
+client/src/BusinessSphereDashboard.jsx-9444-            </tr></thead>
+client/src/BusinessSphereDashboard.jsx-9445-            <tbody>${productRows}</tbody>
+client/src/BusinessSphereDashboard.jsx-9446-            <tfoot><tr style="background:#F0FDF4">
+client/src/BusinessSphereDashboard.jsx:9447:              <td colspan="3" style="padding:9px 12px;font-weight:700;font-size:12.5px">Total</td>
+client/src/BusinessSphereDashboard.jsx-9448-              <td style="padding:9px 12px;text-align:right;font-family:monospace;font-weight:800;font-size:13px;color:${ACCENT}">TZS ${fmt(cust.annualSpend)}k</td>
+client/src/BusinessSphereDashboard.jsx-9449-            </tr></tfoot>
+client/src/BusinessSphereDashboard.jsx-9450-          </table>
+--
+client/src/BusinessSphereDashboard.jsx-9485-      ["Customer", cust.company||cust.contact, "", "", ""],
+client/src/BusinessSphereDashboard.jsx-9486-      ["Year", yearFilter, "", "", ""],
+client/src/BusinessSphereDashboard.jsx-9487-      ["Tier", cust.tier.label, "", "", ""],
+client/src/BusinessSphereDashboard.jsx:9488:      ["Loyalty Discount", cust.tier.discount+"%", "", "", ""],
+client/src/BusinessSphereDashboard.jsx-9489-      ["Annual Spend (TZS k)", Math.round(cust.annualSpend), "", "", ""],
+client/src/BusinessSphereDashboard.jsx-9490-      ["", "", "", "", ""],
+client/src/BusinessSphereDashboard.jsx-9491-      ["--- PRODUCTS PURCHASED ---", "", "", "", ""],
+--
+client/src/BusinessSphereDashboard.jsx-9498-        inv.id, inv.date,
+client/src/BusinessSphereDashboard.jsx-9499-        (inv.items||[]).map(it=>it.name).join("; "),
+client/src/BusinessSphereDashboard.jsx-9500-        inv.status,
+client/src/BusinessSphereDashboard.jsx:9501:        Math.round(lineTotal(inv.items).total),
+client/src/BusinessSphereDashboard.jsx-9502-      ]),
+client/src/BusinessSphereDashboard.jsx-9503-    ];
+client/src/BusinessSphereDashboard.jsx-9504-    downloadCSV(
+--
+client/src/BusinessSphereDashboard.jsx-9512-  // ── All-buyers CSV / Excel ────────────────────────────────────────────
+client/src/BusinessSphereDashboard.jsx-9513-  function exportAllBuyersCSV() {
+client/src/BusinessSphereDashboard.jsx-9514-    const rows = [
+client/src/BusinessSphereDashboard.jsx:9515:      ["Rank","Customer","Tier","Discount","Annual Spend (TZS k)","Invoices","Avg Order (TZS k)","Outstanding (TZS k)","Top Product"],
+client/src/BusinessSphereDashboard.jsx-9516-      ...ranked.map((c,i) => [
+client/src/BusinessSphereDashboard.jsx:9517:        i+1, c.company||c.contact, c.tier.label, c.tier.discount+"%",
+client/src/BusinessSphereDashboard.jsx-9518-        Math.round(c.annualSpend), c.invoiceCount,
+client/src/BusinessSphereDashboard.jsx-9519-        Math.round(c.avgOrderValue), Math.round(c.outstanding),
+client/src/BusinessSphereDashboard.jsx-9520-        c.products[0]?.name||"—",
+--
+client/src/BusinessSphereDashboard.jsx-9531-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+client/src/BusinessSphereDashboard.jsx-9532-        <div>
+client/src/BusinessSphereDashboard.jsx-9533-          <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight flex items-center gap-2">
+client/src/BusinessSphereDashboard.jsx:9534:            <Trophy size={20} className="text-[#D97706]"/> Top Buyers — Loyalty Rankings
+client/src/BusinessSphereDashboard.jsx-9535-          </h1>
+client/src/BusinessSphereDashboard.jsx-9536-          <p className="text-[13px] text-slate-500 mt-1">
+client/src/BusinessSphereDashboard.jsx:9537:            Ranked by annual spend · Automatic tier assignment · Loyalty discounts · Annual statement PDF
+client/src/BusinessSphereDashboard.jsx-9538-          </p>
+client/src/BusinessSphereDashboard.jsx-9539-        </div>
+client/src/BusinessSphereDashboard.jsx-9540-        <div className="flex items-center gap-2">
+--
+client/src/BusinessSphereDashboard.jsx-9555-
+client/src/BusinessSphereDashboard.jsx-9556-      {/* Tier legend */}
+client/src/BusinessSphereDashboard.jsx-9557-      <div className="flex flex-wrap gap-2">
+client/src/BusinessSphereDashboard.jsx:9558:        {LOYALTY_TIERS.map(t => (
+client/src/BusinessSphereDashboard.jsx-9559-          <div key={t.id} className="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[12px] font-semibold"
+client/src/BusinessSphereDashboard.jsx-9560-            style={{background:t.bg, borderColor:t.border, color:t.color}}>
+client/src/BusinessSphereDashboard.jsx-9561-            <span>{t.emoji}</span>
+client/src/BusinessSphereDashboard.jsx-9562-            <span>{t.label}</span>
+client/src/BusinessSphereDashboard.jsx-9563-            <span className="text-[10.5px] font-normal opacity-70">TZS {t.min}k+ / yr</span>
+client/src/BusinessSphereDashboard.jsx:9564:            <span className="bg-white px-1.5 py-0.5 rounded-lg text-[10.5px] font-bold" style={{color:t.color}}>{t.discount}% off</span>
+client/src/BusinessSphereDashboard.jsx-9565-          </div>
+client/src/BusinessSphereDashboard.jsx-9566-        ))}
+client/src/BusinessSphereDashboard.jsx-9567-      </div>
+--
+client/src/BusinessSphereDashboard.jsx-9611-                    <p className="text-white font-black text-[15px] truncate max-w-[110px]">{(ranked[0].company||ranked[0].contact||"").split(" ")[0]}</p>
+client/src/BusinessSphereDashboard.jsx-9612-                    <p className="text-[#F59E0B] font-mono font-bold text-[14px]">TZS {money(Math.round(ranked[0].annualSpend))}k</p>
+client/src/BusinessSphereDashboard.jsx-9613-                    <div className="mt-1 inline-block text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#D97706]/20 text-[#D97706]">
+client/src/BusinessSphereDashboard.jsx:9614:                      {ranked[0].tier.emoji} {ranked[0].tier.label} · {ranked[0].tier.discount}% off
+client/src/BusinessSphereDashboard.jsx-9615-                    </div>
+client/src/BusinessSphereDashboard.jsx-9616-                  </div>
+client/src/BusinessSphereDashboard.jsx-9617-                  <div className="w-full rounded-t-xl" style={{height:110, background:"linear-gradient(to top,#D97706,#F59E0B)"}}/>
+--
+client/src/BusinessSphereDashboard.jsx-9649-              <table className="w-full text-[12.5px]">
+client/src/BusinessSphereDashboard.jsx-9650-                <thead>
+client/src/BusinessSphereDashboard.jsx-9651-                  <tr className="border-b border-slate-100 bg-slate-50">
+client/src/BusinessSphereDashboard.jsx:9652:                    {["Rank","Customer","Tier","Annual Spend","Invoices","Avg Order","Top Product","Discount","Actions"].map(h=>(
+client/src/BusinessSphereDashboard.jsx-9653-                      <th key={h} className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-slate-400">{h}</th>
+client/src/BusinessSphereDashboard.jsx-9654-                    ))}
+client/src/BusinessSphereDashboard.jsx-9655-                  </tr>
+--
+client/src/BusinessSphereDashboard.jsx-9695-                        <td className="px-3 py-3.5 text-slate-500 max-w-[120px] truncate">{cust.products[0]?.name||"—"}</td>
+client/src/BusinessSphereDashboard.jsx-9696-                        <td className="px-3 py-3.5">
+client/src/BusinessSphereDashboard.jsx-9697-                          <span className="inline-block text-[11px] font-black px-2 py-0.5 rounded-full bg-[#16A34A] text-white">
+client/src/BusinessSphereDashboard.jsx:9698:                            {cust.tier.discount}% off
+client/src/BusinessSphereDashboard.jsx-9699-                          </span>
+client/src/BusinessSphereDashboard.jsx-9700-                        </td>
+client/src/BusinessSphereDashboard.jsx-9701-                        <td className="px-3 py-3.5" onClick={e=>e.stopPropagation()}>
+--
+client/src/BusinessSphereDashboard.jsx-9735-                  <div>
+client/src/BusinessSphereDashboard.jsx-9736-                    <p className="text-[16px] font-black text-[#111827]">{selected.company||selected.contact}</p>
+client/src/BusinessSphereDashboard.jsx-9737-                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{background:selected.tier.color,color:"white"}}>
+client/src/BusinessSphereDashboard.jsx:9738:                      {selected.tier.emoji} {selected.tier.label} · {selected.tier.discount}% loyalty discount
+client/src/BusinessSphereDashboard.jsx-9739-                    </span>
+client/src/BusinessSphereDashboard.jsx-9740-                  </div>
+client/src/BusinessSphereDashboard.jsx-9741-                </div>
+--
+client/src/BusinessSphereDashboard.jsx-9756-
+client/src/BusinessSphereDashboard.jsx-9757-🎉 *Congratulations!*
+client/src/BusinessSphereDashboard.jsx-9758-
+client/src/BusinessSphereDashboard.jsx:9759:You have been awarded *${t.label}* loyalty status!
+client/src/BusinessSphereDashboard.jsx:9760:Enjoy *${t.discount}% OFF* all future orders.
+client/src/BusinessSphereDashboard.jsx-9761-
+client/src/BusinessSphereDashboard.jsx:9762:Thank you for your outstanding loyalty!
+client/src/BusinessSphereDashboard.jsx-9763-_${co.name||"BusinessSphere"}_`;
+client/src/BusinessSphereDashboard.jsx-9764-                      const phone=(selected.phone||"").replace(/[^0-9]/g,"");
+client/src/BusinessSphereDashboard.jsx-9765-                      if(phone) window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,"_blank","noopener");
+client/src/BusinessSphereDashboard.jsx:9766:                      else { waBus.push({templateId:"loyalty",vars:{tier:t.label,discount:String(t.discount)}}); notify("Open Collaboration → WhatsApp to send congrats"); }
+client/src/BusinessSphereDashboard.jsx-9767-                    }}
+client/src/BusinessSphereDashboard.jsx-9768-                    className="flex items-center gap-1.5 text-[12px] font-bold text-white px-4 py-2 rounded-xl"
+client/src/BusinessSphereDashboard.jsx-9769-                    style={{background:"#25D366"}}>
+--
+client/src/BusinessSphereDashboard.jsx-9773-                    onClick={()=>{
+client/src/BusinessSphereDashboard.jsx-9774-                      const co=window.__smartManagerCompany||{};
+client/src/BusinessSphereDashboard.jsx-9775-                      const t=selected.tier;
+client/src/BusinessSphereDashboard.jsx:9776:                      const subj=`Congratulations — Your ${t.label} Loyalty Status!`;
+client/src/BusinessSphereDashboard.jsx-9777-                      const body=`Dear ${selected.company||selected.contact},
+client/src/BusinessSphereDashboard.jsx-9778-
+client/src/BusinessSphereDashboard.jsx-9779-Congratulations!
+client/src/BusinessSphereDashboard.jsx-9780-
+client/src/BusinessSphereDashboard.jsx:9781:You have been awarded ${t.label} loyalty status with ${co.name||"BusinessSphere"}.
+client/src/BusinessSphereDashboard.jsx-9782-
+client/src/BusinessSphereDashboard.jsx:9783:As a ${t.label} member, you enjoy ${t.discount}% off all future orders!
+client/src/BusinessSphereDashboard.jsx-9784-
+client/src/BusinessSphereDashboard.jsx:9785:Thank you sincerely for your outstanding loyalty.
+client/src/BusinessSphereDashboard.jsx-9786-
+client/src/BusinessSphereDashboard.jsx-9787-Warm regards,
+client/src/BusinessSphereDashboard.jsx-9788-${co.owner||"The Team"}
+client/src/BusinessSphereDashboard.jsx-9789-${co.name||"BusinessSphere"}`;
+client/src/BusinessSphereDashboard.jsx-9790-                      if(selected.email) window.location.href=`mailto:${selected.email}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+client/src/BusinessSphereDashboard.jsx:9791:                      else { emailBus.push({subject:subj,body,tmpl:"loyalty"}); notify("Open Collaboration → Email to send congrats"); }
+client/src/BusinessSphereDashboard.jsx-9792-                    }}
+client/src/BusinessSphereDashboard.jsx-9793-                    className="flex items-center gap-1.5 text-[12px] font-bold text-white px-4 py-2 rounded-xl bg-[#2563EB]">
+client/src/BusinessSphereDashboard.jsx-9794-                    <Mail size={13}/> Email Congrats
+--
+client/src/BusinessSphereDashboard.jsx-9881-      const custInvs = invoices.rows.filter(
+client/src/BusinessSphereDashboard.jsx-9882-        (inv) => inv.customer?.toLowerCase() === (l.company || l.contact || "").toLowerCase()
+client/src/BusinessSphereDashboard.jsx-9883-      );
+client/src/BusinessSphereDashboard.jsx:9884:      const lifetimeValue = custInvs.reduce((s, inv) => s + lineTotal(inv.items).total, 0);
+client/src/BusinessSphereDashboard.jsx:9885:      const outstanding   = custInvs.filter(i=>i.status!=="Paid").reduce((s,i)=>s+(lineTotal(i.items).total-(i.amountPaid||0)),0);
+client/src/BusinessSphereDashboard.jsx-9886-      const lastActivity  = custInvs.length ? custInvs.sort((a,b)=>b.date?.localeCompare(a.date||""))[0]?.date : l.lastActivity;
+client/src/BusinessSphereDashboard.jsx-9887-      return { ...l, invoiceCount: custInvs.length, lifetimeValue, outstanding, lastActivity };
+client/src/BusinessSphereDashboard.jsx-9888-    }).sort((a,b) => b.lifetimeValue - a.lifetimeValue);
+client/src/BusinessSphereDashboard.jsx-9889-  }, [leads, invoices.rows]);
+client/src/BusinessSphereDashboard.jsx-9890-
+client/src/BusinessSphereDashboard.jsx:9891:  const totalLifetime   = customers.reduce((s,c) => s + c.lifetimeValue, 0);
+client/src/BusinessSphereDashboard.jsx:9892:  const totalOutstanding= customers.reduce((s,c) => s + c.outstanding, 0);
+client/src/BusinessSphereDashboard.jsx-9893-  const topCustomers    = customers.slice(0, 8);
+client/src/BusinessSphereDashboard.jsx-9894-
+client/src/BusinessSphereDashboard.jsx-9895-  // Chart data for top customers
+--
+client/src/BusinessSphereDashboard.jsx-9899-    outstanding: Math.round(c.outstanding / 1000),
+client/src/BusinessSphereDashboard.jsx-9900-  }));
+client/src/BusinessSphereDashboard.jsx-9901-
+client/src/BusinessSphereDashboard.jsx:9902:  // Revenue concentration: top 3 customers % of total
+client/src/BusinessSphereDashboard.jsx:9903:  const top3Share = totalLifetime > 0
+client/src/BusinessSphereDashboard.jsx:9904:    ? Math.round(topCustomers.slice(0,3).reduce((s,c)=>s+c.lifetimeValue,0)/totalLifetime*100)
+client/src/BusinessSphereDashboard.jsx-9905-    : 0;
+client/src/BusinessSphereDashboard.jsx-9906-
+client/src/BusinessSphereDashboard.jsx-9907-  return (
+--
+client/src/BusinessSphereDashboard.jsx-9909-      {/* KPI summary */}
+client/src/BusinessSphereDashboard.jsx-9910-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+client/src/BusinessSphereDashboard.jsx-9911-        {[
+client/src/BusinessSphereDashboard.jsx:9912:          ["Total Customers", customers.length,                           "#2563EB"],
+client/src/BusinessSphereDashboard.jsx:9913:          ["Lifetime Value",  "TZS "+money(Math.round(totalLifetime))+"k","#16A34A"],
+client/src/BusinessSphereDashboard.jsx:9914:          ["Outstanding AR",  "TZS "+money(Math.round(totalOutstanding))+"k", totalOutstanding>0?"#F59E0B":"#16A34A"],
+client/src/BusinessSphereDashboard.jsx-9915-          ["Top 3 Revenue Share", top3Share+"%",                          "#7C3AED"],
+client/src/BusinessSphereDashboard.jsx-9916-        ].map(([l,v,col])=>(
+client/src/BusinessSphereDashboard.jsx-9917-          <div key={l} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 text-center">
+--
+client/src/BusinessSphereDashboard.jsx-9946-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+client/src/BusinessSphereDashboard.jsx-9947-        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+client/src/BusinessSphereDashboard.jsx-9948-          <p className="text-[13.5px] font-semibold text-[#111827]">Customer Directory ({customers.length})</p>
+client/src/BusinessSphereDashboard.jsx:9949:          <p className="text-[12px] text-slate-400">TZS {money(Math.round(totalLifetime))}k total lifetime value</p>
+client/src/BusinessSphereDashboard.jsx-9950-        </div>
+client/src/BusinessSphereDashboard.jsx-9951-        <div className="overflow-x-auto">
+client/src/BusinessSphereDashboard.jsx-9952-          <table className="w-full text-[12.5px]">
+--
+client/src/BusinessSphereDashboard.jsx-10009-      .map((l) => {
+client/src/BusinessSphereDashboard.jsx-10010-        const balance = invoices.rows
+client/src/BusinessSphereDashboard.jsx-10011-          .filter((inv) => inv.customer === l.company && inv.status !== "Paid")
+client/src/BusinessSphereDashboard.jsx:10012:          .reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
+client/src/BusinessSphereDashboard.jsx-10013-        return { id:`cust-${l.id}`, name:l.company, sub:l.phone||l.email||"", type:"customer", balance, direction:"receive" };
+client/src/BusinessSphereDashboard.jsx-10014-      }).filter((p) => p.balance > 0);
+client/src/BusinessSphereDashboard.jsx-10015-
+--
+client/src/BusinessSphereDashboard.jsx-10025-  }, [leads, invoices.rows, expenses?.rows, suppliers?.rows]);
+client/src/BusinessSphereDashboard.jsx-10026-
+client/src/BusinessSphereDashboard.jsx-10027-  const filtered     = filter === "all" ? parties : parties.filter((p) => p.type === filter.slice(0,-1));
+client/src/BusinessSphereDashboard.jsx:10028:  const totalReceive = parties.filter((p) => p.direction === "receive").reduce((s, p) => s + p.balance, 0);
+client/src/BusinessSphereDashboard.jsx:10029:  const totalGive    = parties.filter((p) => p.direction === "give").reduce((s, p) => s + p.balance, 0);
+client/src/BusinessSphereDashboard.jsx:10030:  const netPosition  = totalReceive - totalGive;
+client/src/BusinessSphereDashboard.jsx-10031-
+client/src/BusinessSphereDashboard.jsx-10032-  // Chart: top 8 parties by outstanding balance
+client/src/BusinessSphereDashboard.jsx-10033-  const chartData = parties.slice(0, 8).map(p => ({
+--
+client/src/BusinessSphereDashboard.jsx-10042-      <div className="grid grid-cols-3 gap-3">
+client/src/BusinessSphereDashboard.jsx-10043-        <div className="rounded-xl p-4 bg-green-50 border border-green-100">
+client/src/BusinessSphereDashboard.jsx-10044-          <p className="text-[10.5px] text-green-700 font-semibold uppercase tracking-wide mb-1">To Receive</p>
+client/src/BusinessSphereDashboard.jsx:10045:          <p className="text-[19px] font-mono font-bold text-green-700">TZS {money(Math.round(totalReceive))}k</p>
+client/src/BusinessSphereDashboard.jsx-10046-          <p className="text-[11px] text-green-600 mt-0.5">{parties.filter(p=>p.direction==="receive").length} customers</p>
+client/src/BusinessSphereDashboard.jsx-10047-        </div>
+client/src/BusinessSphereDashboard.jsx-10048-        <div className="rounded-xl p-4 bg-red-50 border border-red-100">
+client/src/BusinessSphereDashboard.jsx-10049-          <p className="text-[10.5px] text-red-700 font-semibold uppercase tracking-wide mb-1">To Give</p>
+client/src/BusinessSphereDashboard.jsx:10050:          <p className="text-[19px] font-mono font-bold text-red-700">TZS {money(Math.round(totalGive))}k</p>
+client/src/BusinessSphereDashboard.jsx-10051-          <p className="text-[11px] text-red-600 mt-0.5">{parties.filter(p=>p.direction==="give").length} suppliers</p>
+client/src/BusinessSphereDashboard.jsx-10052-        </div>
+client/src/BusinessSphereDashboard.jsx-10053-        <div className="rounded-xl p-4 border" style={{background:netPosition>=0?"#F0FDF4":"#FEF2F2",borderColor:netPosition>=0?"#BBF7D0":"#FECACA"}}>
+--
+client/src/BusinessSphereDashboard.jsx-10330-  const [selected, setSelected] = useState(null);
+client/src/BusinessSphereDashboard.jsx-10331-  const [showForm, setShowForm] = useState(false);
+client/src/BusinessSphereDashboard.jsx-10332-  const [sort, setSort] = useState({ field: null, direction: "asc" });
+client/src/BusinessSphereDashboard.jsx:10333:  const [visibleSalesColumns, setVisibleSalesColumns] = usePersistentVisibleColumns("sales_documents", ["document", "customer", "date", "reference", "status", "total", "detail"]);
+client/src/BusinessSphereDashboard.jsx:10334:  const salesColumns = [{ id: "document", label: "Document", required: true }, { id: "customer", label: "Customer" }, { id: "date", label: "Date" }, { id: "reference", label: "Reference" }, { id: "status", label: "Status" }, { id: "total", label: "Total" }, { id: "detail", label: "Detail", required: true }];
+client/src/BusinessSphereDashboard.jsx-10335-
+client/src/BusinessSphereDashboard.jsx-10336-  // A Dashboard Quick Action ("Create Invoice") can deep-link here already
+client/src/BusinessSphereDashboard.jsx-10337-  // on the right tab with the create form open, instead of just switching
+--
+client/src/BusinessSphereDashboard.jsx-10382-  }, [rows, query, sort]);
+client/src/BusinessSphereDashboard.jsx-10383-
+client/src/BusinessSphereDashboard.jsx-10384-  const summary = useMemo(() => {
+client/src/BusinessSphereDashboard.jsx:10385:    const totals = rows.map((r) => lineTotal(r.items).total);
+client/src/BusinessSphereDashboard.jsx:10386:    const sum = totals.reduce((a, b) => a + b, 0);
+client/src/BusinessSphereDashboard.jsx-10387-    return { count: rows.length, sum };
+client/src/BusinessSphereDashboard.jsx-10388-  }, [rows]);
+client/src/BusinessSphereDashboard.jsx-10389-
+--
+client/src/BusinessSphereDashboard.jsx-10399-    const co      = window.__smartManagerCompany || {};
+client/src/BusinessSphereDashboard.jsx-10400-    const fmt     = (n) => new Intl.NumberFormat("en-US").format(Math.round(n));
+client/src/BusinessSphereDashboard.jsx-10401-    const fmtDec  = (n) => new Intl.NumberFormat("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0);
+client/src/BusinessSphereDashboard.jsx:10402:    const { subtotal, tax, total } = lineTotal(doc.items || []);

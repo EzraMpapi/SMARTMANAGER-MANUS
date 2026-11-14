@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            display: flex;
+            background-color: #f8fafc;
+            overflow: hidden;
+            position: relative;
+        }
+        .left-panel {
+            width: 45%;
+            background-color: #101828;
+            color: white;
+            padding: 80px 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+        .left-panel::after {
+            content: '';
+            position: absolute;
+            right: -50px;
+            top: 0;
+            bottom: 0;
+            width: 100px;
+            background-color: #101828;
+            transform: skewX(-10deg);
+            z-index: 1;
+        }
+        .right-panel {
+            width: 55%;
+            padding: 100px 80px 100px 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            z-index: 2;
+        }
+        .brand {
+            font-size: 24px;
+            font-weight: 700;
+            color: #38bdf8;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            z-index: 2;
+        }
+        .brand i {
+            font-size: 28px;
+        }
+        .title {
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 2;
+        }
+        .subtitle {
+            font-size: 28px;
+            color: #94a3b8;
+            font-weight: 400;
+            position: relative;
+            z-index: 2;
+        }
+        .date {
+            margin-top: auto;
+            font-size: 18px;
+            color: #64748b;
+            position: relative;
+            z-index: 2;
+        }
+        .summary-header {
+            font-size: 32px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #38bdf8;
+            padding-bottom: 15px;
+            display: inline-block;
+        }
+        .takeaways {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        .takeaway-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            min-width: 60px;
+            background-color: #e0f2fe;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0284c7;
+            font-size: 24px;
+        }
+        .takeaway-content h3 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        .takeaway-content p {
+            font-size: 18px;
+            color: #475569;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="left-panel">
+            <div class="brand">
+                <i class="fa-solid fa-server"></i> SMART MANAGER
+            </div>
+            <h1 class="title">P0 Foreign-Key Index Optimization</h1>
+            <h2 class="subtitle">Deployment & Execution Report</h2>
+            <div class="date">August 23, 2026</div>
+        </div>
+        <div class="right-panel">
+            <h2 class="summary-header">Executive Summary</h2>
+            <div class="takeaways">
+                <div class="takeaway-item">
+                    <div class="icon-box"><i class="fa-solid fa-check-double"></i></div>
+                    <div class="takeaway-content">
+                        <h3>P0 Batch Applied Successfully</h3>
+                        <p>Exactly five explicitly authorized indexes were deployed to production project <code>rlhngsrihahhyxnjxrxm</code>.</p>
+                    </div>
+                </div>
+                <div class="takeaway-item">
+                    <div class="icon-box"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div class="takeaway-content">
+                        <h3>Strict Scope Maintained</h3>
+                        <p>Zero unintended schema changes. No P1/P2 indexes, drops, or RLS/policy modifications were executed.</p>
+                    </div>
+                </div>
+                <div class="takeaway-item">
+                    <div class="icon-box"><i class="fa-solid fa-globe"></i></div>
+                    <div class="takeaway-content">
+                        <h3>Production Verified</h3>
+                        <p>Final GitHub commit <code>96e4fc9</code> passed CI. Required domain is healthy and serving the Git-linked deployment.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

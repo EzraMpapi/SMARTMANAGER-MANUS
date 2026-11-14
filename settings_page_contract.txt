@@ -1,0 +1,741 @@
+    const scheduleMeasure = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(measureTarget);
+    };
+    scheduleMeasure();
+    window.addEventListener("resize", scheduleMeasure);
+    window.addEventListener("scroll", scheduleMeasure, true);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", scheduleMeasure);
+      window.removeEventListener("scroll", scheduleMeasure, true);
+    };
+  }, [open, step.moduleId]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const previous = document.activeElement;
+    const focusTimer = window.setTimeout(() => {
+      const first = dialogRef.current?.querySelector("button:not([disabled])");
+      first?.focus();
+    }, 0);
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        finishTour("dismissed");
+        return;
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        goNext();
+        return;
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        goPrevious();
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusable = Array.from(dialogRef.current.querySelectorAll("button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])"));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previous && typeof previous.focus === "function") window.setTimeout(() => previous.focus(), 0);
+    };
+  }, [open, stepIndex]);
+
+  function persistCompletion(status) {
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify({ status, completedAt: new Date().toISOString(), role: userRole, version: 1 }));
+    } catch (_error) {
+      // Tour preferences are optional; never block ERP navigation when storage is unavailable.
+    }
+    if (IS_CONFIGURED && currentUser?.id) {
+      const completedAt = new Date().toISOString();
+      const roleTrack = userRole;
+      sb("profiles").eq("id", currentUser.id).update({
+        onboarding_tour_completed_at: completedAt,
+        onboarding_tour_role_track: roleTrack
+      }).single().run().catch((error) => {
+        authDebug("Server-backed onboarding completion sync deferred", { message: error?.message });
+      });
+    }
+  }
+  function finishTour(status = "completed") {
+    persistCompletion(status);
+    setOpen(false);
+    window.setTimeout(() => triggerRef.current?.focus(), 0);
+  }
+  function goNext() {
+    if (stepIndex >= activeSteps.length - 1) finishTour("completed");
+    else setStepIndex((current) => current + 1);
+  }
+  function goPrevious() {
+    setStepIndex((current) => Math.max(0, current - 1));
+  }
+  function restartTour() {
+    setStepIndex(0);
+    setOpen(true);
+  }
+  function openModule() {
+    if (available && onNavigate) {
+      onNavigate(step.moduleId);
+      onTourVisibilityChange?.(true);
+    }
+  }
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={restartTour}
+        className="hidden lg:inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11.5px] font-semibold text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+        aria-label={isSw ? "Anza ziara ya mfumo wa Smart Manager" : "Take the Smart Manager onboarding tour"}
+        data-onboarding-trigger="true"
+      >
+        <Info size={13} /> {isSw ? "Anza Ziara" : "Take a Tour"}
+      </button>
+      {open && (
+        <div
+          className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${spotlightRect ? "bg-transparent" : "bg-slate-950/55 backdrop-blur-sm"}`}
+          data-onboarding-tour="true"
+          onClick={(event) => { if (event.target === event.currentTarget) finishTour("dismissed"); }}
+        >
+          {spotlightRect ? (
+            <div
+              className="pointer-events-none fixed z-[101] rounded-xl border-2 border-emerald-300/95 bg-emerald-200/10 shadow-[0_0_28px_rgba(52,211,153,.52)] animate-pulse"
+              style={{ left: spotlightRect.left, top: spotlightRect.top, width: spotlightRect.width, height: spotlightRect.height, boxShadow: "0 0 0 9999px rgba(15,23,42,.64), 0 0 28px rgba(52,211,153,.52)" }}
+              aria-hidden="true"
+              data-tour-spotlight={step.moduleId}
+            />
+          ) : (
+            <div className="pointer-events-none absolute inset-0" aria-hidden="true" />
+          )}
+          <section
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="onboarding-tour-title"
+            aria-describedby="onboarding-tour-description"
+            className="relative z-[102] w-full max-w-[560px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            data-onboarding-step={step.id}
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
+              <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                <BrandLogo variant="compact" className="h-7 w-7" />
+                {isSw ? "Ziara ya Smart Manager" : "Smart Manager tour"}
+              </div>
+              <button type="button" onClick={() => finishTour("dismissed")} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" aria-label={isSw ? "Funga ziara ya mfumo" : "Close onboarding tour"}>
+                <X size={17} />
+              </button>
+            </div>
+            <div className="px-5 pb-5 pt-6 sm:px-8 sm:pb-7 sm:pt-8">
+              <div className="flex items-start gap-4">
+                <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-md animate-pulse" style={{ background: `linear-gradient(135deg, ${step.accent}, #0F172A)` }} aria-hidden="true">
+                  <StepIcon size={24} />
+                  <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-[12px] shadow-sm border border-slate-200" aria-hidden="true">
+                    {step.illustration}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-700" aria-live="polite">
+                      {isSw ? `Hatua ya ${stepIndex + 1} kati ya ${activeSteps.length}` : `Step ${stepIndex + 1} of ${activeSteps.length}`}{" "}
+                      <span className="ml-1 text-slate-400 normal-case tracking-normal">· {remainingLabel}</span>
+                    </p>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 uppercase">
+                      {userRole} track
+                    </span>
+                  </div>
+                  <h2 id="onboarding-tour-title" className="mt-1 text-[21px] font-semibold tracking-tight text-slate-900">{step.title[isSw ? "sw" : "en"]}</h2>
+                  <p id="onboarding-tour-description" className="mt-2 text-[13px] leading-6 text-slate-600">{step.description[isSw ? "sw" : "en"]}</p>
+                </div>
+              </div>
+              <div className="mt-6 flex items-center gap-1.5" role="progressbar" aria-label="Onboarding tour progress" aria-valuemin={1} aria-valuemax={activeSteps.length} aria-valuenow={stepIndex + 1} aria-valuetext={`Step ${stepIndex + 1} of ${activeSteps.length}; ${remainingLabel}`}>
+                <span className="sr-only" aria-live="polite">{remainingLabel}</span>
+                {activeSteps.map((item, index) => <span key={item.id} className={`h-1.5 rounded-full transition-all ${index === stepIndex ? "w-8 bg-emerald-600" : index < stepIndex ? "w-4 bg-emerald-200" : "w-4 bg-slate-200"}`} aria-hidden="true" />)}
+              </div>
+              <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3.5 text-[12px] leading-5 text-emerald-950">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-600" />
+                  <span>
+                    {isSw
+                      ? "Kila mabadiliko ya kudumu yanasubiri uthibitisho wa seva. Ombi likishindwa, mfumo huhifadhi kazi yako ili uweze kujaribu tena."
+                      : "Every permanent change is designed to wait for server confirmation. If a request fails, the screen preserves your work for retry."}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <button type="button" onClick={() => finishTour("dismissed")} className="rounded-lg px-3 py-2 text-left text-[12px] font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">
+                  {isSw ? " ruka ziara " : "Skip tour"}
+                </button>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={goPrevious} disabled={stepIndex === 0} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-[12px] font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">
+                    <ChevronLeft size={14} /> {isSw ? "Nyuma" : "Back"}
+                  </button>
+                  {available && (
+                    <button type="button" onClick={openModule} className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 px-3 py-2 text-[12px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">
+                      {isSw ? "Fungua mfumo" : "Open module"} <ArrowRight size={14} />
+                    </button>
+                  )}
+                  <button type="button" onClick={goNext} className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500/50">
+                    {stepIndex === ONBOARDING_TOUR_STEPS.length - 1 ? (isSw ? "Maliza ziara" : "Finish tour") : (isSw ? "Endelea" : "Next")} <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+    </>
+  );
+}
+
+function SmartManager() {
+  const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
+  // Role-based access and session state initialized first to prevent temporal dead zones
+  const [currentUser, setCurrentUser] = useState({ id: null, name: "EzyMP", role: "Super Administrator", customerRef: null });
+  const currentRole = roleDefinitionFor(currentUser.role);
+  const canManage = currentRole.writeAccess === "full";
+
+  const [authView, setAuthView] = useState(() => typeof window === "undefined" ? "login" : authScreenFromSearch(window.location.search));
+  const [authContextEmail, setAuthContextEmail] = useState("");
+  const [recoveryAccessToken, setRecoveryAccessToken] = useState(null);
+  const invitationTokenRef = useRef(typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("invite") || "");
+  const acceptInvitationMutation = trpc.teamInvitations.accept.useMutation();
+  const [session, setSession] = useState(() => (IS_CONFIGURED ? null : { demo: true }));
+  const tenantSettingsQuery = trpc.workspaceSettings.get.useQuery(undefined, { enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo), retry: false });
+  const tenantIdleTimeoutMinutes = Math.min(120, Math.max(5, Number(tenantSettingsQuery.data?.profileData?.idleTimeoutMinutes) || 30));
+  const [idleWarningOpen, setIdleWarningOpen] = useState(false);
+  const [idleSecondsRemaining, setIdleSecondsRemaining] = useState(0);
+  const lastActivityAtRef = useRef(Date.now());
+  const IDLE_TIMEOUT_MS = tenantIdleTimeoutMinutes * 60 * 1000;
+  const IDLE_WARNING_MS = Math.min(2 * 60 * 1000, Math.max(60 * 1000, Math.floor(IDLE_TIMEOUT_MS * 0.2)));
+  // Always starts true now, in both modes — previously demo mode skipped
+  // this state entirely, which meant the branded loading screen below
+  // (and its real logo animation) would never actually be seen outside a
+  // live Supabase connection, defeating the point of building it. Demo
+  // mode still is not waiting on a real network call the way live mode is,
+  // so it resolves after a short, honest fixed window representing actual
+  // app initialization, not an artificial delay dressed up as one.
+  const [authChecking, setAuthChecking] = useState(true);
+  // A real, authenticated OAuth user (Google/Microsoft/Apple) who does not
+  // have a company yet — genuinely different from "not logged in." Their
+  // Supabase Auth session is real; they just haven't finished the company
+  // setup step Login/Signup normally requires. Losing this state and
+  // sending them back to a blank Login screen would silently discard a
+  // legitimate session, which is exactly what this build did before this
+  // fix — any token that resolved to a real user but no profile was
+  // simply deleted rather than routed to finish setup.
+  const [oauthPendingUser, setOauthPendingUser] = useState(null);
+  const [workspaceResolutionError, setWorkspaceResolutionError] = useState(null);
+  const [authRetryKey, setAuthRetryKey] = useState(0);
+  const [terminalSessionDiagnostic, setTerminalSessionDiagnostic] = useState(null);
+
+  useProactiveSessionRefresh(Boolean(session?.accessToken && !session?.demo), (accessToken) => {
+    setSession((current) => current?.demo ? current : current ? { ...current, accessToken } : current);
+  });
+
+  useEffect(() => {
+    const handleSessionExpiry = (event) => {
+      setSession(IS_CONFIGURED ? null : { demo: true });
+      setTerminalSessionDiagnostic(event?.detail?.diagnosticCode || "SM-AUTH-401");
+      setAuthView("login");
+    };
+    window.addEventListener("smart-manager:auth-session-expired", handleSessionExpiry);
+    return () => window.removeEventListener("smart-manager:auth-session-expired", handleSessionExpiry);
+  }, []);
+
+  useEffect(() => {
+    if (!IS_CONFIGURED) {
+      const t = setTimeout(() => setAuthChecking(false), 900);
+      return () => clearTimeout(t);
+    }
+
+    // A real OAuth redirect back from Supabase lands here with the
+    // session in the URL fragment (Supabase's implicit-flow convention),
+    // not in localStorage yet — this is the one moment that token exists
+    // only in the URL, so it has to be captured before anything else runs.
+    let tokenFromOAuth = null;
+    let refreshTokenFromOAuth = null;
+    if (typeof window !== "undefined" && window.location.hash.includes("access_token=")) {
+      const params = new URLSearchParams(window.location.hash.slice(1));
+      tokenFromOAuth = params.get("access_token");
+      refreshTokenFromOAuth = params.get("refresh_token");
+      if (tokenFromOAuth) {
+        if (authScreenFromSearch(window.location.search) === "reset") {
+          setRecoveryAccessToken(tokenFromOAuth);
+          window.history.replaceState(null, "", `${window.location.pathname}?auth=reset`);
+          setAuthChecking(false);
+          return;
+        }
+        persistAuthSession({ access_token: tokenFromOAuth, refresh_token: refreshTokenFromOAuth });
+        window.history.replaceState(null, "", window.location.pathname); // real cleanup — an access token has no business sitting in the visible URL
+      }
+    }
+
+    let token = tokenFromOAuth || getStoredAccessToken();
+    const storedRefreshToken = refreshTokenFromOAuth || getStoredRefreshToken();
+    if (!token) { setAuthChecking(false); return; }
+    (async () => {
+      let authenticatedUser = null;
+      try {
+        let user;
+        try {
+          user = await authGetUser(token);
+        } catch (_expiredAccessToken) {
+          if (!storedRefreshToken) throw _expiredAccessToken;
+          const refreshed = await authRefreshSession(storedRefreshToken);
+          persistAuthSession(refreshed, { remember: Boolean(window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)) });
+          reportSessionRefreshOutcome("success", "launch_bootstrap");
+          token = refreshed.access_token;
+          user = await authGetUser(token);
+        }
+        authenticatedUser = user;
+        const loadVerifiedWorkspaceProfile = async () => {
+          const profileRows = await sb("profiles").select("*").eq("id", user.id).run();
+          const profile = profileRows?.[0];
+          if (!profile?.company_id) return profile;
+          const companyRows = await sb("companies").select("*").eq("id", profile.company_id).run();
+          const company = companyRows?.[0];
+          if (!company?.id) {
+            const error = new Error("The assigned workspace is not available to this verified account.");
+            error.status = 403;
+            throw error;
+          }
+          return { ...profile, companies: company };
+        };
+        let profile = await loadVerifiedWorkspaceProfile();
+        if (invitationTokenRef.current && (!profile || !profile.company_id)) {
+          await acceptInvitationMutation.mutateAsync({ token: invitationTokenRef.current });
+          invitationTokenRef.current = "";
+          const inviteUrl = new URL(window.location.href);
+          inviteUrl.searchParams.delete("invite");
+          window.history.replaceState(null, "", `${inviteUrl.pathname}${inviteUrl.search}`);
+          profile = await loadVerifiedWorkspaceProfile();
+        }
+        // A pre-existing authenticated profile with no company can only be
+        // auto-provisioned when this is the first tenant in the deployment.
+        // Otherwise the user must use the explicit create/join organization
+        // flow, preserving tenant boundaries and ownership intent.
+        if (profile && !profile.company_id) {
+          try {
+            await callRpc("ensure_current_company", {}, token);
+            profile = await loadVerifiedWorkspaceProfile();
+          } catch (_bootstrapError) {
+            // The normal explicit company setup / join flow below provides a
+            // safe resolution whenever an existing tenant prevents bootstrap.
+          }
+        }
+        if (!profile || !profile.company_id || !profile.companies?.id) {
+          // A real, valid session without a tenant assignment must finish
+          // company setup before loading any company-scoped modules. This
+          // covers both a new OAuth user and an existing profile left
+          // unassigned by an interrupted setup flow.
+          setOauthPendingUser({ id: user.id, email: user.email, accessToken: token, fullName: user.user_metadata?.full_name || user.user_metadata?.name || "" });
+          setAuthChecking(false);
+          return;
+        }
+        setWorkspaceResolutionError(null);
+        const confirmedIndustryFocus = normalizeOrganizationIndustryFocus(profile.companies?.category);
+        rememberConfirmedOrganizationIndustryFocus(confirmedIndustryFocus);
+        setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, industry: confirmedIndustryFocus, industryFocus: confirmedIndustryFocus, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo, logo: profile.companies?.logo || null, brandColor: profile.companies?.brand_primary_color || "#0B5D3B", brandAccentColor: profile.companies?.brand_accent_color || "#16A34A" } });
+      } catch (bootstrapError) {
+        if (isTerminalWorkspaceSessionError(bootstrapError)) {
+          reportSessionRefreshOutcome("terminal_failure", "launch_bootstrap");
+          clearStoredAuthSession();
+          setTerminalSessionDiagnostic(sessionRecoveryDiagnosticCode(bootstrapError));
+          setSession(null);
+          setAuthView("login");
+        } else {
+          authDebug("Workspace resolution failed", { message: bootstrapError?.message || "unknown", authenticated: Boolean(authenticatedUser) });
+          reportSessionRefreshOutcome("retryable_failure", "launch_bootstrap");
+          setWorkspaceResolutionError({ email: authenticatedUser?.email || null });
+        }
+      } finally {
+        setAuthChecking(false);
+      }
+    })();
+  }, [authRetryKey]);
+
+  function navigateAuthView(view, email = "") {
+    if (email) setAuthContextEmail(email);
+    setAuthView(view);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.hash = "";
+    if (view === "login") url.searchParams.delete("auth"); else url.searchParams.set("auth", view);
+    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+  }
+
+    const handleSignOut = useCallback(() => {
+    clearStoredAuthSession();
+    if (session?.accessToken) authSignOut(session.accessToken);
+    DEMO_OVERRIDE = false;
+    setIdleWarningOpen(false);
+    setIdleSecondsRemaining(0);
+    setSession(IS_CONFIGURED ? null : { demo: true });
+    navigateAuthView("login");
+  }, [session]);
+
+  const isAdministrativeSession = Boolean(session?.accessToken && !session?.demo && PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role)));
+  useEffect(() => {
+    if (!isAdministrativeSession) {
+      setIdleWarningOpen(false);
+      setIdleSecondsRemaining(0);
+      return undefined;
+    }
+    lastActivityAtRef.current = Date.now();
+    const activityEvents = ["pointerdown", "keydown", "touchstart", "scroll"];
+    const markActivity = () => { lastActivityAtRef.current = Date.now(); };
+    activityEvents.forEach((eventName) => window.addEventListener(eventName, markActivity, { passive: true }));
+    const tick = () => {
+      const remaining = Math.max(0, IDLE_TIMEOUT_MS - (Date.now() - lastActivityAtRef.current));
+      if (remaining <= 0) {
+        notify("Your administrative session was signed out after 30 minutes of inactivity.", "error");
+        handleSignOut();
+        return;
+      }
+      if (remaining <= IDLE_WARNING_MS) {
+        setIdleWarningOpen(true);
+        setIdleSecondsRemaining(Math.ceil(remaining / 1000));
+      } else {
+        setIdleSecondsRemaining(0);
+      }
+    };
+    const timer = window.setInterval(tick, 1000);
+    return () => {
+      window.clearInterval(timer);
+      activityEvents.forEach((eventName) => window.removeEventListener(eventName, markActivity));
+    };
+  }, [handleSignOut, isAdministrativeSession, tenantIdleTimeoutMinutes]);
+  function keepAdministrativeSessionActive() {
+    lastActivityAtRef.current = Date.now();
+    setIdleWarningOpen(false);
+    setIdleSecondsRemaining(0);
+  }
+  const [active, setActive] = useState("dashboard");
+  // CmdK handled by paletteOpen state (see topbar)
+
+  // Global ⌘K / Ctrl+K — open command palette from anywhere
+  useEffect(() => {
+    function onKey(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setCmdOpen((v) => !v); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const handleOnboardingVisibilityChange = useCallback((isOpen) => {
+    setSidebarOpen(isOpen);
+  }, []);
+
+  // Company profile is editable in Settings; the topbar and dashboard
+  // greeting read from this state, so edits are reflected immediately.
+  // `id` is blank in demo mode (never read, since IS_CONFIGURED gates every
+  // real write) and set to the real company UUID once a live session
+  // hydrates this below — Settings' saveProfile targets that real id
+  // rather than a hardcoded constant, which could never correctly scope a
+  // write once different real users belong to different companies.
+  const [company, setCompany] = useState(() => {
+    // Live workspaces hydrate this state from the verified session and the
+    // persisted workspace settings query below. Demo defaults remain explicit
+    // fallback state only when the application is not configured.
+    return {
+    id: "",
+    name: "BEIRAHISI HARDWARE",
+    owner: "EzyMP",
+    industry: "Wholesale & Hardware",
+    country: "Tanzania",
+    currency: "TZS",
+    taxRate: 18,
+    timezone: "Africa/Dar_es_Salaam",
+    businessScale: "large",
+    createdAt: "2019-03-12",
+    receiptWidth: "80mm", receiptFooter: "Thank you for your business!", receiptShowLogo: true,
+    // Extended company identity — these feed the logo in the header,
+    // receipts, payslips, PDFs, and any printed document.
+    logo: null,          // base64 data URL — stored in state, persisted to companies table
+    coverPhoto: null,    // base64 — wide banner shown on company card and PDFs
+    phone: "",           // business phone shown on receipts
+    email: "",           // business email shown on receipts
+    website: "",
+    address: "",         // street address
+    city: "",
+    postalCode: "",
+    tin: "",             // TIN number (TRA, KRA, etc.)
+    regNumber: "",       // business registration number
+    tagline: "",         // shown below company name on receipts
+    // Extended branding & identity
+    brandColor: "#0B5D3B",  // primary brand colour for PDFs and exports
+    brandAccentColor: "#16A34A",
+    businessType: "Private Limited Company",
+    foundedYear: "",
+    description: "",     // company bio for proposals and reports
+    // Social media
+    facebook: "",
+    instagram: "",
+    twitter: "",
+    linkedin: "",
+    tiktok: "",
+    whatsappBusiness: "",
+    // Banking
+    bankName: "",
+    bankAccountName: "",
+    bankAccountNo: "",
+    bankBranch: "",
+    bankSwift: "",
+    // Business hours
+    businessHours: {
+      Mon:{open:"08:00",close:"17:00",closed:false},
+      Tue:{open:"08:00",close:"17:00",closed:false},
+      Wed:{open:"08:00",close:"17:00",closed:false},
+      Thu:{open:"08:00",close:"17:00",closed:false},
+      Fri:{open:"08:00",close:"17:00",closed:false},
+      Sat:{open:"09:00",close:"13:00",closed:false},
+      Sun:{open:"",close:"",closed:true},
+    },
+  };});
+
+  // Role-based access state initialized at the top of SmartManager to prevent temporal dead zones.
+  const roleChangeApprovalsQuery = trpc.listRoleChangeApprovals.useQuery(undefined, {
+    enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo && currentUser?.id && PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role))),
+    retry: false,
+    refetchInterval: 10000,
+  });
+  const seenRoleApprovalIdsRef = useRef(null);
+  useEffect(() => {
+    const approvals = roleChangeApprovalsQuery.data?.approvals;
+    if (!Array.isArray(approvals)) return;
+    const pending = approvals.filter((row) => row.status === "Pending Review" && row.data?.targetUserId !== currentUser.id);
+    const nextIds = new Set(pending.map((row) => row.id));
+    if (seenRoleApprovalIdsRef.current === null) {
+      seenRoleApprovalIdsRef.current = nextIds;
+      return;
+    }
+    const newRequests = pending.filter((row) => !seenRoleApprovalIdsRef.current.has(row.id));
+    if (newRequests.length > 0) {
+      notify(newRequests.length === 1 ? "New role-change approval request requires your review." : `${newRequests.length} new role-change approval requests require your review.`);
+    }
+    seenRoleApprovalIdsRef.current = nextIds;
+  }, [roleChangeApprovalsQuery.data, currentUser.id]);
+
+  useEffect(() => {
+    if (session && !session.demo) {
+      setCompany({
+        id: session.company.id, name: session.company.name, owner: session.fullName, industry: session.company.industry || "",
+        country: session.company.country, currency: session.company.currency,
+        taxRate: session.company.taxRate ?? 18, timezone: session.company.timezone || "Africa/Dar_es_Salaam",
+        businessScale: session.company.businessScale || "large",
+        createdAt: session.company.created_at || null,
+        receiptWidth: session.company.receiptWidth || "80mm", receiptFooter: session.company.receiptFooter || "", receiptShowLogo: session.company.receiptShowLogo !== false,
+        logo: session.company.logo || null, brandColor: session.company.brandColor || "#0B5D3B", brandAccentColor: session.company.brandAccentColor || "#16A34A",
+      });
+      setCurrentUser({ id: session.userId, name: session.fullName, role: session.role, customerRef: session.customerRef || null });
+    }
+    }, [session]);
+  useEffect(() => {
+    setGuardedPersistenceCompanyId(session && !session.demo ? session.company?.id : "");
+  }, [session?.demo, session?.company?.id]);
+  useEffect(() => {
+    const profileData = tenantSettingsQuery.data?.profileData;
+
+    if (!profileData || typeof profileData !== "object") return;
+    setCompany((current) => ({ ...current, ...profileData, signatureLogo: profileData.signatureLogo ?? current.signatureLogo ?? null }));
+  }, [tenantSettingsQuery.data]);
+
+  // Activates the real, per-company tax rate everywhere lineTotal() and
+  // every POS/invoice calculation already reads it from (see the TAX_RATE
+  // declaration itself for why this is a module value rather than a prop
+  // threaded through a dozen-plus call sites). Runs whenever company data
+  // changes, so switching companies — or editing the rate in Settings —
+  // takes effect on the very next render, not just at page load.
+  useEffect(() => {
+    setActiveTaxRate(company.taxRate);
+  }, [company.taxRate]);
+
+  // Module entitlements — the "enable only the modules you need" promise.
+  // Dashboard can't be disabled; it's the app's home. Backed by the
+  // company_modules table when a real project is connected.
+  const [enabledModules, setEnabledModules] = useState(() => new Set(MODULES.map((m) => m.id)));
+
+  // Real load from the database in live mode — this state previously had
+  // no fetch at all and simply defaulted to "every module enabled" for
+  // the entire session, meaning a company that had genuinely disabled a
+  // module in a previous session would see it silently reappear on the
+  // next login. A company with no rows yet (brand new, or created before
+  // this fix existed) correctly keeps the "everything enabled" default,
+  // since an empty result here means no explicit choice has been made.
+  useEffect(() => {
+    if (!IS_CONFIGURED || !company.id) return;
+    sb("company_modules").select("*").eq("company_id", company.id).run()
+      .then((rows) => {
+        if (!rows || rows.length === 0) return;
+        const disabled = new Set(rows
+          .filter((r) => (r.data?.enabled ?? r.enabled ?? r.status !== "disabled") === false)
+          .map((r) => r.data?.module_key ?? r.module_key ?? r.name)
+          .filter(Boolean));
+        setEnabledModules(new Set(MODULES.map((m) => m.id).filter((id) => !disabled.has(id))));
+      })
+      .catch(() => { /* keep the "everything enabled" default rather than block on a failed fetch */ });
+  }, [company.id]);
+
+  const [moduleSettingPending, setModuleSettingPending] = useState(false);
+  async function toggleModule(id) {
+    if (id === "dashboard" || moduleSettingPending) return;
+    const next = new Set(enabledModules);
+    const turningOff = next.has(id);
+    if (turningOff) next.delete(id); else next.add(id);
+    setModuleSettingPending(true);
+    try {
+      if (requiresConfirmedPersistence()) {
+        const existing = await sb("company_modules").select("id").eq("company_id", company.id).eq("name", id).run();
+        const record = { company_id: company.id, name: id, status: !turningOff ? "active" : "disabled", data: { module_key: id, enabled: !turningOff } };
+        if (existing?.[0]?.id) {
+          const saved = await sb("company_modules").eq("id", existing[0].id).update(record).single().run();
+          if (!saved?.id) throw buildConfirmedMutationError({ table: "company_modules", method: "PATCH", status: 200 });
+        } else {
+          const saved = await sb("company_modules").insert(record).single().run();
+          if (!saved?.id) throw buildConfirmedMutationError({ table: "company_modules", method: "POST", status: 200 });
+        }
+      }
+      setEnabledModules(next);
+      if (turningOff && active === id) setActive("dashboard");
+      notify(`${MODULES.find((module) => module.id === id)?.label || "Module"} ${turningOff ? "disabled" : "enabled"}.`);
+    } catch (error) {
+      notify(persistenceFailureMessage("Updating the module setting", error), "error");
+    } finally {
+      setModuleSettingPending(false);
+    }
+  }
+
+  // Tables read by more than one module live here, once, so every module
+  // sees the same data in the same session — no "Sales says Paid but
+  // Finance still shows Unpaid" drift between two independent copies.
+  const inventory = useCompanyTable("inventory_items", inventorySeed, { order: { col: "name", ascending: true }, mapRow: mapInventoryRow });
+  const invoices = useCompanyTable("sales_invoices", invoicesSeed, {
+    select: "*,items:sales_invoice_items(*),payments:sales_payments(*)", order: { col: "due_date", ascending: true }, mapRow: mapInvoiceRow,
+  });
+  const crm = useCompanyTable("crm_leads", seedLeads, { order: { col: "created_at", ascending: false }, mapRow: mapLeadRow });
+  const expenses = useCompanyTable("finance_expenses", expensesSeed, { order: { col: "expense_date", ascending: false }, mapRow: mapExpenseRow });
+  const suppliers = useCompanyTable("inventory_suppliers", suppliersSeed, { order: { col: "name", ascending: true }, mapRow: mapSupplierRow });
+  const posTransactions = useCompanyTable("pos_transactions", posTransactionsSeed, {
+    select: "*,pos_transaction_items(*),profiles(full_name),pos_returns(*,pos_return_items(*))", order: { col: "created_at", ascending: false }, mapRow: mapPosTransactionRow,
+  });
+  const posTransactionItems = useCompanyTable("pos_transaction_items", [], { order: { col: "created_at", ascending: false }, mapRow: mapPosTransactionItemRow });
+  const subscriptions = useCompanyTable("sales_subscriptions", subscriptionsSeed, {
+    order: { col: "next_billing_date", ascending: true }, mapRow: mapSubscriptionRow,
+  });
+  const quotations = useCompanyTable("sales_quotations", quotationsSeed, {
+    select: "*,items:sales_quotation_items(*)", order: { col: "issue_date", ascending: false }, mapRow: mapQuotationRow,
+  });
+  const scheduledWorkflows = useCompanyTable("scheduled_reports", scheduledReportsSeed, { mapRow: mapScheduledReportRow });
+  const files = useCompanyTable("documents", filesSeed, {
+    select: "*,profiles(full_name)", order: { col: "created_at", ascending: false }, mapRow: mapFileRow,
+  });
+  const employees = useCompanyTable("hr_employees", employeesSeed, {
+    order: { col: "full_name", ascending: true }, mapRow: mapEmployeeRow,
+  });
+  const leaveRequests = useCompanyTable("hr_leave_requests", leaveRequestsSeed, {
+    select: "*,hr_employees(full_name)", order: { col: "start_date", ascending: false }, mapRow: mapLeaveRow,
+  });
+  const workOrders = useCompanyTable("manufacturing_work_orders", workOrdersSeed, {
+    select: "*,profiles(full_name)", order: { col: "start_date", ascending: false }, mapRow: mapWorkOrderRow,
+  });
+
+
+  // ── Dark mode ────────────────────────────────────────────────────────────
+  const [darkMode, setDarkMode] = React.useState(() => {
+    try { return localStorage.getItem("bs_dark") === "1"; } catch(_e){ return false; }
+  });
+  React.useEffect(() => {
+    const root = document.documentElement;
+    if (darkMode) { root.classList.add("dark"); localStorage.setItem("bs_dark","1"); }
+    else { root.classList.remove("dark"); localStorage.setItem("bs_dark","0"); }
+  }, [darkMode]);
+
+  // ── Smart Alert Engine — cross-module intelligence ─────────────────────
+  // Each module passes its local table data here; the engine returns ranked alerts
+  const [bankLoansForAlerts,  setBankLoansForAlerts]  = React.useState([]);
+  const [phmStockForAlerts,   setPhmStockForAlerts]   = React.useState([]);
+  const [vehiclesForAlerts,   setVehiclesForAlerts]   = React.useState([]);
+  const [schFeesForAlerts,    setSchFeesForAlerts]    = React.useState([]);
+  const [rstOrdersForAlerts,  setRstOrdersForAlerts]  = React.useState([]);
+  const [mfiLoansForAlerts,   setMfiLoansForAlerts]   = React.useState([]);
+  const [htlBookingsForAlerts,setHtlBookingsForAlerts] = React.useState([]);
+
+  const smartAlerts = useSmartAlerts({
+    invoices:    invoices.rows,
+    inventory:   inventory.rows,
+    leaveRequests: leaveRequests.rows,
+    bankLoans:   bankLoansForAlerts,
+    phmStock:    phmStockForAlerts,
+    vehicles:    vehiclesForAlerts,
+    schFees:     schFeesForAlerts,
+    rstOrders:   rstOrdersForAlerts,
+    mfiLoans:    mfiLoansForAlerts,
+    htlBookings: htlBookingsForAlerts,
+  });
+
+  const criticalAlerts = smartAlerts.filter(a => a.priority === "critical" || a.priority === "high");
+
+  const billingManagerRoles = new Set(["super administrator", "organization owner", "owner", "ceo", "cfo", "finance manager", "admin"]);
+  const canManageBilling = billingManagerRoles.has(String(currentUser.role || "").trim().toLowerCase());
+  const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id) && (m.id !== "billing" || canManageBilling));
+
+  // If switching roles removes access to whatever module is currently on
+  // screen (e.g. testing "Employee" while viewing Finance), fall back to
+  // the first module that role can actually see — never leave a
+  // now-restricted screen rendered just because nothing told it to change.
+  useEffect(() => {
+    if (active === "settings") return; // settings has its own internal gating, always reachable
+    if (!visibleModules.some((m) => m.id === active)) {
+      setActive(visibleModules[0]?.id || "dashboard");
+    }
+  }, [currentUser.role]);
+
+  function go(id) {
+    setActive(id);
+    setSidebarOpen(false);
+  }
+
+  // Lets a Dashboard "Quick Action" land a user not just on a module but on
+  // the specific tab or form they meant — e.g. "Create Invoice" opens Sales
+  // already on the Invoices tab with the create form showing, rather than
+  // just switching modules and leaving them to find it themselves. Each
+  // target module reads this once via useEffect and clears it so it never
+  // re-fires on a later, unrelated visit to that module.
+  const [intent, setIntent] = useState(null);
+  function goWithIntent(id, payload) {
+    go(id);
+    setIntent({ module: id, ...payload });
+  }
+  function clearIntent() {
+    setIntent(null);
+  }
+
+  // A real, global keyboard shortcut — Cmd+K on Mac, Ctrl+K on Windows/
+  // Linux — the same convention every serious productivity tool uses
+  // (Linear, Notion, Superhuman, VS Code), deliberately not a pattern
+  // most SME-focused competitors bother with. Listens at the document
+  // level so it works regardless of which module currently has focus.
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }

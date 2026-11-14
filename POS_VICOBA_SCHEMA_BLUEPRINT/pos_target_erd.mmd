@@ -1,0 +1,142 @@
+erDiagram
+  POS_REGISTERS ||--o{ POS_TERMINALS : has
+  POS_REGISTERS ||--o{ POS_SHIFT_SESSIONS : opens
+  POS_SHIFT_SESSIONS ||--o{ POS_SHIFT_CASH_MOVEMENTS : records
+  POS_SHIFT_SESSIONS ||--o{ POS_SALE_HEADERS : owns
+  POS_SALE_HEADERS ||--|{ POS_SALE_LINES : contains
+  POS_SALE_HEADERS ||--|{ POS_SALE_TENDERS : settles
+  POS_SALE_HEADERS ||--o{ POS_RETURN_HEADERS : may_have
+  POS_RETURN_HEADERS ||--|{ POS_RETURN_LINES : contains
+  POS_SALE_LINES ||--o{ POS_RETURN_LINES : returned_from
+  POS_SALE_HEADERS }o--|| INVENTORY_ITEMS : references
+  POS_SALE_HEADERS }o--o| CRM_CONTACTS : customer
+  POS_SALE_HEADERS }o--o| FIN_JOURNAL_BATCHES : posts
+  POS_SALE_TENDERS }o--o| INTEGRATION_PROVIDER_TRANSACTIONS : routes
+  POS_SYNC_DEVICES ||--o{ POS_SYNC_QUEUE : queues
+  POS_SYNC_QUEUE }o--o| POS_SALE_HEADERS : produces
+  POS_SYNC_QUEUE }o--o| POS_RETURN_HEADERS : produces
+  POS_SALE_HEADERS ||--o{ FIN_POSTING_LINKS : links
+  POS_RETURN_HEADERS ||--o{ FIN_POSTING_LINKS : links
+
+  POS_REGISTERS {
+    uuid id PK
+    uuid company_id FK
+    text register_code UK
+    uuid branch_id FK
+    text status
+  }
+  POS_TERMINALS {
+    uuid id PK
+    uuid company_id FK
+    uuid register_id FK
+    text device_key UK
+    text status
+  }
+  POS_SHIFT_SESSIONS {
+    uuid id PK
+    uuid company_id FK
+    uuid register_id FK
+    uuid cashier_id FK
+    numeric opening_float
+    numeric expected_cash
+    numeric counted_cash
+    text status
+  }
+  POS_SALE_HEADERS {
+    uuid id PK
+    uuid company_id FK
+    text sale_number UK
+    uuid shift_id FK
+    numeric subtotal
+    numeric tax_total
+    numeric total
+    text status
+    text idempotency_key UK
+    uuid journal_batch_id FK
+  }
+  POS_SALE_LINES {
+    uuid id PK
+    uuid company_id FK
+    uuid sale_id FK
+    uuid inventory_item_id FK
+    numeric quantity
+    numeric unit_price
+    numeric line_total
+  }
+  POS_SALE_TENDERS {
+    uuid id PK
+    uuid company_id FK
+    uuid sale_id FK
+    text method
+    numeric requested_amount
+    numeric settled_amount
+    text status
+  }
+  POS_RETURN_HEADERS {
+    uuid id PK
+    uuid company_id FK
+    uuid original_sale_id FK
+    text return_number UK
+    numeric refund_total
+    text status
+    uuid journal_batch_id FK
+  }
+  POS_RETURN_LINES {
+    uuid id PK
+    uuid company_id FK
+    uuid return_id FK
+    uuid sale_line_id FK
+    numeric quantity
+    numeric line_total
+  }
+  POS_SYNC_DEVICES {
+    uuid id PK
+    uuid company_id FK
+    text device_key UK
+    bigint last_sequence
+  }
+  POS_SYNC_QUEUE {
+    uuid id PK
+    uuid company_id FK
+    uuid device_id FK
+    bigint client_sequence
+    text operation_type
+    text idempotency_key
+    text status
+  }
+  INVENTORY_ITEMS {
+    uuid id PK
+    uuid company_id FK
+    text name
+    jsonb data
+  }
+  CRM_CONTACTS {
+    uuid id PK
+    uuid company_id FK
+    text name
+  }
+  FIN_JOURNAL_BATCHES {
+    uuid id PK
+    uuid company_id FK
+    text batch_number UK
+    text source_module
+    numeric debit_total
+    numeric credit_total
+    text status
+  }
+  FIN_POSTING_LINKS {
+    uuid id PK
+    uuid company_id FK
+    uuid journal_batch_id FK
+    text source_table
+    uuid source_id
+    text link_role
+  }
+  INTEGRATION_PROVIDER_TRANSACTIONS {
+    uuid id PK
+    uuid company_id FK
+    text provider
+    text client_reference
+    text provider_reference
+    text status
+  }

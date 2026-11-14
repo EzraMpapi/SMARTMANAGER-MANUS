@@ -1,0 +1,23 @@
+<slide id="evidence_limits">
+  <background color="bg-content"/>
+  <shape id="gold-rule" type="line" x="60" y="64" width="150" height="0" stroke="accent" stroke-width="3"/>
+  <text id="slide-title" x="60" y="92" width="900" height="44" font="heading" size="34" color="brand" wrap="false">Taswira inaeleza; ushahidi huthibitisha</text>
+  <text id="slide-subtitle" x="60" y="145" width="1080" height="45" font="body" size="20" color="muted">Kila visual hutajwa kwa uaminifu: dhana, orientation iliyosafishwa, au UI inayosubiri approval.</text>
+  <shape id="concept-card" type="rect" x="60" y="220" width="330" height="330" fill="surface" stroke="border" stroke-width="1"/>
+  <icon id="concept-icon" name="sparkles" x="88" y="248" width="42" height="42" color="brand"/>
+  <text id="concept-title" x="150" y="254" width="200" height="28" font="body" size="22" color="brand" wrap="false">Taswira ya 3D</text>
+  <text id="concept-body" x="88" y="320" width="265" height="175" font="body" size="18" color="ink-dark" line-height="1.35"><p><strong>Inaeleza:</strong> uhusiano wa dhana na transition.</p><p><strong>Haihakikishi:</strong> transaction, payment, role au provider result.</p></text>
+  <shape id="sales-card" type="rect" x="445" y="220" width="330" height="330" fill="#F6F0E4" stroke="#D8C597" stroke-width="1"/>
+  <icon id="sales-icon" name="monitor" x="473" y="248" width="42" height="42" color="brand"/>
+  <text id="sales-title" x="535" y="254" width="205" height="28" font="body" size="22" color="brand" wrap="false">Sales orientation</text>
+  <text id="sales-body" x="473" y="320" width="265" height="175" font="body" size="18" color="ink-dark" line-height="1.35"><p><strong>Inaruhusiwa:</strong> navigation shell pekee.</p><p><strong>Hairuhusiwi:</strong> record, KPI, role, stock au receipt proof.</p></text>
+  <shape id="pending-card" type="rect" x="830" y="220" width="330" height="330" fill="#FFF8E8" stroke="accent" stroke-width="1"/>
+  <icon id="pending-icon" name="lock" x="858" y="248" width="42" height="42" color="accent"/>
+  <text id="pending-title" x="920" y="254" width="205" height="28" font="body" size="22" color="brand" wrap="false">POS na CRM UI</text>
+  <text id="pending-body" x="858" y="320" width="265" height="175" font="body" size="18" color="ink-dark" line-height="1.35"><p><strong>Hali:</strong> bado haijapitishwa.</p><p><strong>Inahitaji:</strong> safe capture, no-record review na claim-to-screen match.</p></text>
+  <shape id="policy-strip" type="rect" x="60" y="580" width="1100" height="42" fill="brand"/>
+  <text id="policy-text" x="80" y="590" width="1060" height="20" font="caption" size="15" color="ink-light" align="center" wrap="false">Visual inayovutia haiwezi kuchukua nafasi ya ushahidi ulioidhinishwa.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="border" stroke-width="1"/>
+  <text id="footer-title" x="60" y="675" width="520" height="18" font="caption" color="muted" wrap="false">SMART MANAGER ERP • Sura 07–09 Commercial Foundation</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="18" font="caption" color="muted" align="right" wrap="false">03</text>
+</slide>

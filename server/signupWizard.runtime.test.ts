@@ -6,7 +6,7 @@ import { clearOnboardingProgress, ONBOARDING_PROGRESS_STORAGE_KEY, writeOnboardi
 
 vi.mock("../client/src/lib/trpc", () => ({
   trpc: {
-    accountRegistration: { createConfirmedPasswordAccount: { useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }) } },
+    accountRegistration: { createConfirmedPasswordAccount: { useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }) }, sendWelcomeEmail: { useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }) } },
     workspaceBranding: { save: { useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }) } },
     passkeySecurity: { notifyRegistered: { useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }) } },
   },

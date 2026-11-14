@@ -1,0 +1,23 @@
+RLS reconciliation — 24 August 2026
+
+Live Supabase project: rlhngsrihahhyxnjxrxm
+
+Read-only connector result:
+- Public schema tables: 519
+- Public tables with RLS disabled: 0
+- Auth schema tables with RLS disabled: 7
+
+The seven auth-schema tables are:
+1. auth.oauth_clients — 0 reported rows
+2. auth.oauth_authorizations — 0 reported rows
+3. auth.oauth_consents — 0 reported rows
+4. auth.oauth_client_states — 0 reported rows
+5. auth.custom_oauth_providers — 0 reported rows
+6. auth.webauthn_credentials — 3 reported rows
+7. auth.webauthn_challenges — 32 reported rows
+
+Conclusion:
+The aggregate report row "RLS not enabled: 7" is not evidence of seven unprotected public application tables. It is the count of Supabase-managed auth-schema tables whose metadata reports RLS disabled. The application-facing public schema has no RLS-disabled tables in the live read-only result. These auth tables should not be altered with a blanket ALTER TABLE ... ENABLE ROW LEVEL SECURITY migration; Supabase Auth owns and operates the auth schema, and the Auth schema is not exposed through the auto-generated Data API.
+
+Corrective documentation action:
+Update the compliance/master-book wording so the seven are described as auth-managed internal tables excluded from application RLS remediation. Keep the public-schema RLS count at 519/519 enabled and retain the seven-table list for transparency.

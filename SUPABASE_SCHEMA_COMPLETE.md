@@ -45,6 +45,24 @@ pnpm verify:supabase-schema
 
 The command fetches the live protected OpenAPI document, dynamically extracts the dashboard’s current table references, and exits non-zero if a table is missing or a tenant-scoped table lacks one of the required ownership/audit columns. It uses only environment-managed Supabase credentials and contains no copied credential values.
 
+## Latest connected-project inventory — 23 August 2026
+
+A fresh verbose inventory was obtained from the connected Supabase project `rlhngsrihahhyxnjxrxm` after the profile migration review. It returned **475 public tables**, with columns, primary keys, foreign-key metadata, RLS flags, and row counts. A deterministic repository comparison covered **247 referenced tables** across the dashboard and protected services and found **zero missing references**. Every returned public table reported `rls_enabled: true`. The inventory also confirmed that `profiles`, `branches`, `departments`, and `hr_employees` exist.
+
+Before the profile migration, `profiles` already contained the required baseline identity columns (`id`, `company_id`, `email`, `full_name`, `role`, `is_active`, `created_at`, and `updated_at`), plus the existing `phone` and `avatar_url`; it was missing the extended identity and preference fields required by the Profile Identity Center. No missing application table was identified. The only validated additive schema gap in this audit was the profile identity contract, which was applied as migration `profile_identity_center` at live version `20260823130430`.
+
+| Latest audit dimension | Result | Evidence and action |
+|---|---:|---|
+| Connected project | `rlhngsrihahhyxnjxrxm` | Supabase connector project listing; status `ACTIVE_HEALTHY` |
+| Public tables returned | 475 | Complete verbose `list_tables` inventory |
+| Repository-referenced tables checked | 247 | Deterministic comparison against dashboard/protected-service references |
+| Missing referenced tables | 0 | No table DDL required for existing ERP references |
+| Public tables with RLS disabled | 0 | All returned tables reported RLS enabled |
+| Profile identity columns missing before apply | 16 | Added by `profile_identity_center` |
+| New profile migration | Applied | Version `20260823130430`; includes self-only identity update and avatar-reference RPCs |
+
+The raw inventory and deterministic comparison are retained in `live_supabase_audit_20260823.txt`, `live_supabase_inventory_analysis.json`, and `scripts/audit_live_supabase_inventory.py`. These files contain schema metadata only; they are not substitutes for tenant data tests or a production backup policy review.
+
 ## References
 
 [1]: https://docs.postgrest.org/en/v12/references/api/openapi.html "PostgREST OpenAPI reference"

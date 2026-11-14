@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const traHandoffSource = readFileSync(new URL("../client/src/lib/traVfdHandoff.js", import.meta.url), "utf8");
 const salesStart = dashboardSource.indexOf("function Sales(");
 const salesEnd = dashboardSource.indexOf("/* ------------------------------- INVENTORY", salesStart);
 const salesSource = dashboardSource.slice(salesStart, salesEnd);
@@ -34,6 +35,29 @@ describe("Sales interaction and persistence contracts", () => {
     expect(salesSource).not.toContain("<button className=\"flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors\">\n              <Printer");
   });
 
+  it("keeps the TRA VFD workflow as an official-service handoff with persisted operator evidence", () => {
+    expect(dashboardSource).toContain('import { buildTraVfdEvidence, OFFICIAL_TRA_RECEIPT_VERIFICATION, OFFICIAL_TRA_TAXPAYER_PORTAL }');
+    expect(salesSource).toContain("async function saveTraVfdEvidence(doc, input)");
+    expect(salesSource).toContain('await sb("sales_invoices").eq("id", doc.dbId).update({ data: { ...current, tra_vfd: evidence } })');
+    expect(salesSource).toContain("Open TRA taxpayer portal");
+    expect(salesSource).toContain("Print VFD receipt");
+    expect(salesSource).toContain("onSaveTraVfd={saveTraVfdEvidence}");
+    expect(traHandoffSource).toContain('if (url.protocol !== "https:" || url.hostname !== "verify.tra.go.tz") return ""');
+  });
+
+  it("converts confirmed quotations and sales orders once into linked invoices", () => {
+    expect(salesSource).toContain("async function convertDocumentToInvoice(source)");
+    expect(salesSource).toContain('const sourceTable = isOrder ? "sales_orders" : "sales_quotations";');
+    expect(salesSource).toContain('if (source.status === "Converted")');
+    expect(salesSource).toContain('invoice.orderDbId === source.dbId');
+    expect(salesSource).toContain('invoice.quotationDbId === source.dbId');
+    expect(salesSource).toContain('...(isOrder ? { order_id: source.dbId } : { quotation_id: source.dbId })');
+    expect(salesSource).toContain('await sb(sourceTable).eq("id", source.dbId).update({ status: "Converted" })');
+    expect(salesSource).toContain('(doc.kind === "quotations" || doc.kind === "orders")');
+    expect(salesSource).toContain('Convert ${doc.kind === "orders" ? "Order" : "Quotation"} to Invoice');
+    expect(salesSource).toContain('onConvertToInvoice={convertDocumentToInvoice}');
+    expect(dashboardSource).toContain('quotationDbId: r.quotation_id || data.quotation_id || null');
+  });
   it("shows authorization and offline denials as recoverable server outcomes without weakening persistence requirements", () => {
     expect(dashboardSource).toContain("was denied by your workspace permissions. The server did not save this change.");
     expect(dashboardSource).toContain("could not be sent because this browser is offline. No server change was made.");
@@ -69,8 +93,14 @@ describe("Sales interaction and persistence contracts", () => {
     expect(dashboardSource).toContain('quotationsHook={quotations} crm={crm} currentUser={currentUser}');
   });
 
+  it("rejects a duplicate payment reference before any payment write", () => {
+    expect(dashboardSource).toContain("This payment reference is already recorded for the invoice. No duplicate payment was written.");
+    expect(dashboardSource).toContain("normalizedReference");
+    expect(dashboardSource).toContain("return null;");
+  });
+
   it("keeps the repaired typed Invoice contract out of generic JSON normalization", () => {
-    expect(dashboardSource).toContain('sales_invoices: new Set(["doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid"])');
+    expect(dashboardSource).toContain('sales_invoices: new Set(["doc_number", "customer", "issue_date", "due_date", "order_id", "quotation_id", "amount_paid"])');
     expect(dashboardSource).toContain('sales_invoice_items: new Set(["invoice_id", "item_name", "item_sku", "qty", "rate", "sort_order"])');
     expect(dashboardSource).toContain('return GENERIC_COMPANY_TABLES.has(table) && !genericAllowedColumns(table).has(column)');
     expect(dashboardSource).toContain("const typedFields = Object.fromEntries(Object.entries(record).filter(([key]) => typedColumns.has(key)));");

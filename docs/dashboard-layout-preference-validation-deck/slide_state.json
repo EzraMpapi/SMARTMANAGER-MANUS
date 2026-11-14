@@ -1,0 +1,100 @@
+{
+  "project_info": {
+    "title": "Dashboard Layout Preferences",
+    "created": 1787766993.982,
+    "last_updated": 1787768945.657,
+    "total_slides": 8
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "overview",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "architecture",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "controls",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "browser_evidence",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "build_memory",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "validation",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "conclusion",
+      "state": "edited",
+      "pageNum": 8
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "Dashboard Layout Preferences",
+      "summary": "Cover page introducing tenant-safe command-center customization and validation evidence.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "overview",
+      "title": "Personalize Presentation, Preserve Truth",
+      "summary": "Explain saved period, KPI, panel visibility, and order preferences without changing real-data computations.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "architecture",
+      "title": "One Scoped Preference Boundary",
+      "summary": "Show how existing user/company-scoped JSON preferences, validation, and dashboard rendering work together.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "controls",
+      "title": "Accessible Controls, Predictable Outcomes",
+      "summary": "Summarize saved range, KPI selection, panel visibility, and keyboard-accessible ordering.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "browser_evidence",
+      "title": "Browser Evidence Closed the Executive Gap",
+      "summary": "Present the executive drawer correction and isolated desktop/mobile test results with verified UI captures.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "build_memory",
+      "title": "Clean Workers Solve the Build Constraint",
+      "summary": "Present measured Vite memory findings, rejected experiments, and the successful clean-worker build.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "validation",
+      "title": "Validation Is Layered, Not Assumed",
+      "summary": "Summarize contract, TypeScript, build, schema, and isolated browser evidence with explicit production boundaries.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "conclusion",
+      "title": "Ready Feature, Clear Operating Rule",
+      "summary": "Close with readiness conclusion, clean-worker runbook, and no-schema-change rationale.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

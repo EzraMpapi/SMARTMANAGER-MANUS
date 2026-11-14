@@ -35,6 +35,7 @@ export function toAuthUserMessage(error: unknown): string {
   if (code === "email_not_confirmed" || /email.*not confirmed|confirm.*email/i.test(message)) return "Confirm your email address before signing in.";
   if (code === "auth_configuration_missing") return "Authentication is not configured for this application. Please contact an administrator.";
   if (code === "auth_response_invalid") return "The authentication server returned an unexpected response. Please try again.";
+  if (code === "auth_recovery_service_unavailable") return "Password recovery email delivery is temporarily unavailable. Please try again shortly or contact your workspace administrator.";
   if (status === 429 || code.includes("rate")) return "Too many sign-in attempts. Please wait a moment and try again.";
   if (status >= 500) return "The authentication server is temporarily unavailable. Please try again shortly.";
   if (code === "NETWORK_ERROR" || error instanceof TypeError || status === 0) return "Unable to connect to the authentication server. Please check your connection and try again.";

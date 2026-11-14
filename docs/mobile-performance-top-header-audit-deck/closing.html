@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hali ya mwisho</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; display: flex; flex-direction: column; background: linear-gradient(135deg, #052e2b 0%, #073c35 62%, #0b5d3b 100%); color: #ffffff; font-family: Inter, Arial, sans-serif; }
+    .topline { min-height: 86px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(167,243,208,.25); padding: 0 70px; }
+    .brand { font-size: 14px; font-weight: 800; letter-spacing: .1em; }
+    .label { color: #a7f3d0; font-size: 12px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+    .center { display: flex; flex: 1; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding-top: 14px; }
+    .status { display: flex; align-items: center; gap: 11px; color: #b9f6d3; font-size: 14px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 8px rgba(74,222,128,.12); }
+    h1 { font-family: Poppins, Arial, sans-serif; font-size: 53px; letter-spacing: -.055em; line-height: 1.07; margin-top: 25px; max-width: 880px; }
+    .lead { color: #d3ebe1; font-size: 19px; line-height: 1.55; margin-top: 21px; max-width: 770px; }
+    .proof { display: grid; grid-template-columns: repeat(4, 1fr); width: 930px; border-top: 1px solid rgba(185,246,211,.35); border-bottom: 1px solid rgba(185,246,211,.35); margin-top: 41px; }
+    .proof-item { min-height: 90px; display: flex; flex-direction: column; justify-content: center; padding: 0 21px; }
+    .proof-item + .proof-item { border-left: 1px solid rgba(185,246,211,.25); }
+    .proof-item strong { color: #ffffff; font-size: 14px; letter-spacing: .02em; }
+    .proof-item span { color: #b8d8cb; font-size: 11px; line-height: 1.4; margin-top: 7px; }
+    .footer { display: flex; justify-content: space-between; color: #a8c9bc; font-size: 11px; padding: 0 70px; margin-bottom: 38px; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="topline"><div class="brand">SMART MANAGER</div><div class="label">Final audit outcome</div></div>
+    <main class="center">
+      <div class="status"><span class="dot"></span> Verified isolated audit</div>
+      <h1>Responsive, accessible,<br />na salama kwa release validation.</h1>
+      <p class="lead">Mobile header, dashboard containment, interaction paths, na keyboard accessibility zimepita validation. Production build na schema gate pia zimefaulu.</p>
+      <section class="proof" aria-label="Validated audit outcomes">
+        <div class="proof-item"><strong>Mobile responsive</strong><span>320–412px bila content/control overlap au horizontal overflow.</span></div>
+        <div class="proof-item"><strong>Header accessibility</strong><span>Labels, 40px targets, Escape close, na focus restoration zimethibitishwa.</span></div>
+        <div class="proof-item"><strong>Interaction proof</strong><span>Command Palette, Notification Center, Create menu, na navigation zimepimwa.</span></div>
+        <div class="proof-item"><strong>Data boundary intact</strong><span>Hakuna schema, RLS, auth flow, tenant logic, au production data iliyobadilishwa.</span></div>
+      </section>
+    </main>
+    <div class="footer"><span>SMART MANAGER protected dashboard</span><span>Mobile performance &amp; top-header audit · 27 Agosti 2026</span></div>
+  </div>
+</body>
+</html>

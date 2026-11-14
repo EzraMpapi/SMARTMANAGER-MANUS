@@ -1,5 +1,9 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { pharmacyAccessForRole, pharmacyArchiveInput, pharmacyClinicalQueueInput, pharmacyDispenseInput, pharmacyInsuranceClaimInput, pharmacyMedicineInput, pharmacyPaymentInput, pharmacyReturnInput, pharmacySaleInput, pharmacySupplierPaymentInput } from "./pharmacyOperations";
+
+const pharmacyWorkspace = fs.readFileSync(path.join(process.cwd(), "client/src/components/PharmacyWorkspace.jsx"), "utf8");
 
 describe("pharmacy role boundaries", () => {
   it("allows pharmacists to dispense but limits controlled-medicine issue to pharmacists and administrators", () => {
@@ -15,6 +19,15 @@ describe("pharmacy role boundaries", () => {
     expect(pharmacyAccessForRole("Cashier").canSale).toBe(true);
     expect(pharmacyAccessForRole("Doctor").canSale).toBe(false);
     expect(pharmacyAccessForRole("Doctor").canRead).toBe(true);
+  });
+});
+
+describe("pharmacy error-state contracts", () => {
+  it("distinguishes restricted access from unavailable server data", () => {
+    expect(pharmacyWorkspace).toContain("Pharmacy access is restricted.");
+    expect(pharmacyWorkspace).toContain("Pharmacy data is temporarily unavailable.");
+    expect(pharmacyWorkspace).toContain("Your profile is not assigned a Pharmacy Management role");
+    expect(pharmacyWorkspace).toContain("Retry read");
   });
 });
 

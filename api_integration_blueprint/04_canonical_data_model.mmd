@@ -1,0 +1,26 @@
+---
+title: SMART MANAGER — Canonical Integration Data Model
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#ecfdf5'
+    primaryBorderColor: '#059669'
+    lineColor: '#64748b'
+---
+flowchart LR
+  SOURCE["External ERP objects\ncustomer · supplier · item · invoice · payment · employee"]
+  MAP["Mapping registry\nexternal_type + external_id\ncompany + connection + version"]
+  CANON["SMART MANAGER canonical entities\nparty · account · product · sale · purchase · journal"]
+  REL["Reference resolver\nidentity links · currency · unit · tax · branch"]
+  COMMAND["Domain commands\nupsert · submit · approve · post · reverse"]
+  RESULT["Authoritative result\nSMART ID · state · version · timestamps"]
+  SOURCE --> MAP --> CANON
+  MAP --> REL --> CANON
+  CANON --> COMMAND --> RESULT
+  RESULT --> MAP
+  classDef source fill:#f8fafc,stroke:#334155,color:#0f172a,stroke-width:1.5px;
+  classDef control fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.7px;
+  classDef canonical fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.8px;
+  class SOURCE source;
+  class MAP,REL,COMMAND control;
+  class CANON,RESULT canonical;

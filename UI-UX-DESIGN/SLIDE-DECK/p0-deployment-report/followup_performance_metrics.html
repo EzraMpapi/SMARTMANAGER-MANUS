@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    .slide-container { width: 1280px; min-height: 720px; background: #ffffff; color: #0f172a; display: flex; flex-direction: column; }
+    .header { background: #101828; color: #ffffff; padding: 38px 60px; display: flex; align-items: center; justify-content: space-between; }
+    .header h1 { font-size: 40px; font-weight: 700; letter-spacing: -0.5px; }
+    .brand { color: #38bdf8; font-size: 17px; font-weight: 700; letter-spacing: 1.2px; }
+    /* Reduced bottom padding to bring total height down to 720px */
+    .content { padding: 26px 60px 7px; display: flex; flex-direction: column; gap: 18px; flex: 1; }
+    .columns { display: flex; gap: 34px; flex: 1; }
+    .left { width: 43%; }
+    .right { width: 57%; }
+    .eyebrow { text-transform: uppercase; color: #64748b; font-size: 13px; font-weight: 700; letter-spacing: 1.1px; margin-bottom: 10px; }
+    .section-title { font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 14px; }
+    .metrics { border-top: 3px solid #38bdf8; background: #f8fafc; }
+    .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 16px; border-bottom: 1px solid #e2e8f0; }
+    .metric-row:last-child { border-bottom: none; }
+    .metric-label { color: #475569; font-size: 16px; font-weight: 600; }
+    .metric-value { color: #0f172a; font-size: 25px; font-weight: 700; }
+    .metric-detail { color: #64748b; font-size: 13px; text-align: right; margin-top: 3px; }
+    .table-label { color: #0284c7; font-family: monospace; font-size: 14px; font-weight: 700; }
+    .plan-table { width: 100%; border-collapse: collapse; }
+    .plan-table th, .plan-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    .plan-table th { background: #f1f5f9; color: #475569; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; }
+    .plan-table td { font-size: 14px; color: #334155; }
+    .plan-table tr:nth-child(even) { background: #f8fafc; }
+    .scan { display: inline-block; padding: 5px 8px; font-size: 13px; font-weight: 700; }
+    .scan-index { background: #dcfce7; color: #166534; }
+    .scan-bitmap { background: #e0f2fe; color: #075985; }
+    .scan-seq { background: #fef3c7; color: #92400e; }
+    .timing { font-family: monospace; color: #0f172a; white-space: nowrap; }
+    .note { background: #101828; color: #cbd5e1; padding: 15px 18px; border-left: 5px solid #38bdf8; font-size: 14px; line-height: 1.45; }
+    .note strong { color: #ffffff; }
+    .source { color: #64748b; font-size: 11px; line-height: 1.35; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="header">
+      <h1>Follow-Up Performance Metrics</h1>
+      <div class="brand">SMART MANAGER</div>
+    </div>
+    <div class="content">
+      <div class="columns">
+        <div class="left">
+          <div class="eyebrow">Fresh production snapshot · 24 Aug 2026</div>
+          <div class="section-title">Relation and index footprint</div>
+          <div class="metrics">
+            <div class="metric-row">
+              <div><div class="metric-label">workforce_role_permissions</div><div class="metric-detail">120 kB relation size</div></div>
+              <div class="metric-value">0</div>
+            </div>
+            <div class="metric-row">
+              <div><div class="metric-label">workforce_permissions</div><div class="metric-detail">48 kB relation size</div></div>
+              <div class="metric-value">0</div>
+            </div>
+            <div class="metric-row">
+              <div><div class="metric-label">Deployed P0 indexes present</div><div class="metric-detail">16 kB each · 5 total</div></div>
+              <div class="metric-value" style="color:#047857;">5/5</div>
+            </div>
+            <div class="metric-row">
+              <div><div class="metric-label">Current advisor notices</div><div class="metric-detail">Unindexed-FK performance lints</div></div>
+              <div class="metric-value" style="color:#b45309;">1,012</div>
+            </div>
+          </div>
+          <div style="margin-top:18px; color:#475569; font-size:14px; line-height:1.45;">
+            The first two values are the point-in-time <code>n_live_tup</code> snapshot returned by PostgreSQL statistics. They are not a substitute for the earlier planner estimates used in the deployment report.
+          </div>
+        </div>
+        <div class="right">
+          <div class="eyebrow">EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)</div>
+          <div class="section-title">Fresh query execution results</div>
+          <table class="plan-table">
+            <thead><tr><th>Representative predicate</th><th>Observed plan</th><th>Execution</th><th>Buffers</th></tr></thead>
+            <tbody>
+              <tr><td><div class="table-label">company_id + approval_request_id</div></td><td><span class="scan scan-index">Index Scan</span><br><small>new composite index</small></td><td class="timing">0.125 ms</td><td>0 hit / 1 read</td></tr>
+              <tr><td><div class="table-label">company_id + granted_by</div></td><td><span class="scan scan-bitmap">Bitmap Heap Scan</span><br><small>new granted_by + company bitmap</small></td><td class="timing">2.313 ms</td><td>4 hit / 16 read</td></tr>
+              <tr><td><div class="table-label">company_id + created_by</div></td><td><span class="scan scan-bitmap">Bitmap Heap Scan</span><br><small>new created_by + company bitmap</small></td><td class="timing">3.915 ms</td><td>4 hit / 2 read</td></tr>
+              <tr><td><div class="table-label">revoked_by IS NULL</div></td><td><span class="scan scan-seq">Seq Scan</span><br><small>NULL-heavy small relation</small></td><td class="timing">0.127 ms</td><td>5 hit / 0 read</td></tr>
+              <tr><td><div class="table-label">updated_by IS NULL</div></td><td><span class="scan scan-seq">Seq Scan</span><br><small>NULL-heavy small relation</small></td><td class="timing">3.915 ms</td><td>5 hit / 0 read</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="note"><strong>Interpretation:</strong> The deployed indexes are available and selected for the selective predicates. The sequential scans are expected for NULL-heavy predicates on small relations. Timing is a single fresh run, not a controlled latency benchmark; the remaining 1,012 advisor notices are outside the explicitly authorized P0 scope.</div>
+      <div class="source">Source: Supabase production project <code>rlhngsrihahhyxnjxrxm</code>, connector captures at 2026-08-24 17:27–17:31 UTC; exact query result files are retained in the task evidence directory.</div>
+    </div>
+  </div>
+</body>
+</html>

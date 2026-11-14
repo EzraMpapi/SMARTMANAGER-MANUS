@@ -1,0 +1,100 @@
+{
+  "project_info": {
+    "title": "SMART MANAGER ERP: Sura 10–12",
+    "created": 1787809387.999,
+    "last_updated": 1787809534.553,
+    "total_slides": 8
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "operations_context",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "evidence_limits",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "inventory",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "stock_control",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "reports",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "capture_gates",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "next_path",
+      "state": "edited",
+      "pageNum": 8
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "SMART MANAGER ERP: Sura 10–12",
+      "summary": "Cover slide for the Kiswahili operations-foundation deck on Inventory, Stock Control, and Reports.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "operations_context",
+      "title": "Operations huanza na uaminifu wa rekodi",
+      "summary": "Frame Inventory, Stock Control, and Reports as context-led operational learning topics, not proof of live data outcomes.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "evidence_limits",
+      "title": "Taswira inaeleza; UI iliyosafishwa huelekeza",
+      "summary": "Distinguish the conceptual operations visual, the redacted Inventory module-shell orientation frame, and pending detailed UI approval.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "inventory",
+      "title": "Sura 10: Inventory huunganisha muktadha na nidhamu",
+      "summary": "Summarize Kiswahili-first Inventory terminology and the boundary against product, quantity, movement, transfer, and value claims.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "stock_control",
+      "title": "Sura 11: Stock Control inalinda mapitio ya tofauti",
+      "summary": "Summarize counts, records, differences, adjustments, approval boundaries, and the no-live-detail condition.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "reports",
+      "title": "Sura 12: Ripoti huanza na chanzo na kipindi",
+      "summary": "Summarize reports as source, period, signal, and follow-up context with no UI, export, schedule, or delivery proof.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "capture_gates",
+      "title": "Gates za ushahidi hulinda operations",
+      "summary": "Show the distinct evidence states for Inventory orientation, Stock Control detail, and Reports UI.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "next_path",
+      "title": "Operations master hujengwa kwa QA ya sura",
+      "summary": "Close with the chapter-by-chapter script, safe UI review, VTT/audio, QA, and approval path.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

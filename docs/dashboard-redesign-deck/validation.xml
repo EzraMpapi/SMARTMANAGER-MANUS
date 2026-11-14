@@ -1,0 +1,27 @@
+<slide id="validation">
+  <background color="paper"/>
+  <text id="validation-breadcrumb" x="64" y="44" width="420" height="20" font="caption" size="12" color="muted" wrap="false">07  /  VALIDATION EVIDENCE</text>
+  <text id="validation-title" x="64" y="76" width="880" height="52" font="heading" size="34" color="ink" wrap="false">Engineering evidence is positive; visual sign-off is gated</text>
+  <text id="validation-intro" x="64" y="132" width="1080" height="32" font="body" size="18" color="muted">The implementation was verified without authenticating into production or changing production data. The remaining work is access- and environment-dependent.</text>
+  <shape id="contracts-card" type="rect" x="64" y="224" width="360" height="270" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="contracts-rule" type="rect" x="64" y="224" width="360" height="4" fill="accent"/>
+  <icon id="contracts-icon" name="circle-check" x="94" y="258" width="32" height="32" color="brand"/>
+  <text id="contracts-label" x="142" y="263" width="190" height="20" font="caption" size="12" color="brand" wrap="false">PASSED</text>
+  <text id="contracts-title" x="94" y="316" width="242" height="30" font="body" size="21" color="ink" wrap="false">Focused regression suite</text>
+  <text id="contracts-body" x="94" y="366" width="242" height="84" font="body" size="17" color="muted" line-height="1.36">4 test files / 8 tests passed, including the new executive overview contract plus dashboard truthfulness and callback coverage.</text>
+  <shape id="local-card" type="rect" x="460" y="224" width="360" height="270" fill="brand" stroke="brand" stroke-width="1"/>
+  <shape id="local-rule" type="rect" x="460" y="224" width="360" height="4" fill="accent"/>
+  <icon id="local-icon" name="shield-check" x="490" y="258" width="32" height="32" color="accent"/>
+  <text id="local-label" x="538" y="263" width="200" height="20" font="caption" size="12" color="#D9E6DF" wrap="false">PROTECTED AS INTENDED</text>
+  <text id="local-title" x="490" y="316" width="260" height="30" font="body" size="21" color="#FFFFFF" wrap="false">Local auth boundary</text>
+  <text id="local-body" x="490" y="366" width="248" height="84" font="body" size="17" color="#D9E6DF" line-height="1.36">Local and blank-config checks both stopped at the existing secure sign-in gateway; no dashboard was exposed without a session.</text>
+  <shape id="gate-card" type="rect" x="856" y="224" width="360" height="270" fill="#FFF9EE" stroke="#C5A059" stroke-width="1"/>
+  <shape id="gate-rule" type="rect" x="856" y="224" width="360" height="4" fill="accent"/>
+  <icon id="gate-icon" name="key-round" x="886" y="258" width="32" height="32" color="accent"/>
+  <text id="gate-label" x="934" y="263" width="180" height="20" font="caption" size="12" color="accent" wrap="false">REMAINING GATE</text>
+  <text id="gate-title" x="886" y="316" width="250" height="30" font="body" size="21" color="ink" wrap="false">Protected visual review</text>
+  <text id="gate-body" x="886" y="366" width="248" height="84" font="body" size="17" color="muted" line-height="1.36">An approved isolated or authenticated non-production session is required for desktop and mobile dashboard captures.</text>
+  <shape id="validation-callout" type="rect" x="64" y="548" width="1152" height="58" fill="#FFFFFF" stroke="hairline" stroke-width="1"/>
+  <text id="validation-callout-text" x="88" y="565" width="1104" height="26" font="body" size="17" color="ink" align="center" wrap="false">TypeScript and diff hygiene also passed. The production build awaits deployment-only Supabase credentials and sufficient memory capacity.</text>
+  <text id="validation-page" x="1158" y="657" width="58" height="28" font="caption" size="14" color="muted" align="right" wrap="false">08</text>
+</slide>

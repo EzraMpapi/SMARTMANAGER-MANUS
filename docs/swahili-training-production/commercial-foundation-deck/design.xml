@@ -1,0 +1,15 @@
+<design>
+  <size width="1280" height="720"></size>
+  <color name="brand" value="#112620"/>
+  <color name="accent" value="#C5A059"/>
+  <color name="bg-content" value="#FDFBF7"/>
+  <color name="ink-dark" value="#1A1D20"/>
+  <color name="ink-light" value="#FDFBF7"/>
+  <color name="muted" value="#6B7280"/>
+  <color name="surface" value="#F4EFE6"/>
+  <color name="border" value="#E5DFD3"/>
+  <font name="display" family="Inter" size="48"/>
+  <font name="heading" family="Inter" size="32"/>
+  <font name="body" family="Inter" size="18"/>
+  <font name="caption" family="Inter" size="14"/>
+</design>

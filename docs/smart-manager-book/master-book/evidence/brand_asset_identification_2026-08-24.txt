@@ -1,0 +1,6 @@
+Asset identification findings:
+
+- extracted-000.png is a colorful official Smart Manager brand logo/banner asset with the SMART MANAGER wordmark, abstract S mark, green/blue/gold palette, and the Swahili tagline “Simamia Biashara Yako. Popote, Wakati Wote.” It is 1536x1024.
+- extracted-001.png is a monochrome official Smart Manager logo/banner variant with the same abstract mark, wordmark, and tagline. It is 1536x1024.
+- Neither extracted-000.png nor extracted-001.png is the founder/owner portrait. Additional extraction or source recovery is required before the founder section is authored.
+- extracted-002.png is the founder/owner portrait used in the existing official manual: a professional portrait of a Black African man wearing a brown suit, white shirt, and brown tie against a light background. It is 1024x1025. Source provenance: extracted from page 2 of the repository’s existing official manual PDF, not newly generated.

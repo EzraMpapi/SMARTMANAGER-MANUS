@@ -26,7 +26,7 @@ describe("vertical command-center contracts", () => {
       "<LazyPharmacyWorkspace",
       '{active === "hotel"       && <HotelManagementModule',
       '{active === "fleet"       && <FleetManagementModule',
-      '{active === "restaurant"  && <RestaurantModule',
+      '{active === "restaurant"  && <RestaurantManagementModule',
     ]) expect(dashboard).toContain(route);
     expect(workspace).toContain("Insufficient confirmed data");
   });

@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { z } from "zod";
 import { ENV } from "./_core/env";
-import { resolveVerifiedProfile } from "./aiApprovals";
+import { canonicalVerifiedRole, resolveVerifiedProfile } from "./aiApprovals";
 
 export const HEALTHCARE_TABLES = [
   "hc_patients",
@@ -181,13 +181,14 @@ const roleGroups: Record<string, readonly string[]> = {
 export type HealthcareAction = "read" | "create" | "update" | "archive";
 
 export function healthcareAccessForRole(role: string) {
-  const groups = roleGroups[role] || [];
+  const canonicalRole = canonicalVerifiedRole(role);
+  const groups = roleGroups[canonicalRole] || [];
   const can = (table: HealthcareTable, action: HealthcareAction) => {
-    if (fullHealthcareAccessRoles.has(role)) return true;
+    if (fullHealthcareAccessRoles.has(canonicalRole)) return true;
     return tablePermissions[table][action].some((group) => groups.includes(group));
   };
   return {
-    role,
+    role: canonicalRole,
     canRead: Object.fromEntries(HEALTHCARE_TABLES.map((table) => [table, can(table, "read")])),
     canCreate: Object.fromEntries(HEALTHCARE_TABLES.map((table) => [table, can(table, "create")])),
     canUpdate: Object.fromEntries(HEALTHCARE_TABLES.map((table) => [table, can(table, "update")])),

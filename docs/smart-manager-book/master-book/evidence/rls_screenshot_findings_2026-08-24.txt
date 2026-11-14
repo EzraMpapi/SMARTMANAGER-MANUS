@@ -1,0 +1,14 @@
+Attached screenshot inspection (original: /home/ubuntu/upload/1787565132467.jpg)
+
+The source image is 1078 x 156 pixels, aspect ratio 539:78 (6.910256), and was tiled horizontally into two overlapping crops in left-to-right order.
+
+Verified visible rows:
+- Auth tables: 23
+- RLS enabled: 535
+- RLS not enabled: 7
+
+The right-side text is partially cropped but the visible interpretation reads:
+- RLS enabled: "Reported enabled in returned metadata" (the final word is cut in the screenshot)
+- RLS not enabled: "Requires table-specific review"
+
+The screenshot does not identify the seven table names and does not prove that the seven are public application tables; it only displays an aggregate metadata count. The seven names and intended exposure must be obtained from the raw live table snapshot or a fresh read-only Supabase audit before any DDL is considered.

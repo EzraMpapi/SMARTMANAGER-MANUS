@@ -1,0 +1,902 @@
+=== migration object declarations ===
+=== service/router references ===
+server/workspaceSettings.ts-14-type ImagePayload = { mimeType: "image/png" | "image/jpeg" | "image/webp"; base64: string };
+server/workspaceSettings.ts-15-type ProfileData = {
+server/workspaceSettings.ts:16:  tagline?: string; description?: string; businessType?: string; foundedYear?: string; regNumber?: string; postalCode?: string;
+server/workspaceSettings.ts-17-  facebook?: string; instagram?: string; twitter?: string; linkedin?: string; tiktok?: string; whatsappBusiness?: string;
+server/workspaceSettings.ts-18-  bankName?: string; bankAccountName?: string; bankAccountNo?: string; bankBranch?: string; bankSwift?: string;
+--
+server/workspaceSettings.ts-127-export function cleanProfileData(data: ProfileData): ProfileData {
+server/workspaceSettings.ts-128-  return {
+server/workspaceSettings.ts:129:    tagline: data.tagline || "", description: data.description || "", businessType: data.businessType || "", foundedYear: data.foundedYear || "", regNumber: data.regNumber || "", postalCode: data.postalCode || "",
+server/workspaceSettings.ts-130-    facebook: data.facebook || "", instagram: data.instagram || "", twitter: data.twitter || "", linkedin: data.linkedin || "", tiktok: data.tiktok || "", whatsappBusiness: data.whatsappBusiness || "",
+server/workspaceSettings.ts-131-    bankName: data.bankName || "", bankAccountName: data.bankAccountName || "", bankAccountNo: data.bankAccountNo || "", bankBranch: data.bankBranch || "", bankSwift: data.bankSwift || "",
+--
+server/traFiscalRouter.ts-42-      tradingName: z.string().max(200).optional(),
+server/traFiscalRouter.ts-43-      physicalAddress: z.string().optional(),
+server/traFiscalRouter.ts:44:      postalAddress: z.string().optional(),
+server/traFiscalRouter.ts-45-      region: z.string().max(100).optional(),
+server/traFiscalRouter.ts-46-      district: z.string().max(100).optional(),
+--
+server/traFiscalRouter.ts-75-            tradingName: input.tradingName || null,
+server/traFiscalRouter.ts-76-            physicalAddress: input.physicalAddress || null,
+server/traFiscalRouter.ts:77:            postalAddress: input.postalAddress || null,
+server/traFiscalRouter.ts-78-            region: input.region || null,
+server/traFiscalRouter.ts-79-            district: input.district || null,
+--
+server/traFiscalRouter.ts-96-          tradingName: input.tradingName || null,
+server/traFiscalRouter.ts-97-          physicalAddress: input.physicalAddress || null,
+server/traFiscalRouter.ts:98:          postalAddress: input.postalAddress || null,
+server/traFiscalRouter.ts-99-          region: input.region || null,
+server/traFiscalRouter.ts-100-          district: input.district || null,
+--
+server/traFiscalRouter.ts-143-      companyId: z.string().min(1),
+server/traFiscalRouter.ts-144-      branchId: z.string().default("MAIN"),
+server/traFiscalRouter.ts:145:      sourceType: z.enum(["invoice", "pos", "sales", "ecommerce", "service"]),
+server/traFiscalRouter.ts-146-      sourceId: z.string().min(1),
+server/traFiscalRouter.ts-147-      idempotencyKey: z.string().min(1),
+--
+server/teamInvitations.test.ts-3-
+server/teamInvitations.test.ts-4-describe("team invitation security helpers", () => {
+server/teamInvitations.test.ts:5:  it("hashes opaque invitation tokens deterministically without exposing the token in storage", () => {
+server/teamInvitations.test.ts-6-    expect(hashInvitationToken("opaque-invitation-token")).toMatch(/^[a-f0-9]{64}$/);
+server/teamInvitations.test.ts-7-    expect(hashInvitationToken("opaque-invitation-token")).toBe(hashInvitationToken("opaque-invitation-token"));
+--
+server/supportOperations.ts-307-  requireSupportRole(profile, true);
+server/supportOperations.ts-308-  if (!SUPPORT_PRIORITIES.has(input.priority) || !Number.isInteger(input.firstResponseMinutes) || input.firstResponseMinutes <= 0 || !Number.isInteger(input.resolutionMinutes) || input.resolutionMinutes <= 0 || (input.warningMinutes != null && (!Number.isInteger(input.warningMinutes) || input.warningMinutes < 0))) {
+server/supportOperations.ts:309:    throw new TRPCError({ code: "BAD_REQUEST", message: "Use a supported priority and positive SLA response and resolution deadlines." });
+server/supportOperations.ts-310-  }
+server/supportOperations.ts-311-  const payload = { name: input.name.trim(), priority: input.priority, first_response_minutes: input.firstResponseMinutes, resolution_minutes: input.resolutionMinutes, warning_minutes: input.warningMinutes ?? null, is_active: input.isActive };
+--
+server/supabase.schemaContract.test.ts-19-    expect(referencedTables.length).toBeGreaterThanOrEqual(110);
+server/supabase.schemaContract.test.ts-20-    expect(referencedTables).toContain("finance_expenses");
+server/supabase.schemaContract.test.ts:21:    expect(referencedTables).toContain("inventory_items");
+server/supabase.schemaContract.test.ts-22-    expect(referencedTables).toContain("crm_leads");
+server/supabase.schemaContract.test.ts-23-    expect(referencedTables).toContain("procurement_purchase_orders");
+--
+server/supabase.schemaContract.test.ts-31-    expect(contractManifest.finance_expenses.forbiddenColumns).toEqual(expect.arrayContaining(["data", "cost_center", "department"]));
+server/supabase.schemaContract.test.ts-32-    expect(contractManifest.sales_invoices.requiredColumns).toEqual(expect.arrayContaining(["doc_number", "customer", "issue_date", "due_date"]));
+server/supabase.schemaContract.test.ts:33:    expect(contractManifest.inventory_items.requiredColumns).toEqual(expect.arrayContaining(["data"]));
+server/supabase.schemaContract.test.ts-34-    expect(contractManifest.crm_leads.requiredColumns).toEqual(expect.arrayContaining(["data"]));
+server/supabase.schemaContract.test.ts-35-  });
+--
+server/supabase.schemaContract.test.ts-50-  });
+server/supabase.schemaContract.test.ts-51-
+server/supabase.schemaContract.test.ts:52:  it("requires all tenant-scoped dashboard tables to expose stable ownership and audit columns", () => {
+server/supabase.schemaContract.test.ts-53-    expect(verifierSource).toContain('["id", "company_id", "created_at", "updated_at"]');
+server/supabase.schemaContract.test.ts-54-    expect(verifierSource).toContain("globalTables");
+--
+server/schoolOperations.ts-11-  "sch_classes", "sch_attendance_sessions", "sch_attendance_records", "sch_exams", "sch_assessments", "sch_assessment_scores", "sch_report_cards", "sch_assignments", "sch_assignment_submissions",
+server/schoolOperations.ts-12-  "sch_fees", "sch_fee_structures", "sch_fee_invoices", "sch_fee_invoice_lines", "sch_payments", "sch_scholarships",
+server/schoolOperations.ts:13:  "sch_transport", "sch_transport_assignments", "sch_hostels", "sch_hostel_allocations", "sch_books", "sch_library_loans", "sch_inventory_items", "sch_inventory_movements",
+server/schoolOperations.ts-14-  "sch_disciplinary_records", "sch_announcements", "sch_messages", "sch_portal_links", "sch_notifications", "sch_approval_requests", "sch_audit_logs",
+server/schoolOperations.ts-15-] as const;
+--
+server/schoolOperations.ts-114-  if (["sch_attendance_sessions", "sch_attendance_records", "sch_assignments", "sch_assignment_submissions", "sch_teacher_assignments"].includes(table)) return "teaching";
+server/schoolOperations.ts-115-  if (["sch_fees", "sch_fee_structures", "sch_fee_invoices", "sch_fee_invoice_lines", "sch_payments", "sch_scholarships"].includes(table)) return "finance";
+server/schoolOperations.ts:116:  if (["sch_transport", "sch_transport_assignments", "sch_hostels", "sch_hostel_allocations", "sch_books", "sch_library_loans", "sch_inventory_items", "sch_inventory_movements"].includes(table)) return "services";
+server/schoolOperations.ts-117-  if (["sch_disciplinary_records"].includes(table)) return "welfare";
+server/schoolOperations.ts-118-  if (["sch_announcements", "sch_messages", "sch_notifications"].includes(table)) return "communications";
+--
+server/schoolOperations.ts-138-export const schoolAttendanceSessionInput = z.object({ classId: idSchema, termId: idSchema, attendanceDate: date, notes: optionalText });
+server/schoolOperations.ts-139-export const schoolAttendanceInput = z.object({ sessionId: idSchema, records: z.array(z.object({ studentId: idSchema, status: z.enum(["Present", "Absent", "Late", "Excused"]), reason: optionalText })).min(1).max(1_000) });
+server/schoolOperations.ts:140:export const schoolAssessmentInput = z.object({ name: text, termId: idSchema, classId: idSchema, subjectId: idSchema, teacherAssignmentId: idSchema, assessmentDate: date, maxScore: z.number().finite().positive().max(1_000), weight: z.number().finite().min(0).max(100).default(100), notes: optionalText });
+server/schoolOperations.ts-141-export const schoolScoreInput = z.object({ assessmentId: idSchema, scores: z.array(z.object({ studentId: idSchema, score: z.number().finite().min(0).max(1_000), remarks: optionalText })).min(1).max(1_000) });
+server/schoolOperations.ts-142-export const schoolReportCardInput = z.object({ studentId: idSchema, termId: idSchema, gradingScaleId: idSchema, notes: optionalText, publish: z.boolean().default(false) });
+server/schoolOperations.ts:143:export const schoolAssignmentInput = z.object({ name: text, classId: idSchema, subjectId: idSchema, teacherAssignmentId: idSchema, dueAt: utc, instructions: optionalText, maximumScore: z.number().finite().positive().max(1_000).default(100) });
+server/schoolOperations.ts-144-export const schoolAssignmentSubmissionInput = z.object({ assignmentId: idSchema, studentId: idSchema, documentId: idSchema.optional(), notes: optionalText });
+server/schoolOperations.ts-145-export const schoolFeeStructureInput = z.object({ name: text, termId: idSchema, classId: idSchema.optional(), amount: money, mandatory: z.boolean().default(true), notes: optionalText });
+--
+server/schoolOperations.ts-148-export const schoolScholarshipInput = z.object({ studentId: idSchema, termId: idSchema, amount: money.refine((value) => value > 0, "Enter a scholarship amount greater than zero."), reason: text });
+server/schoolOperations.ts-149-export const schoolScholarshipDecisionInput = z.object({ scholarshipId: idSchema, decision: z.enum(["Approved", "Rejected"]), notes: optionalText });
+server/schoolOperations.ts:150:export const schoolServiceInput = z.object({ table: z.enum(["sch_transport", "sch_hostels", "sch_books", "sch_inventory_items"]), name: text, amount: money.optional(), notes: optionalText, data: z.record(z.string(), z.unknown()).default({}) });
+server/schoolOperations.ts-151-export const schoolServiceAssignmentInput = z.object({ table: z.enum(["sch_transport_assignments", "sch_hostel_allocations"]), studentId: idSchema, serviceId: idSchema, termId: idSchema.optional(), notes: optionalText });
+server/schoolOperations.ts-152-export const schoolLibraryLoanInput = z.object({ bookId: idSchema, studentId: idSchema, dueDate: date, notes: optionalText });
+--
+server/schoolOperations.ts-213-export async function assignSchoolService(req: CreateExpressContextOptions["req"], input: z.infer<typeof schoolServiceAssignmentInput>) { const { profile, token } = await context(req, "services"); const serviceTable = input.table === "sch_transport_assignments" ? "sch_transport" : "sch_hostels"; const [student, service] = await Promise.all([row("sch_students", token, profile.company_id, input.studentId), row(serviceTable, token, profile.company_id, input.serviceId)]); if (input.termId) await row("sch_terms", token, profile.company_id, input.termId); const assignment = await insert(input.table, token, profile.company_id, { name: `${student.name} · ${service.name}`, status: "Active", notes: input.notes || null, data: { ...input, studentName: student.name, serviceName: service.name, assignedAt: now() } }); await audit(token, profile.company_id, profile, "School service assignment created", input.table, assignment.id); return assignment; }
+server/schoolOperations.ts-214-export async function createSchoolLibraryLoan(req: CreateExpressContextOptions["req"], input: z.infer<typeof schoolLibraryLoanInput>) { const { profile, token } = await context(req, "services"); const [book, student] = await Promise.all([row("sch_books", token, profile.company_id, input.bookId), row("sch_students", token, profile.company_id, input.studentId)]); const available = decimal(book.availableCopies ?? book.available ?? book.copies); if (available < 1) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This library item has no available copies to loan." }); const duplicate = (await rows("sch_library_loans", token, profile.company_id, 2_000)).find((record) => record.bookId === book.id && record.studentId === student.id && record.status === "On loan"); if (duplicate) throw new TRPCError({ code: "CONFLICT", message: "This learner already has an open loan for the selected book." }); const loan = await insert("sch_library_loans", token, profile.company_id, { name: `${book.name} · ${student.name}`, status: "On loan", notes: input.notes || null, data: { bookId: book.id, bookName: book.name, studentId: student.id, studentName: student.name, dueDate: input.dueDate, issuedAt: now(), issuedBy: profile.id } }); await update("sch_books", token, profile.company_id, book.id, { data: { availableCopies: available - 1, available: available - 1 } }); await audit(token, profile.company_id, profile, "Library loan issued", "sch_library_loans", loan.id); return loan; }
+server/schoolOperations.ts:215:export async function recordSchoolInventoryMovement(req: CreateExpressContextOptions["req"], input: z.infer<typeof schoolInventoryMovementInput>) { const { profile, token } = await context(req, "services"); const item = await row("sch_inventory_items", token, profile.company_id, input.itemId); const onHand = decimal(item.onHand ?? item.quantity); const next = onHand + input.quantityDelta; if (next < 0) throw new TRPCError({ code: "BAD_REQUEST", message: "This movement would make school inventory negative." }); const movement = await insert("sch_inventory_movements", token, profile.company_id, { name: `${input.quantityDelta > 0 ? "Receipt" : "Issue"} · ${item.name}`, status: "Posted", amount: Math.abs(input.quantityDelta) * decimal(item.unitCost ?? item.amount), notes: input.reason, data: { itemId: item.id, itemName: item.name, quantityDelta: input.quantityDelta, quantityAfter: next, reason: input.reason, postedAt: now() } }); await update("sch_inventory_items", token, profile.company_id, item.id, { amount: next * decimal(item.unitCost ?? item.amount), data: { onHand: next, lastMovementAt: now() } }); await audit(token, profile.company_id, profile, "School inventory movement posted", "sch_inventory_movements", movement.id, input.reason); return movement; }
+server/schoolOperations.ts-216-export async function createSchoolDisciplineRecord(req: CreateExpressContextOptions["req"], input: z.infer<typeof schoolDisciplineInput>) { const { profile, token } = await context(req, "welfare"); const student = await row("sch_students", token, profile.company_id, input.studentId); const record = await insert("sch_disciplinary_records", token, profile.company_id, { name: `${input.category} · ${student.name}`, status: "Recorded", notes: input.description, data: { ...input, studentName: student.name, recordedBy: profile.id, recordedAt: now() } }); await audit(token, profile.company_id, profile, "Disciplinary record created", "sch_disciplinary_records", record.id); return record; }
+server/schoolOperations.ts-217-
+--
+server/schoolOperations.ts-231-}
+server/schoolOperations.ts-232-
+server/schoolOperations.ts:233:export async function getSchoolReports(req: CreateExpressContextOptions["req"]) { const { profile, token } = await context(req, "read"); const [students, admissions, enrollments, attendance, assessments, scores, invoices, payments, scholarships, libraryLoans, inventory, discipline, reports] = await Promise.all([rows("sch_students", token, profile.company_id), rows("sch_admissions", token, profile.company_id), rows("sch_enrollments", token, profile.company_id), rows("sch_attendance_records", token, profile.company_id, 5_000), rows("sch_assessments", token, profile.company_id), rows("sch_assessment_scores", token, profile.company_id, 5_000), rows("sch_fee_invoices", token, profile.company_id), rows("sch_payments", token, profile.company_id), rows("sch_scholarships", token, profile.company_id), rows("sch_library_loans", token, profile.company_id), rows("sch_inventory_items", token, profile.company_id), rows("sch_disciplinary_records", token, profile.company_id), rows("sch_report_cards", token, profile.company_id)]);
+server/schoolOperations.ts:234:  const recordedAttendance = attendance.filter((record) => record.status === "Present" || record.status === "Late").length; const attendanceRate = attendance.length ? (recordedAttendance / attendance.length) * 100 : 0; const invoiceTotal = invoices.reduce((sum, invoice) => sum + decimal(invoice.amount), 0); const collected = payments.reduce((sum, payment) => sum + decimal(payment.amount), 0); const outstanding = invoices.reduce((sum, invoice) => sum + Math.max(0, decimal(invoice.balance ?? invoice.amount) || decimal(invoice.amount) - decimal(invoice.paidAmount)), 0); const averageScore = scores.length ? scores.reduce((sum, score) => sum + decimal(score.percentage), 0) / scores.length : 0; return { learners: { activeStudents: students.filter((record) => record.status === "Active").length, pendingAdmissions: admissions.filter((record) => record.status === "Submitted").length, activeEnrollments: enrollments.filter((record) => record.status === "Active").length, attendanceRate }, academics: { assessments: assessments.length, averageScore, publishedReportCards: reports.filter((record) => record.status === "Published").length }, finance: { invoiced: invoiceTotal, collected, outstanding, scholarshipsApproved: scholarships.filter((record) => record.status === "Approved").reduce((sum, record) => sum + decimal(record.amount), 0) }, services: { openLibraryLoans: libraryLoans.filter((record) => record.status === "On loan").length, inventoryValue: inventory.reduce((sum, item) => sum + decimal(item.amount), 0), disciplineCases: discipline.length } }; }
+server/schoolOperations.ts-235-export async function getSchoolDashboard(req: CreateExpressContextOptions["req"]) { const { profile, token, access } = await dashboardContext(req); if (!access.canRead) return { access, totals: { activeStudents: 0, pendingAdmissions: 0, todayAttendanceRate: null, outstandingFees: 0, todayCollections: 0, publishedReportCards: 0, pendingApprovals: 0 }, notifications: [], announcements: [], pendingAdmissions: [] }; const [students, admissions, attendanceSessions, attendance, invoices, payments, reportCards, notifications, announcements, approvals] = await Promise.all([rows("sch_students", token, profile.company_id), rows("sch_admissions", token, profile.company_id), rows("sch_attendance_sessions", token, profile.company_id), rows("sch_attendance_records", token, profile.company_id, 5_000), rows("sch_fee_invoices", token, profile.company_id), rows("sch_payments", token, profile.company_id), rows("sch_report_cards", token, profile.company_id), rows("sch_notifications", token, profile.company_id), rows("sch_announcements", token, profile.company_id), rows("sch_approval_requests", token, profile.company_id)]);
+server/schoolOperations.ts-236-  const today = new Date().toISOString().slice(0, 10); const todaySessions = attendanceSessions.filter((record) => record.attendanceDate === today); const todayAttendance = attendance.filter((record) => todaySessions.some((session) => session.id === record.sessionId)); const present = todayAttendance.filter((record) => ["Present", "Late"].includes(record.status)).length; const outstanding = invoices.reduce((sum, invoice) => sum + Math.max(0, decimal(invoice.balance ?? invoice.amount) || decimal(invoice.amount) - decimal(invoice.paidAmount)), 0); return { access, totals: { activeStudents: students.filter((record) => record.status === "Active").length, pendingAdmissions: admissions.filter((record) => ["Submitted", "Waitlisted"].includes(record.status)).length, todayAttendanceRate: todayAttendance.length ? (present / todayAttendance.length) * 100 : null, outstandingFees: outstanding, todayCollections: payments.filter((record) => String(record.paidAt || "").slice(0, 10) === today).reduce((sum, record) => sum + decimal(record.amount), 0), publishedReportCards: reportCards.filter((record) => record.status === "Published").length, pendingApprovals: approvals.filter((record) => record.status === "Pending").length }, notifications: notifications.filter((record) => record.status !== "Read").slice(0, 20), announcements: announcements.filter((record) => record.status === "Published").slice(0, 10), pendingAdmissions: admissions.filter((record) => ["Submitted", "Waitlisted"].includes(record.status)).slice(0, 20) }; }
+--
+server/schemaDriftChecker.test.ts-10-
+server/schemaDriftChecker.test.ts-11-    expect(ERP_SCHEMA_CONTRACTS.sales_invoices.requiredColumns).toContain("doc_number");
+server/schemaDriftChecker.test.ts:12:    expect(ERP_SCHEMA_CONTRACTS.inventory_items.requiredColumns).toContain("data");
+server/schemaDriftChecker.test.ts-13-    expect(ERP_SCHEMA_CONTRACTS.crm_leads.requiredColumns).toContain("data");
+server/schemaDriftChecker.test.ts-14-    expect(ERP_SCHEMA_CONTRACTS.hc_patients.requiredColumns).toEqual(["company_id", "name", "status", "data"]);
+--
+server/schemaDriftChecker.test.ts-46-      data: { sku: "WID-1" },
+server/schemaDriftChecker.test.ts-47-    };
+server/schemaDriftChecker.test.ts:48:    expect(validatePayloadContract("inventory_items", validInventory).valid).toBe(true);
+server/schemaDriftChecker.test.ts-49-
+server/schemaDriftChecker.test.ts-50-    const validLead = {
+--
+server/salesInteractionContracts.test.ts-17-  });
+server/salesInteractionContracts.test.ts-18-
+server/salesInteractionContracts.test.ts:19:  it("retains Sales form data for retry and exposes a clear saving state instead of closing before confirmation", () => {
+server/salesInteractionContracts.test.ts-20-    expect(salesSource).toContain("const [submitting, setSubmitting] = useState(false);");
+server/salesInteractionContracts.test.ts-21-    expect(salesSource).toContain("async function handleSubmit(e) {\n    e.preventDefault();");
+--
+server/propertyManagementContracts.test.ts-59-    expect(workspace).toContain("Portfolio control board");
+server/propertyManagementContracts.test.ts-60-    expect(workspace).toContain("Applications and leases");
+server/propertyManagementContracts.test.ts:61:    expect(workspace).toContain("Rent, utilities, deposits, and payment evidence");
+server/propertyManagementContracts.test.ts-62-    expect(workspace).toContain("Maintenance request queue");
+server/propertyManagementContracts.test.ts-63-  });
+--
+server/propertyManagementContracts.test.ts-68-    expect(migration).toContain("property_immutable_guard");
+server/propertyManagementContracts.test.ts-69-    expect(migration).toContain("Property financial and audit history is immutable.");
+server/propertyManagementContracts.test.ts:70:    expect(migration).toContain("property_ledger_post");
+server/propertyManagementContracts.test.ts-71-    expect(migration).toContain("debit_total<>credit_total");
+server/propertyManagementContracts.test.ts-72-    expect(migration).toContain("PROPERTY_RECEIVABLE");
+--
+server/propertyManagementContracts.test.ts-94-  });
+server/propertyManagementContracts.test.ts-95-
+server/propertyManagementContracts.test.ts:96:  it("uses the configured storage boundary and scheduled controls without exposing secrets", () => {
+server/propertyManagementContracts.test.ts-97-    expect(operations).toContain("storagePut");
+server/propertyManagementContracts.test.ts-98-    expect(operations).toContain("dataBase64");
+--
+server/propertyManagementContracts.test.ts-106-  });
+server/propertyManagementContracts.test.ts-107-
+server/propertyManagementContracts.test.ts:108:  it("exposes the module through navigation and a responsive workspace", () => {
+server/propertyManagementContracts.test.ts-109-    expect(dashboard).toContain('id: "property-management"');
+server/propertyManagementContracts.test.ts-110-    expect(dashboard).toContain("LazyPropertyManagementWorkspace");
+--
+server/posTransactionMigration.test.ts-2-import { describe, expect, it } from "vitest";
+server/posTransactionMigration.test.ts-3-
+server/posTransactionMigration.test.ts:4:const migration = readFileSync(new URL("../supabase/migrations/20260816_004_pos_transaction_engine.sql", import.meta.url), "utf8");
+server/posTransactionMigration.test.ts-5-
+server/posTransactionMigration.test.ts-6-describe("POS transaction engine migration", () => {
+server/posTransactionMigration.test.ts-7-  it("creates an additive idempotency boundary without weakening RLS", () => {
+server/posTransactionMigration.test.ts:8:    expect(migration).toContain("CREATE TABLE IF NOT EXISTS public.pos_transaction_commits");
+server/posTransactionMigration.test.ts-9-    expect(migration).toContain("UNIQUE (company_id, idempotency_key)");
+server/posTransactionMigration.test.ts-10-    expect(migration).toContain("ENABLE ROW LEVEL SECURITY");
+--
+server/posTransactionMigration.test.ts-18-    expect(migration).toContain("v_company_id uuid := public.current_company_id()");
+server/posTransactionMigration.test.ts-19-    expect(migration).toContain("FOR UPDATE");
+server/posTransactionMigration.test.ts:20:    expect(migration).toContain("INSERT INTO public.pos_transactions");
+server/posTransactionMigration.test.ts:21:    expect(migration).toContain("INSERT INTO public.inventory_stock_movements");
+server/posTransactionMigration.test.ts-22-    expect(migration).toContain("INSERT INTO public.sales_payments");
+server/posTransactionMigration.test.ts-23-    expect(migration).toContain("INSERT INTO public.audit_log");
+--
+server/posReturnMigration.test.ts-2-import { describe, expect, it } from "vitest";
+server/posReturnMigration.test.ts-3-
+server/posReturnMigration.test.ts:4:const migration = readFileSync(new URL("../supabase/migrations/20260816_005_pos_return_engine.sql", import.meta.url), "utf8");
+server/posReturnMigration.test.ts-5-
+server/posReturnMigration.test.ts-6-describe("POS return engine migration", () => {
+server/posReturnMigration.test.ts-7-  it("adds an idempotent, tenant-scoped return boundary without weakening RLS", () => {
+server/posReturnMigration.test.ts:8:    expect(migration).toContain("CREATE TABLE IF NOT EXISTS public.pos_return_commits");
+server/posReturnMigration.test.ts-9-    expect(migration).toContain("UNIQUE (company_id, idempotency_key)");
+server/posReturnMigration.test.ts-10-    expect(migration).toContain("company_id = (SELECT public.current_company_id())");
+--
+server/posReturnMigration.test.ts-13-  });
+server/posReturnMigration.test.ts-14-
+server/posReturnMigration.test.ts:15:  it("locks and validates original sale, unreturned quantity, inventory, payment refund, and audit history", () => {
+server/posReturnMigration.test.ts-16-    expect(migration).toContain("v_user_id uuid := auth.uid()");
+server/posReturnMigration.test.ts-17-    expect(migration).toContain("FOR UPDATE");
+--
+server/posOperationalToolsUi.test.ts-3-
+server/posOperationalToolsUi.test.ts-4-const source = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+server/posOperationalToolsUi.test.ts:5:const pos = source.slice(source.indexOf("function POS("), source.indexOf("function Checkout"));
+server/posOperationalToolsUi.test.ts-6-const reconciliation = source.slice(source.indexOf("function PosReconciliationDashboard"), source.indexOf("function Checkout"));
+server/posOperationalToolsUi.test.ts-7-
+server/posOperationalToolsUi.test.ts-8-describe("POS operational tools UI integration", () => {
+server/posOperationalToolsUi.test.ts:9:  it("exposes device-profile export/import only through the scoped browser-local profile path", () => {
+server/posOperationalToolsUi.test.ts:10:    expect(pos).toContain("serializePosDeviceProfile(deviceProfile)");
+server/posOperationalToolsUi.test.ts:11:    expect(pos).toContain("parsePosDeviceProfileImport(reader.result)");
+server/posOperationalToolsUi.test.ts:12:    expect(pos).toContain("writePosDeviceProfile(window.localStorage, deviceScope");
+server/posOperationalToolsUi.test.ts:13:    expect(pos).toContain("32 KB or smaller");
+server/posOperationalToolsUi.test.ts:14:    expect(pos).toContain("Export counter profile");
+server/posOperationalToolsUi.test.ts:15:    expect(pos).toContain("Import counter profile");
+server/posOperationalToolsUi.test.ts-16-  });
+server/posOperationalToolsUi.test.ts-17-
+--
+server/posOperationalToolsUi.test.ts-19-    expect(reconciliation).toContain('const canExport = ["Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager", "HR Manager", "Sales Manager", "Procurement Officer", "Warehouse Manager", "Project Manager"].includes(canonicalRoleId(currentUser?.role));');
+server/posOperationalToolsUi.test.ts-20-    expect(reconciliation).toContain("buildPosReconciliationCsv(rows)");
+server/posOperationalToolsUi.test.ts:21:    expect(reconciliation).toContain("posReconciliationExportFilename()");
+server/posOperationalToolsUi.test.ts-22-    expect(reconciliation).toContain("Export CSV");
+server/posOperationalToolsUi.test.ts-23-    expect(reconciliation).toContain("tenant-scoped reconciliation outcome");
+--
+server/posCashierAcceptance.test.ts-9-describe("POS cashier acceptance contract", () => {
+server/posCashierAcceptance.test.ts-10-  it("requires a server-confirmed opening float and captures cash movements for the active shift", () => {
+server/posCashierAcceptance.test.ts:11:    expect(shifts).toContain('useCompanyTable("pos_shifts"');
+server/posCashierAcceptance.test.ts:12:    expect(shifts).toContain('useCompanyTable("pos_cash_movements"');
+server/posCashierAcceptance.test.ts:13:    expect(shifts).toContain('sb("pos_shifts").insert');
+server/posCashierAcceptance.test.ts:14:    expect(shifts).toContain('sb("pos_cash_movements").insert');
+server/posCashierAcceptance.test.ts-15-    expect(shifts).toContain("One drawer, one shift");
+server/posCashierAcceptance.test.ts-16-  });
+--
+server/posCashierAcceptance.test.ts-32-    expect(receipt).toContain("Cash change");
+server/posCashierAcceptance.test.ts-33-    expect(checkout).toContain("VAT");
+server/posCashierAcceptance.test.ts:34:    expect(checkout).toContain('callRpc("complete_pos_sale"');
+server/posCashierAcceptance.test.ts-35-  });
+server/posCashierAcceptance.test.ts-36-
+server/posCashierAcceptance.test.ts-37-  it("provides return confirmation, reconciliation outcomes, receipt output, and device preferences without unsafe hardware access", () => {
+server/posCashierAcceptance.test.ts:38:    expect(source).toContain('callRpc("complete_pos_return"');
+server/posCashierAcceptance.test.ts:39:    expect(source).toContain('useCompanyTable("pos_sync_events"');
+server/posCashierAcceptance.test.ts-40-    expect(receipt).toContain("Print Receipt");
+server/posCashierAcceptance.test.ts-41-    expect(receipt).toContain("deviceProfile?.paperWidth");
+--
+server/operationsCommandCenters.test.ts-9-  it("covers Inventory and Procurement control towers", () => {
+server/operationsCommandCenters.test.ts-10-    for (const text of ["Inventory control tower", "Stock readiness and replenishment risk", "Stock distribution", "Replenishment queue", "Procurement control tower", "Supplier coverage and purchasing readiness", "Open purchase orders", "Supplier spend", "Pending approvals"]) expect(workspace).toContain(text);
+server/operationsCommandCenters.test.ts:11:    for (const source of ["inventory_items", "inventory_suppliers", "finance_expenses"]) expect(workspace).toContain(source);
+server/operationsCommandCenters.test.ts-12-  });
+server/operationsCommandCenters.test.ts-13-
+server/operationsCommandCenters.test.ts-14-  it("covers Supply Chain and POS control towers", () => {
+server/operationsCommandCenters.test.ts-15-    for (const text of ["Supply chain control tower", "Deliveries, fleet readiness, and exceptions", "Shipment status", "Logistics exceptions", "POS command center", "Counter throughput and payment mix", "Payment mix", "Stock linkage"]) expect(workspace).toContain(text);
+server/operationsCommandCenters.test.ts:16:    for (const source of ["scm_shipments", "scm_vehicles", "pos_transactions", "pos_transaction_items"]) expect(workspace).toContain(source);
+server/operationsCommandCenters.test.ts-17-  });
+server/operationsCommandCenters.test.ts-18-
+server/operationsCommandCenters.test.ts-19-  it("keeps all four centers wired through existing module routes", () => {
+server/operationsCommandCenters.test.ts-20-    for (const route of [
+server/operationsCommandCenters.test.ts:21:      '{active === "inventory" && <Inventory',
+server/operationsCommandCenters.test.ts-22-      '{active === "procurement" && <Procurement',
+server/operationsCommandCenters.test.ts-23-      '{active === "scm" && <SupplyChain',
+server/operationsCommandCenters.test.ts:24:      '{active === "pos" && <POS',
+server/operationsCommandCenters.test.ts-25-    ]) expect(dashboard).toContain(route);
+server/operationsCommandCenters.test.ts-26-    expect(workspace).toContain("Insufficient confirmed data");
+--
+server/moneyAgentContracts.test.ts-6-const read = (relativePath: string) => fs.readFileSync(path.join(root, relativePath), "utf8");
+server/moneyAgentContracts.test.ts-7-const migration = read("supabase/migrations/20260823_001_money_agent_core.sql");
+server/moneyAgentContracts.test.ts:8:const operations = read("server/moneyAgentOperations.ts");
+server/moneyAgentContracts.test.ts-9-const router = read("server/routers.ts");
+server/moneyAgentContracts.test.ts-10-const dashboard = read("client/src/BusinessSphereDashboard.jsx");
+--
+server/moneyAgentContracts.test.ts-42-  });
+server/moneyAgentContracts.test.ts-43-
+server/moneyAgentContracts.test.ts:44:  it("protects ledger and audit history from direct mutation and requires balanced postings", () => {
+server/moneyAgentContracts.test.ts-45-    expect(migration).toContain("money_agent_block_direct_mutation");
+server/moneyAgentContracts.test.ts-46-    expect(migration).toContain("Money Agent financial history is immutable");
+server/moneyAgentContracts.test.ts-47-    expect(migration).toContain("debit_total<>credit_total");
+server/moneyAgentContracts.test.ts:48:    expect(migration).toContain("money_agent_ledger_post");
+server/moneyAgentContracts.test.ts:49:    expect(migration).toContain("REVOKE ALL ON FUNCTION public.money_agent_ledger_post");
+server/moneyAgentContracts.test.ts-50-  });
+server/moneyAgentContracts.test.ts-51-
+--
+server/moneyAgentContracts.test.ts-73-
+server/moneyAgentContracts.test.ts-74-  it("registers protected tRPC snapshot, customer snapshot, and action procedures", () => {
+server/moneyAgentContracts.test.ts:75:    expect(router).toContain('moneyAgent: router({');
+server/moneyAgentContracts.test.ts-76-    expect(router).toContain("getMoneyAgentSnapshot");
+server/moneyAgentContracts.test.ts-77-    expect(router).toContain("getMoneyAgentCustomerSnapshot");
+server/moneyAgentContracts.test.ts-78-    expect(router).toContain("customerSnapshot");
+server/moneyAgentContracts.test.ts-79-    expect(router).toContain("runMoneyAgentAction");
+server/moneyAgentContracts.test.ts:80:    expect(router).toContain(".input(moneyAgentActionInput)");
+server/moneyAgentContracts.test.ts:81:    expect(router).toContain(".input(moneyAgentListInput)");
+server/moneyAgentContracts.test.ts-82-    ["SET_AGENT_PIN", "VERIFY_AGENT_KYC", "VERIFY_CUSTOMER_KYC"].forEach((action) => expect(operations).toContain(action));
+server/moneyAgentContracts.test.ts-83-  });
+--
+server/moneyAgentContracts.test.ts-109-  });
+server/moneyAgentContracts.test.ts-110-
+server/moneyAgentContracts.test.ts:111:  it("exposes the real workspace only through the dashboard module catalog and role gates", () => {
+server/moneyAgentContracts.test.ts-112-    expect(dashboard).toContain('"money-agent"');
+server/moneyAgentContracts.test.ts-113-    expect(dashboard).toContain('id: "Money Agent"');
+--
+server/microfinanceOperations.ts-20-type StaffProfile = { id: string; company_id: string; full_name: string | null; role: string };
+server/microfinanceOperations.ts-21-
+server/microfinanceOperations.ts:22:const money = z.number().finite().positive().max(1_000_000_000_000);
+server/microfinanceOperations.ts-23-const nonNegativeMoney = z.number().finite().min(0).max(1_000_000_000_000);
+server/microfinanceOperations.ts-24-const shortText = z.string().trim().min(1).max(240);
+--
+server/microfinanceOperations.ts-59-export const microfinanceDisbursementInput = z.object({ applicationId: z.string().uuid(), disbursedOn: dateInput, paymentMethod, provider: z.string().trim().max(60).optional().default(""), providerReference: z.string().trim().max(100).optional().default(""), cashSessionId: z.string().uuid().nullable().optional().default(null) });
+server/microfinanceOperations.ts-60-export const microfinanceRepaymentInput = z.object({ loanId: z.string().uuid(), amount: money, receivedOn: dateInput, paymentMethod, provider: z.string().trim().max(60).optional().default(""), providerReference: z.string().trim().max(100).optional().default(""), cashSessionId: z.string().uuid().nullable().optional().default(null), idempotencyKey: z.string().uuid().optional() });
+server/microfinanceOperations.ts:61:export const microfinanceSavingsInput = z.object({ borrowerId: z.string().uuid(), amount: money, transactionType: z.enum(["Deposit", "Withdrawal"]), transactedOn: dateInput, paymentMethod, providerReference: z.string().trim().max(100).optional().default(""), cashSessionId: z.string().uuid().nullable().optional().default(null), note: optionalText });
+server/microfinanceOperations.ts-62-export const microfinanceGuarantorInput = z.object({ borrowerId: z.string().uuid(), fullName: shortText, phone: z.string().trim().min(9).max(32), nationalId: z.string().trim().min(4).max(64), relationship: shortText, guaranteedAmount: money });
+server/microfinanceOperations.ts-63-export const microfinanceCollateralInput = z.object({ borrowerId: z.string().uuid(), description: shortText, collateralType: shortText, estimatedValue: money, documentReference: z.string().trim().max(120).optional().default("") });
+--
+server/microfinanceOperations.ts-193-  const par30Schedules = overdueSchedules.filter((item) => calculateMicrofinanceOverdueDays(String(dataOf(item).dueDate || ""), numeric(dataOf(item).outstanding)) >= 30);
+server/microfinanceOperations.ts-194-  const par30Amount = par30Schedules.reduce((sum, item) => sum + numeric(dataOf(item).outstanding), 0);
+server/microfinanceOperations.ts:195:  const savingsBalance = savings.reduce((sum, item) => sum + (item.status === "Deposit" ? numeric(item.amount) : -numeric(item.amount)), 0);
+server/microfinanceOperations.ts-196-  return {
+server/microfinanceOperations.ts-197-    permissions: { canManage: can(actor, CREDIT_ROLES), canApprove: can(actor, new Set()), canDisburse: can(actor, TELLER_ROLES), canCollect: can(actor, COLLECTION_ROLES), canAudit: can(actor, AUDIT_ROLES) },
+--
+server/microfinanceOperations.ts-355-  if (!application || application.status !== "Submitted") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Only submitted applications can receive a credit decision." });
+server/microfinanceOperations.ts-356-  const data = dataOf(application); const approvedAmount = input.decision === "Approved" ? input.approvedAmount : 0;
+server/microfinanceOperations.ts:357:  if (input.decision === "Approved" && (!approvedAmount || approvedAmount > numeric(application.amount))) throw new TRPCError({ code: "BAD_REQUEST", message: "Approved amount must be positive and cannot exceed the requested amount." });
+server/microfinanceOperations.ts-358-  const status = input.decision === "Approved" ? "Approved" : "Rejected";
+server/microfinanceOperations.ts-359-  const updated = await patch("mfi_loan_applications", actor.company_id, application.id, { status, data: { ...data, approvedAmount, decisionNote: input.decisionNote || null, decidedAt: new Date().toISOString(), decidedById: actor.id, decidedByName: actor.full_name || "Credit approver" } });
+--
+server/microfinanceOperations.ts-404-  const borrower = await row("mfi_clients", actor.company_id, input.borrowerId); if (!borrower || borrower.status !== "Active") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Only active borrowers can transact savings." });
+server/microfinanceOperations.ts-405-  const historical = await request<Row[]>("mfi_savings", new URLSearchParams({ select: "id,company_id,name,status,amount,notes,data,created_at,updated_at", company_id: `eq.${actor.company_id}`, "data->>borrowerId": `eq.${borrower.id}`, limit: "500" }));
+server/microfinanceOperations.ts:406:  const balance = historical.reduce((sum, item) => sum + (item.status === "Deposit" ? numeric(item.amount) : -numeric(item.amount)), 0);
+server/microfinanceOperations.ts-407-  if (input.transactionType === "Withdrawal" && input.amount > balance) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Withdrawal exceeds the borrower’s confirmed savings balance." });
+server/microfinanceOperations.ts-408-  const transaction = await insert("mfi_savings", { company_id: actor.company_id, name: `${input.transactionType} · ${borrower.name || "Borrower"}`, status: input.transactionType, amount: input.amount, notes: input.note || null, data: { borrowerId: borrower.id, borrowerName: borrower.name, transactedOn: input.transactedOn, paymentMethod: input.paymentMethod, providerReference: input.providerReference || null, cashSessionId: input.cashSessionId, recordedById: actor.id } });
+server/microfinanceOperations.ts:409:  await insert("mfi_cash_transactions", { company_id: actor.company_id, name: `Savings ${input.transactionType.toLowerCase()} · ${transaction.id.slice(0, 8)}`, status: "Posted", amount: input.amount, notes: input.note || null, data: { direction: input.transactionType === "Deposit" ? "Inflow" : "Outflow", cashSessionId: input.cashSessionId, savingsTransactionId: transaction.id, paymentMethod: input.paymentMethod, providerReference: input.providerReference || null, transactedOn: input.transactedOn } });
+server/microfinanceOperations.ts:410:  await audit(actor.company_id, actor, `Savings ${input.transactionType.toLowerCase()} recorded`, "savings", transaction.id, { borrowerId: borrower.id, amount: input.amount }); return { id: transaction.id, balance: input.transactionType === "Deposit" ? balance + input.amount : balance - input.amount };
+server/microfinanceOperations.ts-411-}
+server/microfinanceOperations.ts-412-
+--
+server/maintenancePersistenceBoundaries.test.ts-19-  });
+server/maintenancePersistenceBoundaries.test.ts-20-
+server/maintenancePersistenceBoundaries.test.ts:21:  it("confirms linked Finance expenses separately and exposes reconciliation when needed", () => {
+server/maintenancePersistenceBoundaries.test.ts-22-    const expenseMutationAt = maintenance.indexOf('runCompanyTableMutation("finance_expenses", "insert"');
+server/maintenancePersistenceBoundaries.test.ts-23-    const expenseStateAt = maintenance.indexOf("expensesHook.setRows((prev) => [mapExpenseRow(expenseData), ...prev]);");
+--
+server/executiveCommandCenter.test.ts-10-    for (const label of [
+server/executiveCommandCenter.test.ts-11-      "Total revenue", "Net sales", "Gross profit", "Net profit", "Operating expenses",
+server/executiveCommandCenter.test.ts:12:      "Outstanding receivables", "Outstanding payables", "Cash position", "Inventory value",
+server/executiveCommandCenter.test.ts-13-      "Low-stock items", "Active customers", "Employees", "Orders", "Pending approvals",
+server/executiveCommandCenter.test.ts-14-      "Sales target", "Target achievement", "Profit margin",
+--
+server/executiveCommandCenter.test.ts-16-    expect(workspace).toContain("Insufficient confirmed data");
+server/executiveCommandCenter.test.ts-17-    expect(workspace).toContain("No confirmed workspace target configured");
+server/executiveCommandCenter.test.ts:18:    expect(workspace).toContain("No confirmed cash-balance source exposed to the executive dashboard");
+server/executiveCommandCenter.test.ts-19-  });
+server/executiveCommandCenter.test.ts-20-
+--
+server/executiveCommandCenter.test.ts-23-      expect(workspace).toContain(label);
+server/executiveCommandCenter.test.ts-24-    }
+server/executiveCommandCenter.test.ts:25:    for (const source of ["sales_invoices", "finance_expenses", "inventory_items", "hr_leave_requests"]) expect(workspace).toContain(source);
+server/executiveCommandCenter.test.ts:26:    for (const module of ["onNavigate(\"sales\")", "onNavigate(\"finance\")", "onNavigate(\"inventory\")", "onNavigate(\"hr\")", "onNavigate(\"reports\")"]) expect(workspace).toContain(module);
+server/executiveCommandCenter.test.ts-27-    expect(dashboard).toContain('{active === "dashboard" && (');
+server/executiveCommandCenter.test.ts-28-    expect(dashboard).toContain("<Dashboard");
+--
+server/dashboard.scheduled.test.ts-9-const sections = [
+server/dashboard.scheduled.test.ts-10-  { title: "Executive KPIs", rows: [{ metric: "Revenue", value: "TZS 4,800k" }] },
+server/dashboard.scheduled.test.ts:11:  { title: "CRM Pipeline by Stage", rows: [{ stage: "Proposal", deal_count: 2 }] },
+server/dashboard.scheduled.test.ts-12-];
+server/dashboard.scheduled.test.ts-13-
+--
+server/communityGroupsRlsPenetration.test.ts-64-    expect(companyA).not.toBe(companyB);
+server/communityGroupsRlsPenetration.test.ts-65-
+server/communityGroupsRlsPenetration.test.ts:66:    const ownGroups = await request(tenantAToken, "community_groups?select=id,company_id&limit=100");
+server/communityGroupsRlsPenetration.test.ts-67-    expect(ownGroups.ok).toBe(true);
+server/communityGroupsRlsPenetration.test.ts-68-    expect(rows(ownGroups).every((row) => row.company_id === companyA)).toBe(true);
+server/communityGroupsRlsPenetration.test.ts-69-
+server/communityGroupsRlsPenetration.test.ts:70:    const foreignGroup = await request(tenantAToken, `community_groups?select=id,company_id&id=eq.${encodeURIComponent(groupB)}&limit=1`);
+server/communityGroupsRlsPenetration.test.ts-71-    expectDeniedOrEmpty(foreignGroup, "tenant A foreign group read");
+server/communityGroupsRlsPenetration.test.ts-72-
+--
+server/communityGroupsRlsPenetration.test.ts-103-  it("rejects cross-tenant updates and deletes, including direct company_id tampering", async () => {
+server/communityGroupsRlsPenetration.test.ts-104-    const companyA = await rpc(tenantAToken, "current_company_id");
+server/communityGroupsRlsPenetration.test.ts:105:    const update = await request(tenantAToken, `community_groups?id=eq.${encodeURIComponent(groupB)}`, {
+server/communityGroupsRlsPenetration.test.ts-106-      method: "PATCH",
+server/communityGroupsRlsPenetration.test.ts-107-      headers: { Prefer: "return=representation" },
+--
+server/communityGroupsRlsPenetration.test.ts-110-    expectDeniedOrEmpty(update, "tenant A foreign group update");
+server/communityGroupsRlsPenetration.test.ts-111-
+server/communityGroupsRlsPenetration.test.ts:112:    const deleteResult = await request(tenantAToken, `community_groups?id=eq.${encodeURIComponent(groupB)}`, {
+server/communityGroupsRlsPenetration.test.ts-113-      method: "DELETE",
+server/communityGroupsRlsPenetration.test.ts-114-      headers: { Prefer: "return=representation" },
+--
+server/collaborationEmailLinkCheck.test.ts-5-
+server/collaborationEmailLinkCheck.test.ts-6-describe("Collaboration Hub Email Attachment & Template Link Checks", () => {
+server/collaborationEmailLinkCheck.test.ts:7:  it("includes email folders, composer tools, templates, and safe link structures", () => {
+server/collaborationEmailLinkCheck.test.ts-8-    expect(dashboardSource).toContain("folderItems");
+server/collaborationEmailLinkCheck.test.ts-9-    expect(dashboardSource).toContain("sentEmails");
+--
+server/bankMfiOperations.test.ts-21-  });
+server/bankMfiOperations.test.ts-22-
+server/bankMfiOperations.test.ts:23:  it("rejects unsafe or non-positive money inputs", () => {
+server/bankMfiOperations.test.ts-24-    expect(() => buildReducingBalanceSchedule(0, 1_800, 12)).toThrow();
+server/bankMfiOperations.test.ts-25-    expect(() => allocateRepaymentCents(0, { penaltyCents: 0, feeCents: 0, interestCents: 0, principalCents: 1 })).toThrow();
+--
+server/aiApprovals.test.ts-34-  });
+server/aiApprovals.test.ts-35-
+server/aiApprovals.test.ts:36:  it("rejects a decision from a verified role that is not authorized for the proposed operation", async () => {
+server/aiApprovals.test.ts-37-    const fetchMock = vi.fn()
+server/aiApprovals.test.ts-38-      .mockResolvedValueOnce(json({ id: "user-2" }))
+--
+server/routers.ts-39-import { applyPortalReferenceImport, decidePortalReferenceApproval, exportPortalReferenceErrors, getPortalReferenceDailySummary, getPortalReferenceSummarySettings, listPortalReferenceDeliveryHistory, listPortalReferenceWorkflow, portalReferenceApprovalDecisionInput, portalReferenceApprovalRequestInput, portalReferenceAuditSearchInput, portalReferenceCsvInput, portalReferenceDeliveryHistoryInput, portalReferenceErrorExportInput, portalReferenceImportApplyInput, portalReferenceSummarySettingsInput, portalReferenceWorkflowListInput, requestPortalReferenceReplacement, savePortalReferenceSummarySettings, searchPortalReferenceAudit, stagePortalReferenceCsvImport } from "./healthcarePortalReconciliationWorkflow";
+server/routers.ts-40-import { closeMicrofinanceCashSession, createMicrofinanceBorrower, createMicrofinanceCollateral, createMicrofinanceCollection, createMicrofinanceGroup, createMicrofinanceGuarantor, createMicrofinanceProduct, decideMicrofinanceApplication, disburseMicrofinanceLoan, getMicrofinanceCreditScoringSettings, getMicrofinanceEscalationSettings, listMicrofinanceAudit, listMicrofinanceDashboard, listMicrofinanceEscalationHistory, microfinanceApplicationInput, microfinanceBorrowerInput, microfinanceCashCloseInput, microfinanceCashOpenInput, microfinanceCollateralInput, microfinanceCollectionInput, microfinanceCreditScoringSettingsInput, microfinanceDecisionInput, microfinanceDisbursementInput, microfinanceEscalationSettingsInput, microfinanceGroupInput, microfinanceGuarantorInput, microfinanceListInput, microfinanceProductInput, microfinanceRepaymentInput, microfinanceSavingsInput, openMicrofinanceCashSession, recordMicrofinanceRepayment, recordMicrofinanceSavings, saveMicrofinanceCreditScoringSettings, saveMicrofinanceEscalationSettings, submitMicrofinanceApplication } from "./microfinanceOperations";
+server/routers.ts:41:import { getMoneyAgentCustomerSnapshot, getMoneyAgentSnapshot, moneyAgentActionInput, moneyAgentListInput, runMoneyAgentAction } from "./moneyAgentOperations";
+server/routers.ts-42-import { getPropertySnapshot, propertyActionInput, propertyDocumentUploadInput, propertyListInput, runPropertyAction, uploadPropertyDocument } from "./propertyManagementOperations";
+server/routers.ts-43-import { adjustPharmacyStock, archivePharmacyRecord, completePharmacySale, createPharmacyBrand, createPharmacyCategory, createPharmacyInsuranceClaim, createPharmacyMedicine, createPharmacyPurchaseOrder, createPharmacySupplier, createPharmacyTransfer, dispensePharmacyPrescription, getPharmacyAccess, getPharmacyClinicalQueue, getPharmacyDashboard, getPharmacyReports, listPharmacyAudit, listPharmacyRecords, markPharmacyNotificationRead, pharmacyAdjustmentInput, pharmacyArchiveInput, pharmacyBrandInput, pharmacyBrandUpdateInput, pharmacyCategoryInput, pharmacyCategoryUpdateInput, pharmacyClinicalQueueInput, pharmacyDispenseInput, pharmacyInsuranceClaimInput, pharmacyListInput, pharmacyMedicineInput, pharmacyMedicineUpdateInput, pharmacyNotificationInput, pharmacyPaymentInput, pharmacyPurchaseOrderInput, pharmacyReceiptInput, pharmacyReturnInput, pharmacySaleInput, pharmacySupplierInput, pharmacySupplierPaymentInput, pharmacySupplierUpdateInput, pharmacyTransferInput, receivePharmacyStock, recordPharmacySalePayment, recordPharmacySupplierPayment, returnPharmacySaleItems, updatePharmacyBrand, updatePharmacyCategory, updatePharmacyMedicine, updatePharmacySupplier } from "./pharmacyOperations";
+server/routers.ts-44-import { archiveSchoolRecord, assignSchoolService, createSchoolAcademicYear, createSchoolAdmission, createSchoolAnnouncement, createSchoolAssignment, createSchoolAssessment, createSchoolClass, createSchoolDepartment, createSchoolDisciplineRecord, createSchoolDocument, createSchoolFeeStructure, createSchoolGradingScale, createSchoolLibraryLoan, createSchoolServiceRecord, createSchoolStream, createSchoolSubject, createSchoolTeacher, createSchoolTeacherAssignment, createSchoolTerm, createSchoolTimetable, decideSchoolAdmission, decideSchoolApproval, decideSchoolScholarship, getSchoolAccess, getSchoolDashboard, getSchoolPortal, getSchoolReports, issueSchoolFeeInvoice, linkSchoolPortal, listSchoolAudit, listSchoolRecords, markSchoolNotificationRead, openSchoolAttendanceSession, publishSchoolReportCard, recordSchoolAssessmentScores, recordSchoolAttendance, recordSchoolInventoryMovement, recordSchoolPayment, requestSchoolApproval, requestSchoolScholarship, schoolAcademicYearInput, schoolAdmissionDecisionInput, schoolAdmissionInput, schoolAnnouncementInput, schoolApprovalDecisionInput, schoolApprovalRequestInput, schoolArchiveInput, schoolAssignmentInput, schoolAssignmentSubmissionInput, schoolAssessmentInput, schoolAttendanceInput, schoolAttendanceSessionInput, schoolClassInput, schoolDepartmentInput, schoolDisciplineInput, schoolDocumentInput, schoolDocumentUploadInput, schoolFeeStructureInput, schoolGradingScaleInput, schoolIdInput, schoolInventoryMovementInput, schoolInvoiceInput, schoolLibraryLoanInput, schoolListInput, schoolMessageInput, schoolPaymentInput, schoolPortalLinkInput, schoolReportCardInput, schoolScoreInput, schoolScholarshipDecisionInput, schoolScholarshipInput, schoolServiceAssignmentInput, schoolServiceInput, schoolStreamInput, schoolSubjectInput, schoolTeacherAssignmentInput, schoolTeacherInput, schoolTermInput, schoolTimetableInput, sendSchoolMessage, submitSchoolAssignment, uploadSchoolDocument } from "./schoolOperations";
+server/routers.ts:45:import { addBeneficiary, addCollateral, addGroupMember, addGuarantor, createAmlAlert, createGroup, createLoanProduct, createPaymentInstruction, createReconciliation, createStandingOrder, createAccountType as createBankAccountType, customerStatement, decideLoanApplication, disburseLoan, listBankMfiSnapshot, moveCash, recordSharePurchase, runStandingOrders, scoreLoanApplication, openAccount, postTransaction, recordRepayment, registerCustomer, resolveAmlAlert, restructureLoan, runDailyControls, setupInstitution, submitLoanApplication, updateKyc, writeOffLoan } from "./bankMfiOperations";
+server/routers.ts-46-
+server/routers.ts-47-const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
+--
+server/routers.ts-156-    uploadDocument: protectedProcedure.input(propertyDocumentUploadInput).mutation(({ ctx, input }) => uploadPropertyDocument(ctx.req, input)),
+server/routers.ts-157-  }),
+server/routers.ts:158:  moneyAgent: router({
+server/routers.ts-159-    snapshot: protectedProcedure
+server/routers.ts:160:      .input(moneyAgentListInput)
+server/routers.ts-161-      .query(({ ctx, input }) => getMoneyAgentSnapshot(ctx.req, input)),
+server/routers.ts-162-    customerSnapshot: protectedProcedure
+server/routers.ts:163:      .input(moneyAgentListInput)
+server/routers.ts-164-      .query(({ ctx, input }) => getMoneyAgentCustomerSnapshot(ctx.req, input)),
+server/routers.ts-165-    action: protectedProcedure
+server/routers.ts:166:      .input(moneyAgentActionInput)
+server/routers.ts-167-      .mutation(({ ctx, input }) => runMoneyAgentAction(ctx.req, input)),
+server/routers.ts-168-  }),
+--
+server/routers.ts-277-        const result = await updatePatientSmsConsentPreferences(ctx.req, input);
+server/routers.ts-278-        const { profile } = await resolveVerifiedProfile(ctx.req);
+server/routers.ts:279:        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Patient SMS consent preference updated", module: "Healthcare", details: "Patient self-service preference updated without exposing clinical record details." }).catch(() => undefined);
+server/routers.ts-280-        return result;
+server/routers.ts-281-      }),
+--
+server/routers.ts-658-          expenses: z.number(),
+server/routers.ts-659-          outstanding: z.number(),
+server/routers.ts:660:          inventoryValue: z.number(),
+server/routers.ts-661-          lowStockCount: z.number().int(),
+server/routers.ts:662:          inventoryCount: z.number().int(),
+server/routers.ts-663-        }),
+server/routers.ts:664:        inventory: z.array(z.object({
+server/routers.ts-665-          sku: z.string(), name: z.string(), qty: z.number(), reorder: z.number(), unitCost: z.number(), category: z.string(),
+server/routers.ts-666-        })).max(200),
+--
+server/routers.ts-670-        const { invokeLLM } = await import("./_core/llm");
+server/routers.ts-671-        const fallback = () => {
+server/routers.ts:672:          const findings: Array<{ severity: "high" | "medium" | "low"; area: "cash_flow" | "inventory"; title: string; detail: string; recommendation: string }> = [];
+server/routers.ts-673-          if (input.totals.outstanding > input.totals.revenue * 0.35 && input.totals.revenue > 0) {
+server/routers.ts-674-            findings.push({ severity: "high", area: "cash_flow", title: "Receivables concentration", detail: `${input.currency} ${Math.round(input.totals.outstanding).toLocaleString()} remains outstanding, above 35% of collected revenue.`, recommendation: "Review overdue invoices and prioritize collection follow-ups this week." });
+server/routers.ts-675-          }
+server/routers.ts-676-          if (input.totals.lowStockCount > 0) {
+server/routers.ts:677:            findings.push({ severity: "medium", area: "inventory", title: "Replenishment pressure", detail: `${input.totals.lowStockCount} of ${input.totals.inventoryCount} tracked items are at or below reorder level.`, recommendation: "Review replenishment proposals and confirm supplier lead times before the next cycle." });
+server/routers.ts-678-          }
+server/routers.ts-679-          if (input.totals.expenses > input.totals.revenue && input.totals.revenue > 0) {
+--
+server/routers.ts-698-                  type: "object",
+server/routers.ts-699-                  properties: {
+server/routers.ts:700:                    findings: { type: "array", maxItems: 5, items: { type: "object", properties: { severity: { type: "string", enum: ["high", "medium", "low"] }, area: { type: "string", enum: ["cash_flow", "inventory"] }, title: { type: "string" }, detail: { type: "string" }, recommendation: { type: "string" } }, required: ["severity", "area", "title", "detail", "recommendation"], additionalProperties: false } },
+server/routers.ts-701-                  },
+server/routers.ts-702-                  required: ["findings"],
+--
+server/routers.ts-875-      idleTimeoutMinutes: z.number().int().min(5).max(120).optional(),
+server/routers.ts-876-      profileData: z.object({
+server/routers.ts:877:        tagline: z.string().max(200).optional(), description: z.string().max(2_000).optional(), businessType: z.string().max(120).optional(), foundedYear: z.string().max(4).optional(), regNumber: z.string().max(160).optional(), postalCode: z.string().max(40).optional(),
+server/routers.ts-878-        facebook: z.string().max(200).optional(), instagram: z.string().max(200).optional(), twitter: z.string().max(200).optional(), linkedin: z.string().max(200).optional(), tiktok: z.string().max(200).optional(), whatsappBusiness: z.string().max(80).optional(),
+server/routers.ts-879-        bankName: z.string().max(160).optional(), bankAccountName: z.string().max(200).optional(), bankAccountNo: z.string().max(120).optional(), bankBranch: z.string().max(200).optional(), bankSwift: z.string().max(80).optional(),
+--
+server/routers.ts-943-      name: z.string().trim().min(2).max(160),
+server/routers.ts-944-      priority: z.enum(["Low", "Medium", "High", "Urgent"]),
+server/routers.ts:945:      firstResponseMinutes: z.number().int().positive().max(525_600),
+server/routers.ts:946:      resolutionMinutes: z.number().int().positive().max(525_600),
+server/routers.ts-947-      warningMinutes: z.number().int().min(0).max(525_600).nullable().optional(),
+server/routers.ts-948-      isActive: z.boolean(),
+--
+server/routers.ts-1004-      frequency: z.enum(["daily", "weekly", "monthly"]),
+server/routers.ts-1005-      format: z.enum(["csv", "pdf"]),
+server/routers.ts:1006:      modules: z.object({ finance: z.boolean(), sales: z.boolean(), crm: z.boolean(), inventory: z.boolean(), operations: z.boolean() }),
+server/routers.ts-1007-      dateRange: z.object({ start: z.string(), end: z.string() }),
+server/routers.ts-1008-    })).mutation(({ ctx, input }) => createReportSchedule(ctx.user, getSessionToken(ctx.req), input)),
+server/routers.ts-1009-    update: protectedProcedure.input(z.object({
+server/routers.ts:1010:      id: z.number().int().positive(),
+server/routers.ts-1011-      companyId: z.string().min(1).max(100).optional(),
+server/routers.ts-1012-      name: z.string().min(1).max(120).optional(),
+--
+server/routers.ts-1015-      frequency: z.enum(["daily", "weekly", "monthly"]).optional(),
+server/routers.ts-1016-      format: z.enum(["csv", "pdf"]).optional(),
+server/routers.ts:1017:      modules: z.object({ finance: z.boolean(), sales: z.boolean(), crm: z.boolean(), inventory: z.boolean(), operations: z.boolean() }).optional(),
+server/routers.ts-1018-      dateRange: z.object({ start: z.string(), end: z.string() }).optional(),
+server/routers.ts-1019-      isActive: z.boolean().optional(),
+--
+server/routers.ts-1022-      return updateReportSchedule(ctx.user.openId, getSessionToken(ctx.req), id, patch);
+server/routers.ts-1023-    }),
+server/routers.ts:1024:    remove: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => deleteReportSchedule(ctx.user.openId, getSessionToken(ctx.req), input.id)),
+server/routers.ts:1025:    toggleActive: protectedProcedure.input(z.object({ id: z.number().int().positive(), isActive: z.boolean() })).mutation(({ ctx, input }) => updateReportSchedule(ctx.user.openId, getSessionToken(ctx.req), input.id, { isActive: input.isActive })),
+server/routers.ts:1026:    sendNow: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => sendReportScheduleNow(ctx.user.openId, input.id)),
+server/routers.ts-1027-  }),
+server/routers.ts-1028-
+--
+server/routers.ts-1039-
+server/routers.ts-1040-  auditLogs: router({
+server/routers.ts:1041:    list: protectedProcedure.input(z.object({ companyId: z.string().min(1), limit: z.number().int().positive().optional(), module: z.string().optional(), startDate: z.string().optional(), endDate: z.string().optional() })).query(async ({ ctx, input }) => {
+server/routers.ts-1042-      await requireVerifiedAuditCompany(ctx.req, input.companyId);
+server/routers.ts-1043-      const logs = await listAuditLogs(input.companyId, input.limit || 100);
+--
+server/routers.ts-1049-      });
+server/routers.ts-1050-    }),
+server/routers.ts:1051:    complianceExport: protectedProcedure.input(z.object({ companyId: z.string().min(1), limit: z.number().int().positive().max(100).optional(), module: z.string().optional(), startDate: z.string().optional(), endDate: z.string().optional() })).query(async ({ ctx, input }) => {
+server/routers.ts-1052-      const approvalResult = await listRoleChangeApprovals(ctx.req);
+server/routers.ts-1053-      if (approvalResult.profile.company_id !== input.companyId) {
+--
+server/routers.ts-1077-    updateKyc: protectedProcedure.input(z.object({ customerId: z.string().uuid(), payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => updateKyc(ctx.req, input.customerId, input.payload)),
+server/routers.ts-1078-    openAccount: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => openAccount(ctx.req, input.payload)),
+server/routers.ts:1079:    postTransaction: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => postTransaction(ctx.req, input.payload)),
+server/routers.ts-1080-    submitLoanApplication: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => submitLoanApplication(ctx.req, input.payload)),
+server/routers.ts-1081-    scoreLoanApplication: protectedProcedure.input(z.object({ applicationId: z.string().uuid(), payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => scoreLoanApplication(ctx.req, input.applicationId, input.payload)),
+--
+server/routers.ts-1115-      return runSchemaDriftCheck();
+server/routers.ts-1116-    }),
+server/routers.ts:1117:    listSchemaDriftRuns: protectedProcedure.input(z.object({ limit: z.number().int().positive().max(100).optional() })).query(async ({ ctx, input }) => {
+server/routers.ts-1118-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+server/routers.ts-1119-      return listSchemaDriftRuns(input.limit);
+--
+client/src/components/MoneyAgentWorkspace.jsx-43-function TransactionForm({ snapshot, onDone }) {
+client/src/components/MoneyAgentWorkspace.jsx-44-  const [form, setForm] = useState({ transactionType: "Cash In", amount: "", agentId: "", customerId: "", serviceId: "", authorizationMethod: "supervisor_approval", authorizationReference: "" });
+client/src/components/MoneyAgentWorkspace.jsx:45:  const mutation = trpc.moneyAgent.action.useMutation({ onSuccess: (result) => onDone(result), onError: (error) => onDone(null, error) });
+client/src/components/MoneyAgentWorkspace.jsx-46-  const services = (snapshot?.services || []).filter((service) => service.active && (form.transactionType === "Cash In" || form.transactionType === "Cash Out" || service.serviceType === form.transactionType));
+client/src/components/MoneyAgentWorkspace.jsx-47-  const submit = (event) => { event.preventDefault(); mutation.mutate({ action: "CREATE_TRANSACTION", payload: { ...form, amount: Number(form.amount), agentId: form.agentId || null, customerId: form.customerId || null, serviceId: form.serviceId || null, idempotencyKey: crypto.randomUUID() } }); };
+--
+client/src/components/MoneyAgentWorkspace.jsx-58-  const balance = wallets.reduce((total, wallet) => total + (Number(wallet.availableBalance) || 0), 0);
+client/src/components/MoneyAgentWorkspace.jsx-59-  return <div className="space-y-5" aria-label="Money Agent customer portal">
+client/src/components/MoneyAgentWorkspace.jsx:60:    <header className="rounded-2xl bg-gradient-to-br from-[#102A43] via-[#166088] to-[#16A34A] p-5 text-white shadow-sm sm:p-7"><div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end"><div><div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[.18em] text-emerald-100"><WalletCards size={14} /> Tanzania Money Agent customer portal</div><h1 className="text-[24px] font-black tracking-tight sm:text-[30px]">Your wallet, safely in view</h1><p className="mt-2 max-w-2xl text-[12px] leading-5 text-emerald-50/80">This portal is limited to the customer profile linked to your authenticated account. It does not expose agent registers, balances, approvals, or other customers.</p></div><div className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-[10.5px] font-semibold"><ShieldCheck size={15} /> Customer-only access</div></div></header>
+client/src/components/MoneyAgentWorkspace.jsx-61-    {query.isLoading && <Card><div className="flex items-center gap-3 text-sm text-slate-500"><RefreshCw size={16} className="animate-spin" /> Loading your server-confirmed wallet state…</div></Card>}
+client/src/components/MoneyAgentWorkspace.jsx-62-    {query.error && <Card><div className="flex items-start gap-3 text-rose-700"><XCircle size={18} className="mt-0.5" /><div><p className="text-sm font-bold">Your Money Agent profile is unavailable</p><p className="mt-1 text-[11px] leading-4">{query.error.message}. A verified customer profile must be linked to this authenticated account before customer data can be shown.</p><ActionButton variant="secondary" onClick={() => query.refetch()}><RefreshCw size={14} /> Retry read</ActionButton></div></div></Card>}
+--
+client/src/components/MoneyAgentWorkspace.jsx-82-  const [pinForm, setPinForm] = useState({ agentId: "", pin: "" });
+client/src/components/MoneyAgentWorkspace.jsx-83-  const [settlementForm, setSettlementForm] = useState({ agentId: "", businessDate: new Date().toISOString().slice(0, 10), openingFloat: "", closingFloat: "", notes: "" });
+client/src/components/MoneyAgentWorkspace.jsx:84:  const snapshotQuery = trpc.moneyAgent.snapshot.useQuery({ limit: 100 }, { enabled: !isCustomer, retry: false, refetchOnWindowFocus: false });
+client/src/components/MoneyAgentWorkspace.jsx:85:  const customerSnapshotQuery = trpc.moneyAgent.customerSnapshot.useQuery({ limit: 100 }, { enabled: isCustomer, retry: false, refetchOnWindowFocus: false });
+client/src/components/MoneyAgentWorkspace.jsx:86:  const action = trpc.moneyAgent.action.useMutation({ onSuccess: (result) => { setMessage({ kind: "success", text: result?.status ? `Confirmed state: ${result.status}.` : "Money Agent change confirmed by the server." }); snapshotQuery.refetch(); }, onError: (error) => setMessage({ kind: "error", text: error.message || "The Money Agent change could not be confirmed." }) });
+client/src/components/MoneyAgentWorkspace.jsx-87-  const snapshot = snapshotQuery.data || {};
+client/src/components/MoneyAgentWorkspace.jsx-88-  const metrics = snapshot.metrics || {};
+--
+server/organizationIndustryFocus.test.ts-7-    expect(normalizeOrganizationIndustryFocus("retail")).toBe("retail");
+server/organizationIndustryFocus.test.ts-8-    expect(normalizeOrganizationIndustryFocus("unknown")).toBe("general");
+server/organizationIndustryFocus.test.ts:9:    expect(getLoginModulesForIndustry("retail").map((module) => module.id)).toContain("pos");
+server/organizationIndustryFocus.test.ts-10-    expect(getLoginModulesForIndustry("unknown").map((module) => module.id)).toContain("dashboard");
+server/organizationIndustryFocus.test.ts-11-  });
+--
+server/verticalCommandCenters.test.ts-8-describe("vertical command-center contracts", () => {
+server/verticalCommandCenters.test.ts-9-  it("covers healthcare, school, and pharmacy operations", () => {
+server/verticalCommandCenters.test.ts:10:    for (const text of ["Healthcare control tower", "Patient flow, clinical workload, and care exceptions", "Scheduled appointments", "Urgent patients", "Pharmacy control tower", "Stock safety, expiry exposure, and dispensing", "Low stock", "School operations control tower", "Enrollment, academic delivery, and fee collection", "Outstanding fees", "Collection rate"]) expect(workspace).toContain(text);
+server/verticalCommandCenters.test.ts-11-    for (const source of ["hc_patients", "hc_appointments", "hc_visits", "phm_drugs", "phm_stock", "phm_dispense", "sch_students", "sch_teachers", "sch_fees"]) expect(workspace).toContain(source);
+server/verticalCommandCenters.test.ts-12-  });
+--
+server/moneyAgentOperations.ts-32-] as const;
+server/moneyAgentOperations.ts-33-
+server/moneyAgentOperations.ts:34:const money = z.number().finite().positive().max(1_000_000_000_000);
+server/moneyAgentOperations.ts-35-const nonNegativeMoney = z.number().finite().min(0).max(1_000_000_000_000);
+server/moneyAgentOperations.ts-36-const text = z.string().trim().min(1).max(500);
+--
+server/moneyAgentOperations.ts-61-};
+server/moneyAgentOperations.ts-62-
+server/moneyAgentOperations.ts:63:export const moneyAgentListInput = z.object({ limit: z.number().int().min(1).max(200).optional().default(100) });
+server/moneyAgentOperations.ts:64:export const moneyAgentActionInput = z.object({ action: z.enum(actionNames), payload: z.record(z.string(), z.unknown()).default({}) });
+server/moneyAgentOperations.ts-65-
+server/moneyAgentOperations.ts-66-function isRecord(value: unknown): value is JsonRecord {
+--
+server/moneyAgentOperations.ts-107-}
+server/moneyAgentOperations.ts-108-
+server/moneyAgentOperations.ts:109:export async function getMoneyAgentSnapshot(req: CreateExpressContextOptions["req"], input: z.infer<typeof moneyAgentListInput>) {
+server/moneyAgentOperations.ts-110-  const token = await authenticatedRequest(req);
+server/moneyAgentOperations.ts-111-  return userRpc("money_agent_snapshot", token, { p_limit: input.limit });
+server/moneyAgentOperations.ts-112-}
+server/moneyAgentOperations.ts-113-
+server/moneyAgentOperations.ts:114:export async function getMoneyAgentCustomerSnapshot(req: CreateExpressContextOptions["req"], input: z.infer<typeof moneyAgentListInput>) {
+server/moneyAgentOperations.ts-115-  const token = await authenticatedRequest(req);
+server/moneyAgentOperations.ts-116-  return userRpc("money_agent_customer_snapshot", token, { p_limit: input.limit });
+server/moneyAgentOperations.ts-117-}
+server/moneyAgentOperations.ts-118-
+server/moneyAgentOperations.ts:119:export async function runMoneyAgentAction(req: CreateExpressContextOptions["req"], input: z.infer<typeof moneyAgentActionInput>) {
+server/moneyAgentOperations.ts-120-  const token = await authenticatedRequest(req);
+server/moneyAgentOperations.ts-121-  const parsedPayload = payloadSchemas[input.action].parse(input.payload);
+--
+server/supabasePersistence.ts-5-  "finance_expenses",
+server/supabasePersistence.ts-6-  "sales_invoices",
+server/supabasePersistence.ts:7:  "inventory_items",
+server/supabasePersistence.ts-8-  "crm_leads",
+server/supabasePersistence.ts-9-] as const;
+--
+server/sectorCommandCenters.test.ts-8-describe("sector command-center contracts", () => {
+server/sectorCommandCenters.test.ts-9-  it("covers lending and savings sectors", () => {
+server/sectorCommandCenters.test.ts:10:    for (const text of ["Microfinance control tower", "Portfolio health, savings, and PAR monitoring", "Active clients", "Loan portfolio", "Net savings", "Banking & MFI control tower", "Deposits", "PAR exposure", "Pending applications"]) expect(workspace).toContain(text);
+server/sectorCommandCenters.test.ts-11-    for (const source of ["mfi_clients", "mfi_loans", "mfi_savings", "bnk_accounts", "bnk_loans", "bnk_applications"]) expect(workspace).toContain(source);
+server/sectorCommandCenters.test.ts-12-  });
+--
+server/sectorCommandCenters.test.ts-14-  it("covers VICOBA and Community Groups", () => {
+server/sectorCommandCenters.test.ts-15-    for (const text of ["VICOBA / SACCOS control tower", "Member fund", "Defaulted loans", "Community finance control tower", "Groups", "Members represented", "Group funds", "Pending contributions"]) expect(workspace).toContain(text);
+server/sectorCommandCenters.test.ts:16:    for (const source of ["vicoba_members", "vicoba_loans", "vicoba_meetings", "community_groups", "community_contributions"]) expect(workspace).toContain(source);
+server/sectorCommandCenters.test.ts-17-  });
+server/sectorCommandCenters.test.ts-18-
+--
+server/sectorCommandCenters.test.ts-22-      "<LazyMicrofinanceWorkspace",
+server/sectorCommandCenters.test.ts-23-      '{active === "banking"     && <BankingMFIModule',
+server/sectorCommandCenters.test.ts:24:      '{active === "vicoba" && <VicobaSaccosModule',
+server/sectorCommandCenters.test.ts-25-      '{active === "community" && <CommunityGroupsModule',
+server/sectorCommandCenters.test.ts-26-    ]) expect(dashboard).toContain(route);
+--
+server/schemaDriftChecker.ts-19-    forbiddenColumns: [],
+server/schemaDriftChecker.ts-20-  },
+server/schemaDriftChecker.ts:21:  inventory_items: {
+server/schemaDriftChecker.ts:22:    tableName: "inventory_items",
+server/schemaDriftChecker.ts-23-    expectedColumns: ["id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at", "data"],
+server/schemaDriftChecker.ts-24-    requiredColumns: ["company_id", "name", "status", "amount", "data"],
+--
+server/manufacturingPersistenceBoundaries.test.ts-12-    const createAt = workOrders.indexOf('const header = await sb("manufacturing_work_orders").insert');
+server/manufacturingPersistenceBoundaries.test.ts-13-    const createStateAt = workOrders.indexOf("setWorkOrders((prev) => [confirmed, ...prev]);");
+server/manufacturingPersistenceBoundaries.test.ts:14:    const inventoryUpdateAt = workOrders.indexOf('const savedItem = await sb("inventory_items").eq("sku", c.sku).update');
+server/manufacturingPersistenceBoundaries.test.ts-15-    const orderStatusAt = workOrders.indexOf('const savedOrder = await sb("manufacturing_work_orders").eq("id", order.dbId ?? order.id).update');
+server/manufacturingPersistenceBoundaries.test.ts-16-    const lifecycleStateAt = workOrders.indexOf("setWorkOrders((prev) => prev.map((existing) => (existing.id === id ? confirmed : existing)));");
+--
+server/manufacturingPersistenceBoundaries.test.ts-19-
+server/manufacturingPersistenceBoundaries.test.ts-20-    expect(createStateAt).toBeGreaterThan(createAt);
+server/manufacturingPersistenceBoundaries.test.ts:21:    expect(orderStatusAt).toBeGreaterThan(inventoryUpdateAt);
+server/manufacturingPersistenceBoundaries.test.ts-22-    expect(lifecycleStateAt).toBeGreaterThan(orderStatusAt);
+server/manufacturingPersistenceBoundaries.test.ts-23-    expect(deleteStateAt).toBeGreaterThan(deleteAt);
+--
+server/scheduledPortalReferenceReconciliationDigest.ts-79-          category: "report",
+server/scheduledPortalReferenceReconciliationDigest.ts-80-          idempotencyKey: `${deliveryId}-${Buffer.from(recipient).toString("base64url").slice(0, 24)}`,
+server/scheduledPortalReferenceReconciliationDigest.ts:81:          providerDeliveryPurpose: "portal_reference_reconciliation_digest",
+server/scheduledPortalReferenceReconciliationDigest.ts-82-        });
+server/scheduledPortalReferenceReconciliationDigest.ts-83-        succeeded += 1;
+--
+server/guardedServerBoundary.test.ts-40-    ["finance_expenses", { company_id: companyId, vendor: "TANESCO", category: "Utilities", amount: "1000", expense_date: "2026-08-20", status: "Paid", method: "Cash" }, { company_id: companyId, vendor: "TANESCO", category: "Utilities", amount: "1000", expense_date: "2026-08-20", status: "Paid", method: "Cash", cost_center: "ILLEGAL" }],
+server/guardedServerBoundary.test.ts-41-    ["sales_invoices", { company_id: companyId, status: "Draft", amount: "500", doc_number: "INV-99", customer: "Acme", issue_date: "2026-08-20", due_date: "2026-09-20" }, { company_id: companyId, status: "Draft", amount: "500", customer: "Acme", issue_date: "2026-08-20", due_date: "2026-09-20" }],
+server/guardedServerBoundary.test.ts:42:    ["inventory_items", { company_id: companyId, name: "Item A", status: "Active", amount: "10", data: { sku: "A" } }, { company_id: companyId, name: "Item A", status: "Active", amount: "10" }],
+server/guardedServerBoundary.test.ts-43-    ["crm_leads", { company_id: companyId, name: "Lead 1", status: "New", data: { email: "a@b.com" } }, { company_id: companyId, name: "Lead 1", status: "New" }],
+server/guardedServerBoundary.test.ts-44-  ] as const)("permits valid %s payloads and actively rejects drifted payloads", async (tableName, validPayload, driftedPayload) => {
+--
+server/restaurantFnbContracts.test.ts-40-  });
+server/restaurantFnbContracts.test.ts-41-
+server/restaurantFnbContracts.test.ts:42:  it("posts shared inventory, hospitality, POS, finance, payment, and audit references", () => {
+server/restaurantFnbContracts.test.ts:43:    for (const record of ["public.inventory_items", "public.inventory_stock_movements", "public.hospitality_folio_lines", "public.pos_transactions", "public.journal_entries", "public.restaurant_payments", "public.restaurant_audit_events"]) expect(migration).toContain(record);
+server/restaurantFnbContracts.test.ts-44-    expect(migration).toContain("Room Charge");
+server/restaurantFnbContracts.test.ts-45-    expect(migration).toContain("Mobile Money");
+--
+server/restaurantFnbContracts.test.ts-61-    expect(restaurantServer).toContain("restaurant_reconcile_alerts");
+server/restaurantFnbContracts.test.ts-62-    expect(restaurantServer).toContain("const companies = Array.isArray(raw)");
+server/restaurantFnbContracts.test.ts:63:    expect(serverRoutes).toContain('app.post("/api/scheduled/restaurantAlerts", scheduledRestaurantAlertsHandler);');
+server/restaurantFnbContracts.test.ts-64-    expect(hardeningMigration).toContain("REVOKE ALL ON FUNCTION public.restaurant_is_manager() FROM PUBLIC,anon,authenticated");
+server/restaurantFnbContracts.test.ts-65-    expect(hardeningMigration).toContain("REVOKE ALL ON FUNCTION public.restaurant_can_operate(text[]) FROM PUBLIC,anon,authenticated");
+--
+server/financeCommandCenters.test.ts-15-  it("covers report coverage and governance", () => {
+server/financeCommandCenters.test.ts-16-    for (const text of ["Reporting command center", "Report coverage, freshness, and governance", "Reportable invoices", "Valuation rows", "Scheduled reports", "Latest source date", "Export actions", "Tax filing", "Freshness"]) expect(workspace).toContain(text);
+server/financeCommandCenters.test.ts:17:    for (const source of ["sales_invoices", "inventory_items", "finance_expenses", "pos_transactions"]) expect(workspace).toContain(source);
+server/financeCommandCenters.test.ts-18-  });
+server/financeCommandCenters.test.ts-19-
+--
+server/financeCommandCenters.test.ts-26-      "<Integrations invoices={invoices}",
+server/financeCommandCenters.test.ts-27-    ]) expect(dashboard).toContain(route);
+server/financeCommandCenters.test.ts:28:    expect(workspace).toContain("No confirmed sync telemetry source is exposed");
+server/financeCommandCenters.test.ts-29-  });
+server/financeCommandCenters.test.ts-30-});
+--
+server/dashboard.callback.test.ts-20-      frequency: "weekly",
+server/dashboard.callback.test.ts-21-      format: "csv",
+server/dashboard.callback.test.ts:22:      modules: { finance: true, sales: true, crm: true, inventory: true, operations: true },
+server/dashboard.callback.test.ts-23-      dateRange: { start: "2026-08-01", end: "2026-08-12" },
+server/dashboard.callback.test.ts-24-      scheduleCronTaskUid: "cron_test_task_123",
+--
+server/dashboard.callback.test.ts-30-        sales_invoices: [{ company_id: "company-1", issue_date: "2026-08-05", status: "Paid", amount_paid: 4800000, customer: "Sample Retail Group", sales_invoice_items: [{ qty: 1, rate: 4800000 }] }],
+server/dashboard.callback.test.ts-31-        finance_expenses: [{ company_id: "company-1", expense_date: "2026-08-06", amount: 900000 }],
+server/dashboard.callback.test.ts:32:        crm_leads: [{ company_id: "company-1", created_at: "2026-08-07", stage: "Proposal", value_amount: 12000000 }],
+server/dashboard.callback.test.ts:33:        inventory_items: [{ company_id: "company-1", category: "Storage", qty_on_hand: 10, unit_cost: 400 }],
+server/dashboard.callback.test.ts-34-        manufacturing_work_orders: [{ company_id: "company-1", start_date: "2026-08-08", status: "Planned" }],
+server/dashboard.callback.test.ts-35-        companies: [{ id: "company-1", name: "Sample Retail Group", currency: "TZS" }],
+--
+server/communityGroupsSchema.test.ts-2-import { describe, expect, it } from "vitest";
+server/communityGroupsSchema.test.ts-3-
+server/communityGroupsSchema.test.ts:4:const migration = readFileSync(new URL("../supabase/migrations/20260823_035_community_groups_module.sql", import.meta.url), "utf8");
+server/communityGroupsSchema.test.ts:5:const timestampMigration = readFileSync(new URL("../supabase/migrations/20260823_037_community_groups_schema_contract.sql", import.meta.url), "utf8");
+server/communityGroupsSchema.test.ts-6-const requiredTables = [
+server/communityGroupsSchema.test.ts:7:  "community_groups", "community_group_members", "community_group_committees", "community_group_committee_members",
+server/communityGroupsSchema.test.ts-8-  "community_group_meetings", "community_group_attendance", "community_group_contributions", "community_group_savings",
+server/communityGroupsSchema.test.ts-9-  "community_group_welfare_claims", "community_group_loans", "community_group_loan_guarantors", "community_group_loan_repayments",
+--
+server/communityGroupsSchema.test.ts-40-    ]) expect(timestampMigration).toContain(`ALTER TABLE public.${table}`);
+server/communityGroupsSchema.test.ts-41-    expect(timestampMigration).toContain("ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now()");
+server/communityGroupsSchema.test.ts:42:    expect(timestampMigration).toContain("community_groups_touch_updated_at()");
+server/communityGroupsSchema.test.ts-43-  });
+server/communityGroupsSchema.test.ts-44-});
+--
+server/bankMfiOperations.ts-84-    ["accountTypes", "bank_account_types", "id,code,name,product_kind,currency,minimum_opening_balance,minimum_operating_balance,annual_interest_rate,withdrawal_fee,status,data", "name.asc"],
+server/bankMfiOperations.ts-85-    ["loanProducts", "bank_loan_products", "id,code,name,product_kind,currency,minimum_amount,maximum_amount,minimum_term_months,maximum_term_months,annual_interest_rate,interest_method,processing_fee_rate,late_penalty_rate,collateral_required,guarantors_required,approval_threshold,status,data", "name.asc"],
+server/bankMfiOperations.ts:86:    ["customers", "bank_customers", "id,customer_number,customer_kind,full_name,phone,email,date_of_birth,gender,occupation,address,national_id,tin,risk_rating,pep_status,source_of_funds,relationship_purpose,kyc_status,kyc_verified_at,kyc_expires_at,status,branch_id,created_at,updated_at", "created_at.desc"],
+server/bankMfiOperations.ts-87-    ["customerDocuments", "bank_customer_documents", "id,customer_id,document_type,document_number,file_url,issued_at,expires_at,verification_status,verified_at,created_at,updated_at", "created_at.desc"],
+server/bankMfiOperations.ts-88-    ["beneficialOwners", "bank_beneficial_owners", "id,customer_id,full_name,national_id,ownership_percent,verification_status,created_at,updated_at", "created_at.desc"],
+server/bankMfiOperations.ts-89-    ["accounts", "bank_accounts", "id,account_number,customer_id,account_type_id,branch_id,currency,ledger_balance,available_balance,hold_amount,status,opened_at,closed_at,version,created_at,updated_at", "created_at.desc"],
+server/bankMfiOperations.ts-90-    ["beneficiaries", "bank_account_beneficiaries", "id,customer_id,account_id,beneficiary_name,beneficiary_account_number,bank_name,phone,status,verified_at,created_at,updated_at", "created_at.desc"],
+server/bankMfiOperations.ts:91:    ["transactions", "bank_transactions", "id,transaction_number,transaction_type,channel,source_account_id,destination_account_id,customer_id,amount,fee_amount,currency,status,idempotency_key,provider,provider_reference,narration,journal_batch_id,teller_id,posted_at,reversed_transaction_id,created_at,updated_at", "posted_at.desc"],
+server/bankMfiOperations.ts-92-    ["tellers", "bank_tellers", "id,profile_id,branch_id,teller_code,name,status,opening_balance,closing_balance,opened_at,closed_at,version,data,created_at,updated_at", "name.asc"],
+server/bankMfiOperations.ts-93-    ["cashMovements", "bank_cash_movements", "id,teller_id,branch_id,movement_type,amount,currency,status,transaction_id,approved_by,approved_at,idempotency_key,narration,created_by,created_at", "created_at.desc"],
+--
+server/bankMfiOperations.ts-95-    ["wallets", "bank_wallets", "id,wallet_number,customer_id,provider,msisdn,balance,status,provider_customer_ref,data,created_at,updated_at", "created_at.desc"],
+server/bankMfiOperations.ts-96-    ["paymentInstructions", "bank_payment_instructions", "id,instruction_number,payment_type,channel,source_account_id,destination_account_id,amount,currency,provider,msisdn,provider_reference,status,requested_at,confirmed_at,failure_reason,idempotency_key,data,created_at", "requested_at.desc"],
+server/bankMfiOperations.ts:97:    ["applications", "bank_loan_applications", "id,application_number,customer_id,product_id,amount,term_months,purpose,status,credit_score,score_inputs,submitted_by,submitted_at,decision_by,decision_at,decision_note,branch_id,disbursement_account_id,data,created_at,updated_at", "created_at.desc"],
+server/bankMfiOperations.ts-98-    ["approvals", "bank_loan_approvals", "id,application_id,step_number,approver_id,decision,note,decided_at", "decided_at.desc"],
+server/bankMfiOperations.ts-99-    ["guarantors", "bank_guarantors", "id,application_id,customer_id,guarantee_amount,consent_status,consented_at,data,created_at", "created_at.desc"],
+--
+server/bankMfiOperations.ts-101-    ["loans", "bank_loans", "id,loan_number,application_id,customer_id,product_id,principal,outstanding_principal,outstanding_interest,outstanding_fees,outstanding_penalties,annual_interest_rate,term_months,interest_method,status,disbursed_at,maturity_date,days_past_due,par_bucket,write_off_at,restructure_count,created_at,updated_at", "created_at.desc"],
+server/bankMfiOperations.ts-102-    ["schedules", "bank_loan_schedules", "id,loan_id,installment_number,due_date,principal_due,interest_due,fee_due,penalty_due,principal_paid,interest_paid,fee_paid,penalty_paid,status,paid_at", "due_date.asc"],
+server/bankMfiOperations.ts:103:    ["repayments", "bank_loan_repayments", "id,repayment_number,loan_id,account_id,amount,principal_amount,interest_amount,fee_amount,penalty_amount,channel,status,idempotency_key,transaction_id,posted_by,posted_at", "posted_at.desc"],
+server/bankMfiOperations.ts-104-    ["groups", "bank_groups", "id,group_number,name,group_type,meeting_frequency,status,branch_id,data,created_at,updated_at", "name.asc"],
+server/bankMfiOperations.ts-105-    ["groupMembers", "bank_group_members", "id,group_id,customer_id,role,shares_count,joined_at,status", "joined_at.desc"],
+--
+server/bankMfiOperations.ts-147-  return callRpc(token, "bank_open_account", { p_payload: payload });
+server/bankMfiOperations.ts-148-}
+server/bankMfiOperations.ts:149:export async function postTransaction(req: BankRequest, payload: Record<string, unknown>) {
+server/bankMfiOperations.ts-150-  const { token } = await resolveVerifiedProfile(req);
+server/bankMfiOperations.ts:151:  return callRpc(token, "bank_post_transaction", { p_payload: payload });
+server/bankMfiOperations.ts-152-}
+server/bankMfiOperations.ts-153-export async function submitLoanApplication(req: BankRequest, payload: Record<string, unknown>) {
+--
+server/bankMfiOperations.ts-175-
+server/bankMfiOperations.ts-176-export function buildReducingBalanceSchedule(principalCents: number, annualRateBps: number, termMonths: number): ScheduleInstallment[] {
+server/bankMfiOperations.ts:177:  if (!Number.isSafeInteger(principalCents) || principalCents <= 0) throw new Error("principalCents must be a positive safe integer");
+server/bankMfiOperations.ts-178-  if (!Number.isSafeInteger(annualRateBps) || annualRateBps < 0) throw new Error("annualRateBps must be a non-negative safe integer");
+server/bankMfiOperations.ts-179-  if (!Number.isSafeInteger(termMonths) || termMonths <= 0 || termMonths > 600) throw new Error("termMonths must be between 1 and 600");
+--
+server/bankMfiOperations.ts-191-
+server/bankMfiOperations.ts-192-export function allocateRepaymentCents(amountCents: number, balances: { penaltyCents: number; feeCents: number; interestCents: number; principalCents: number }) {
+server/bankMfiOperations.ts:193:  if (!Number.isSafeInteger(amountCents) || amountCents <= 0) throw new Error("amountCents must be a positive safe integer");
+server/bankMfiOperations.ts-194-  let remaining = amountCents;
+server/bankMfiOperations.ts-195-  const penaltyCents = Math.min(remaining, Math.max(0, balances.penaltyCents)); remaining -= penaltyCents;
+--
+server/aiApprovals.ts-34-const ACTION_RULES: Record<string, { label: string; module: string; roles: string[] }> = {
+server/aiApprovals.ts-35-  create_lead: { label: "Create CRM lead", module: "crm", roles: ["Sales Manager", "Organization Owner", "CEO", "Super Administrator"] },
+server/aiApprovals.ts:36:  adjust_stock: { label: "Adjust inventory stock", module: "inventory", roles: ["Warehouse Manager", "Organization Owner", "CEO", "Super Administrator"] },
+server/aiApprovals.ts-37-  mark_invoice_paid: { label: "Mark invoice paid", module: "finance", roles: ["Finance Manager", "CFO", "Organization Owner", "CEO", "Super Administrator"] },
+server/aiApprovals.ts-38-  record_expense: { label: "Record expense", module: "finance", roles: ["Finance Manager", "CFO", "Organization Owner", "CEO", "Super Administrator"] },
+--
+server/propertyManagementOperations.ts-32-  REGISTER_BUILDING: z.object({ portfolioId: uuid, propertyCode: text.max(40), name: text.max(180), propertyType: z.enum(["Building", "Apartment Block", "House", "Commercial Centre", "Office Block", "Warehouse", "Mixed Use"]).default("Building"), address: optionalText, region: optionalText, district: optionalText, ward: optionalText, village: optionalText, latitude: z.number().finite().min(-90).max(90).nullable().optional().default(null), longitude: z.number().finite().min(-180).max(180).nullable().optional().default(null), yearBuilt: z.number().int().min(1800).max(2200).nullable().optional().default(null), floors: z.number().int().min(1).max(300).nullable().optional().default(null), status: z.enum(["Draft", "Active", "Maintenance", "Archived"]).default("Active") }),
+server/propertyManagementOperations.ts-33-  REGISTER_PLOT: z.object({ portfolioId: uuid, plotCode: text.max(40), titleNumber: optionalText, landUse: optionalText, areaSqm: money.default(0), address: optionalText, region: optionalText, district: optionalText, ward: optionalText, latitude: z.number().finite().min(-90).max(90).nullable().optional().default(null), longitude: z.number().finite().min(-180).max(180).nullable().optional().default(null), ownerId: uuid.nullable().optional().default(null), status: z.enum(["Available", "Leased", "Sold", "Disputed", "Archived"]).default("Available") }),
+server/propertyManagementOperations.ts:34:  REGISTER_UNIT: z.object({ buildingId: uuid.nullable().optional().default(null), plotId: uuid.nullable().optional().default(null), ownerId: uuid.nullable().optional().default(null), unitCode: text.max(40), unitType: z.enum(["Apartment", "House", "Commercial Space", "Office", "Shop", "Warehouse", "Parking", "Plot", "Room"]).default("Apartment"), floorLabel: optionalText, bedrooms: z.number().int().min(0).max(100).nullable().optional().default(null), bathrooms: z.number().int().min(0).max(100).nullable().optional().default(null), areaSqm: money.default(0), rentAmount: money.default(0), serviceChargeAmount: money.default(0), depositAmount: money.default(0), status: z.enum(["Draft", "Available", "Reserved", "Occupied", "Maintenance", "Sold", "Off Market"]).default("Available"), furnishing: optionalText, notes: optionalText }).refine((value) => Boolean(value.buildingId || value.plotId), "A unit must belong to a building or plot."),
+server/propertyManagementOperations.ts-35-  REGISTER_LISTING: z.object({ unitId: uuid, agentId: uuid.nullable().optional().default(null), listingType: z.enum(["Rent", "Sale", "Leasehold"]).default("Rent"), askingAmount: money, commissionRate: money.default(0), availableFrom: date.nullable().optional().default(null), expiresAt: date.nullable().optional().default(null), description: optionalText, status: z.enum(["Draft", "Published", "Reserved", "Closed", "Withdrawn"]).default("Draft") }),
+server/propertyManagementOperations.ts-36-  REGISTER_AGENT: z.object({ profileId: uuid.nullable().optional().default(null), agentCode: text.max(40), fullName: text.max(180), phone, email: z.string().trim().email().max(180).optional(), licenceNumber: optionalText, commissionRate: money.default(0), status: z.enum(["Active", "Suspended", "Inactive"]).default("Active"), branchLabel: optionalText }),
+server/propertyManagementOperations.ts-37-  REGISTER_TENANT: z.object({ profileId: uuid.nullable().optional().default(null), tenantCode: text.max(40), fullName: text.max(180), phone, email: z.string().trim().email().max(180).optional(), nationalId: optionalText, tin: optionalText, kycStatus: z.enum(["Pending", "Verified", "Needs Review", "Rejected", "Expired"]).default("Pending"), status: z.enum(["Active", "Blocked", "Inactive"]).default("Active"), address: optionalText, emergencyContact: optionalText }),
+server/propertyManagementOperations.ts:38:  SUBMIT_APPLICATION: z.object({ unitId: uuid, tenantId: uuid, agentId: uuid.nullable().optional().default(null), requestedStartDate: date.nullable().optional().default(null), proposedRent: money.default(0), idempotencyKey: uuid }),
+server/propertyManagementOperations.ts-39-  APPROVE_APPLICATION: z.object({ applicationId: uuid, note: optionalText }),
+server/propertyManagementOperations.ts:40:  CREATE_LEASE: z.object({ unitId: uuid, tenantId: uuid, applicationId: uuid.nullable().optional().default(null), startDate: date, endDate: date, rentAmount: money, serviceChargeAmount: money.default(0), depositAmount: money.default(0), rentFrequency: z.enum(["Monthly", "Quarterly", "Biannual", "Annual"]).default("Monthly"), noticeDays: z.number().int().min(0).max(365).default(30), status: z.enum(["Active", "Pending Approval"]).default("Pending Approval"), terms: z.record(z.string(), z.unknown()).default({}) }),
+server/propertyManagementOperations.ts-41-  APPROVE_LEASE: z.object({ leaseId: uuid, note: optionalText }),
+server/propertyManagementOperations.ts-42-  RECORD_HANDOVER: z.object({ leaseId: uuid, handoverType: z.enum(["Move In", "Move Out"]).default("Move In"), handoverDate: date.optional(), keysCount: z.number().int().min(0).max(1_000).default(0), meterSnapshot: z.record(z.string(), z.unknown()).default({}), signedByTenant: z.boolean().default(false), signedByManager: z.boolean().default(false), notes: optionalText }),
+--
+server/propertyManagementOperations.ts-45-  CREATE_BUDGET: z.object({ portfolioId: uuid.nullable().optional().default(null), fiscalYear: z.number().int().min(2000).max(2200), category: text.max(120), budgetAmount: money, status: z.enum(["Draft", "Approved", "Closed"]).default("Draft") }),
+server/propertyManagementOperations.ts-46-  REGISTER_SERVICE_CHARGE: z.object({ unitId: uuid, name: text.max(180), amount: money, frequency: z.enum(["Monthly", "Quarterly", "Annual", "One Time"]).default("Monthly"), status: z.enum(["Active", "Inactive"]).default("Active") }),
+server/propertyManagementOperations.ts:47:  GENERATE_INVOICE: z.object({ leaseId: uuid, invoiceType: z.enum(["Rent", "Service Charge", "Deposit", "Utility", "Late Fee", "Other"]).default("Rent"), periodStart: date.optional(), periodEnd: date.optional(), dueDate: date.optional(), description: optionalText }),
+server/propertyManagementOperations.ts:48:  RECORD_PAYMENT: z.object({ invoiceId: uuid, amount: money.refine((value) => value > 0, "Payment amount must be positive."), paymentMethod: z.enum(["Cash", "Bank Transfer", "Mobile Money", "Card", "Cheque", "Provider"]), providerCode: z.string().trim().max(80).optional(), providerReference: z.string().trim().max(200).optional(), idempotencyKey: uuid }),
+server/propertyManagementOperations.ts-49-  CREATE_MAINTENANCE_REQUEST: z.object({ unitId: uuid.nullable().optional().default(null), leaseId: uuid.nullable().optional().default(null), tenantId: uuid.nullable().optional().default(null), category: text.max(80).default("General"), priority: z.enum(["Low", "Medium", "High", "Emergency"]).default("Medium"), title: text.max(180), description: text.max(2_000) }),
+server/propertyManagementOperations.ts-50-  ASSIGN_WORK_ORDER: z.object({ requestId: uuid, contractorId: uuid.nullable().optional().default(null), assignedProfileId: uuid.nullable().optional().default(null), estimatedCost: money.default(0), dueDate: date.optional() }),
+server/propertyManagementOperations.ts-51-  COMPLETE_WORK_ORDER: z.object({ workOrderId: uuid, actualCost: money.default(0), completionNote: optionalText }),
+server/propertyManagementOperations.ts:52:  CREATE_EXPENSE: z.object({ propertyId: uuid.nullable().optional().default(null), unitId: uuid.nullable().optional().default(null), workOrderId: uuid.nullable().optional().default(null), category: text.max(120), description: text.max(500), amount: money.refine((value) => value > 0, "Expense amount must be positive."), expenseDate: date.optional(), paymentMethod: optionalText, paymentReference: optionalText }),
+server/propertyManagementOperations.ts-53-  APPROVE_EXPENSE: z.object({ expenseId: uuid, note: optionalText }),
+server/propertyManagementOperations.ts-54-  RECORD_METER_READING: z.object({ meterId: uuid, readingDate: date.optional(), readingValue: money, source: z.enum(["Manual", "Import", "Provider Pending"]).default("Manual"), notes: optionalText }),
+--
+server/posPendingQueue.test.ts-3-  createPendingPosSale,
+server/posPendingQueue.test.ts-4-  isRetryablePosTransportError,
+server/posPendingQueue.test.ts:5:  posPendingQueueKey,
+server/posPendingQueue.test.ts-6-  readPendingPosSales,
+server/posPendingQueue.test.ts-7-  updatePendingPosSale,
+server/posPendingQueue.test.ts-8-  writePendingPosSales,
+server/posPendingQueue.test.ts:9:} from "../client/src/lib/posPendingQueue";
+server/posPendingQueue.test.ts-10-
+server/posPendingQueue.test.ts-11-describe("POS pending queue", () => {
+server/posPendingQueue.test.ts-12-  it("scopes browser queue records to the active workspace and authenticated user", () => {
+server/posPendingQueue.test.ts:13:    expect(posPendingQueueKey({ companyId: "company-a", userId: "user-a" })).not.toBe(posPendingQueueKey({ companyId: "company-b", userId: "user-a" }));
+server/posPendingQueue.test.ts:14:    expect(posPendingQueueKey({ companyId: "company-a", userId: "user-a" })).not.toBe(posPendingQueueKey({ companyId: "company-a", userId: "user-b" }));
+server/posPendingQueue.test.ts-15-  });
+server/posPendingQueue.test.ts-16-
+--
+server/posCheckoutIntegration.test.ts-8-describe("POS checkout confirmed persistence integration", () => {
+server/posCheckoutIntegration.test.ts-9-  it("uses the authenticated atomic completion RPC with a retry-stable idempotency key", () => {
+server/posCheckoutIntegration.test.ts:10:    expect(checkout).toContain('callRpc("complete_pos_sale"');
+server/posCheckoutIntegration.test.ts-11-    expect(checkout).toContain("p_idempotency_key: attempt.idempotencyKey");
+server/posCheckoutIntegration.test.ts-12-    expect(checkout).toContain("const attempt = saleAttempt || createPosSaleAttempt");
+--
+server/posCheckoutIntegration.test.ts-14-  });
+server/posCheckoutIntegration.test.ts-15-
+server/posCheckoutIntegration.test.ts:16:  it("does not update the cart, transaction list, or inventory as a false local success", () => {
+server/posCheckoutIntegration.test.ts-17-    expect(checkout).not.toContain('notify("Sale completed locally, but saving to the server failed.", "error")');
+server/posCheckoutIntegration.test.ts:18:    expect(checkout).not.toContain("inventory.setRows((prev)");
+server/posCheckoutIntegration.test.ts-19-    expect(checkout).not.toContain("transactions.setRows((prev) => [draft");
+server/posCheckoutIntegration.test.ts-20-    expect(checkout).toContain("notify(persistenceFailureMessage(\"Completing the sale\", error), \"error\")");
+server/posCheckoutIntegration.test.ts:21:    expect(checkout).toContain("await Promise.all([inventory.reload?.(), transactions.reload?.()].filter(Boolean))");
+server/posCheckoutIntegration.test.ts-22-  });
+server/posCheckoutIntegration.test.ts-23-
+--
+server/posCheckoutIntegration.test.ts-32-
+server/posCheckoutIntegration.test.ts-33-  it("persists held carts without stock deduction and excludes them from completed-sale metrics", () => {
+server/posCheckoutIntegration.test.ts:34:    expect(checkout).toContain('runCompanyTableMutation("pos_transactions", "insert"');
+server/posCheckoutIntegration.test.ts-35-    expect(checkout).toContain('status: "Held"');
+server/posCheckoutIntegration.test.ts-36-    expect(checkout).toContain("Inventory has not been deducted");
+--
+server/posCheckoutIntegration.test.ts-41-  });
+server/posCheckoutIntegration.test.ts-42-
+server/posCheckoutIntegration.test.ts:43:  it("confirms a return through the atomic RPC before refreshing transaction and inventory state", () => {
+server/posCheckoutIntegration.test.ts:44:    expect(registerHistory).toContain('callRpc("complete_pos_return"');
+server/posCheckoutIntegration.test.ts-45-    expect(registerHistory).toContain("p_idempotency_key: idempotencyKey");
+server/posCheckoutIntegration.test.ts:46:    expect(registerHistory).toContain("await Promise.all([inventory.reload?.(), transactions.reload?.()].filter(Boolean))");
+server/posCheckoutIntegration.test.ts:47:    expect(registerHistory).not.toContain("inventory.setRows((prev)");
+server/posCheckoutIntegration.test.ts-48-    expect(registerHistory).not.toContain('notify("Return processed locally, but saving to the server failed.", "error")');
+server/posCheckoutIntegration.test.ts-49-  });
+--
+server/posCheckoutIntegration.test.ts-63-    expect(checkout).toContain('window.addEventListener("online", handleOnline)');
+server/posCheckoutIntegration.test.ts-64-    expect(checkout).toContain("Pending sync");
+server/posCheckoutIntegration.test.ts:65:    expect(checkout).toContain("These sales require server confirmation before inventory, revenue, receipt output, or customer balances change.");
+server/posCheckoutIntegration.test.ts-66-    expect(checkout).toContain("Force sync all");
+server/posCheckoutIntegration.test.ts:67:    expect(checkout).toContain('callRpc("complete_pos_sale"');
+server/posCheckoutIntegration.test.ts:68:    expect(checkout).toContain('callRpc("record_pos_sync_event"');
+server/posCheckoutIntegration.test.ts-69-    expect(checkout).toContain('p_status: "synced"');
+server/posCheckoutIntegration.test.ts-70-    expect(checkout).toContain('p_status: "needs_attention"');
+--
+server/posRpcPrivilegeHardeningMigration.test.ts-2-import { describe, expect, it } from "vitest";
+server/posRpcPrivilegeHardeningMigration.test.ts-3-
+server/posRpcPrivilegeHardeningMigration.test.ts:4:const migration = readFileSync(new URL("../supabase/migrations/20260816_008_harden_pos_rpc_privileges.sql", import.meta.url), "utf8");
+server/posRpcPrivilegeHardeningMigration.test.ts-5-
+server/posRpcPrivilegeHardeningMigration.test.ts-6-describe("POS RPC privilege hardening migration", () => {
+server/posRpcPrivilegeHardeningMigration.test.ts-7-  it("explicitly removes anonymous and public execution from every POS RPC signature", () => {
+server/posRpcPrivilegeHardeningMigration.test.ts-8-    expect(migration).toContain("FROM PUBLIC, anon");
+server/posRpcPrivilegeHardeningMigration.test.ts:9:    expect(migration).toContain("complete_pos_sale(text, text, jsonb, jsonb, numeric, numeric, numeric)");
+server/posRpcPrivilegeHardeningMigration.test.ts:10:    expect(migration).toContain("complete_pos_sale(text, text, jsonb, jsonb, numeric, numeric, numeric, uuid, text)");
+server/posRpcPrivilegeHardeningMigration.test.ts:11:    expect(migration).toContain("complete_pos_return(text, uuid, jsonb, text, numeric)");
+server/posRpcPrivilegeHardeningMigration.test.ts:12:    expect(migration).toContain("record_pos_sync_event(text, text, uuid, text)");
+server/posRpcPrivilegeHardeningMigration.test.ts-13-  });
+server/posRpcPrivilegeHardeningMigration.test.ts-14-
+--
+server/healthcarePortalReconciliationWorkflow.test.ts-51-    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+server/healthcarePortalReconciliationWorkflow.test.ts-52-      if (url.includes("/hc_patients?")) return json([patientOne, patientTwo]);
+server/healthcarePortalReconciliationWorkflow.test.ts:53:      if (url.includes("/hc_portal_reference_imports?")) return json([{ id: "import-1", company_id: companyId, name: "row", status: "Applied", created_at: new Date().toISOString(), data: { proposedReference: "ASHA-PORTAL" } }]);
+server/healthcarePortalReconciliationWorkflow.test.ts:54:      if (url.includes("/hc_portal_reference_approvals?")) return json([{ id: "approval-1", company_id: companyId, name: "approval", status: "Pending", created_at: new Date().toISOString(), data: { proposedReference: "BARAKA-PORTAL" } }]);
+server/healthcarePortalReconciliationWorkflow.test.ts-55-      return json([]);
+server/healthcarePortalReconciliationWorkflow.test.ts-56-    }));
+--
+server/healthcarePortalReconciliationWorkflow.test.ts-64-  it("exports only correction-safe rejected rows without portal references or contact values", async () => {
+server/healthcarePortalReconciliationWorkflow.test.ts-65-    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+server/healthcarePortalReconciliationWorkflow.test.ts:66:      if (url.includes("/hc_portal_reference_imports?")) return json([{ id: "import-error", company_id: companyId, name: "row", status: "Invalid", created_at: "2026-08-21T06:00:00.000Z", data: { rowNumber: 6, mrn: "SMC-000184", proposedReference: "ASHA-PORTAL", validationReason: "Portal reference format is invalid.", phone: "+255700000000" } }]);
+server/healthcarePortalReconciliationWorkflow.test.ts-67-      return json([]);
+server/healthcarePortalReconciliationWorkflow.test.ts-68-    }));
+--
+server/healthcarePortalReconciliationWorkflow.test.ts-76-    asRole("Clinic Administrator");
+server/healthcarePortalReconciliationWorkflow.test.ts-77-    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+server/healthcarePortalReconciliationWorkflow.test.ts:78:      if (url.includes("/hc_portal_reference_imports?")) return json([{ id: "import-1", company_id: companyId, name: "Import row", status: "Rejected", created_at: "2026-08-21T06:00:00.000Z", data: { mrn: "SMC-000184", validationReason: "Needs correction", proposedReference: "ASHA-PORTAL" } }]);
+server/healthcarePortalReconciliationWorkflow.test.ts:79:      if (url.includes("/hc_portal_reference_approvals?")) return json([{ id: "approval-1", company_id: companyId, name: "Replacement approval", status: "Rejected", created_at: "2026-08-21T06:00:00.000Z", data: { reason: "Replacement review", decisionNote: "Identity could not be confirmed.", decidedAt: "2026-08-21T07:00:00.000Z", proposedReference: "BARAKA-PORTAL" } }]);
+server/healthcarePortalReconciliationWorkflow.test.ts-80-      return json([]);
+server/healthcarePortalReconciliationWorkflow.test.ts-81-    }));
+--
+server/financeLedgerContracts.test.ts-11-    );
+server/financeLedgerContracts.test.ts-12-
+server/financeLedgerContracts.test.ts:13:    expect(ledgerSource).toContain("const ledger = useMemo(() => buildLedger(invoices, expenses, posTransactions)");
+server/financeLedgerContracts.test.ts-14-    expect(ledgerSource).toContain("{ledger.length > 0 && (");
+server/financeLedgerContracts.test.ts-15-    expect(ledgerSource).toContain("data={ledger.slice(-30).map");
+--
+server/communityGroupsSecurity.test.ts-2-import { describe, expect, it } from "vitest";
+server/communityGroupsSecurity.test.ts-3-
+server/communityGroupsSecurity.test.ts:4:const hardening = readFileSync(new URL("../supabase/migrations/20260823_036_community_groups_security_hardening.sql", import.meta.url), "utf8");
+server/communityGroupsSecurity.test.ts:5:const insertGuard = readFileSync(new URL("../supabase/migrations/20260823_043_community_groups_relationship_guard_approval_fix.sql", import.meta.url), "utf8");
+server/communityGroupsSecurity.test.ts:6:const documentGuard = readFileSync(new URL("../supabase/migrations/20260823_044_community_groups_document_creator_guard.sql", import.meta.url), "utf8");
+server/communityGroupsSecurity.test.ts:7:const base = readFileSync(new URL("../supabase/migrations/20260823_035_community_groups_module.sql", import.meta.url), "utf8");
+server/communityGroupsSecurity.test.ts-8-const tables = [
+server/communityGroupsSecurity.test.ts:9:  "community_groups", "community_group_members", "community_group_committees", "community_group_committee_members",
+server/communityGroupsSecurity.test.ts-10-  "community_group_meetings", "community_group_attendance", "community_group_contributions", "community_group_savings",
+server/communityGroupsSecurity.test.ts-11-  "community_group_welfare_claims", "community_group_loans", "community_group_loan_guarantors", "community_group_loan_repayments",
+--
+server/communityGroupsSecurity.test.ts-18-describe("Community Groups security hardening contract", () => {
+server/communityGroupsSecurity.test.ts-19-  it("defines database-side role helpers and revokes helper execution from public and anonymous callers", () => {
+server/communityGroupsSecurity.test.ts:20:    expect(hardening).toContain("community_groups_is_privileged");
+server/communityGroupsSecurity.test.ts:21:    expect(hardening).toContain("community_groups_can_operate");
+server/communityGroupsSecurity.test.ts:22:    expect(hardening).toContain("community_groups_can_approve");
+server/communityGroupsSecurity.test.ts:23:    expect(hardening).toContain("community_groups_can_disburse");
+server/communityGroupsSecurity.test.ts:24:    expect(hardening).toContain("REVOKE EXECUTE ON FUNCTION public.community_groups_is_privileged() FROM PUBLIC, anon");
+server/communityGroupsSecurity.test.ts-25-  });
+server/communityGroupsSecurity.test.ts-26-
+--
+server/communityGroupsSecurity.test.ts-34-
+server/communityGroupsSecurity.test.ts-35-  it("installs relationship guards for every Community Groups table", () => {
+server/communityGroupsSecurity.test.ts:36:    expect(hardening).toContain("community_groups_assert_relationships");
+server/communityGroupsSecurity.test.ts-37-    expect(hardening).toContain("Community Groups records must reference a group in the same tenant.");
+server/communityGroupsSecurity.test.ts-38-    expect(hardening).toContain("Committee and member must belong to the same group.");
+--
+server/communityGroupsSecurity.test.ts-45-    expect(insertGuard).toContain("auth.uid() IS NULL OR NEW.company_id IS DISTINCT FROM c");
+server/communityGroupsSecurity.test.ts-46-    expect(insertGuard).toContain("group_a := NEW.group_id;");
+server/communityGroupsSecurity.test.ts:47:    expect(insertGuard).not.toContain("group_a := public.community_groups_parent_group(TG_TABLE_NAME, NEW.id, c);");
+server/communityGroupsSecurity.test.ts-48-  });
+server/communityGroupsSecurity.test.ts-49-
+--
+server/bankMfiSecurity.test.ts-40-
+server/bankMfiSecurity.test.ts-41-  it("hardens privileged RPCs and keeps critical workflows auditable", () => {
+server/bankMfiSecurity.test.ts:42:    expect(hardening).toContain("REVOKE EXECUTE ON FUNCTION public.bank_post_transaction(jsonb) FROM PUBLIC, anon");
+server/bankMfiSecurity.test.ts-43-    expect(helperHardening).toContain("REVOKE EXECUTE ON FUNCTION public.bank_has_role(text[]) FROM authenticated, anon, PUBLIC");
+server/bankMfiSecurity.test.ts-44-    expect(creditRepair).toContain("bank_score_loan_application");
+--
+server/sessionRefreshTableReload.test.ts-5-
+server/sessionRefreshTableReload.test.ts-6-describe("silent session refresh table reload", () => {
+server/sessionRefreshTableReload.test.ts:7:  it("signals when a refreshed session is persisted without exposing any token value", () => {
+server/sessionRefreshTableReload.test.ts-8-    expect(source).toContain('window.dispatchEvent(new Event("smart-manager:auth-session-updated"))');
+server/sessionRefreshTableReload.test.ts-9-    expect(source).not.toContain('auth-session-updated", authResult.access_token');
+--
+server/schemaDriftMonitor.test.ts-31-    expect(handlerSource).toContain("!user.isCron || !user.taskUid");
+server/schemaDriftMonitor.test.ts-32-    expect(handlerSource).toContain('error: "cron-only"');
+server/schemaDriftMonitor.test.ts:33:    expect(routeSource).toContain('app.post("/api/scheduled/schemaDriftMonitor", scheduledSchemaDriftMonitorHandler)');
+server/schemaDriftMonitor.test.ts-34-  });
+server/schemaDriftMonitor.test.ts-35-});
+--
+server/protocolClosure.test.ts-2-import { describe, expect, it } from "vitest";
+server/protocolClosure.test.ts-3-
+server/protocolClosure.test.ts:4:const moduleMap = readFileSync(new URL("../module-map-inventory.md", import.meta.url), "utf8");
+server/protocolClosure.test.ts:5:const bugInventory = readFileSync(new URL("../master-bug-inventory.md", import.meta.url), "utf8");
+server/protocolClosure.test.ts-6-
+server/protocolClosure.test.ts-7-describe("Smart Manager Protocol Closure", () => {
+server/protocolClosure.test.ts:8:  it("documents all modules and dependencies in module-map-inventory.md", () => {
+server/protocolClosure.test.ts-9-    expect(moduleMap).toContain("Collaboration Hub");
+server/protocolClosure.test.ts-10-    expect(moduleMap).toContain("TRA Fiscal Portal");
+--
+server/protocolClosure.test.ts-12-  });

@@ -6,7 +6,7 @@ const source = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx",
 describe("account passkey management UI", () => {
   it("renders the registered-credential manager inside Security Settings", () => {
     expect(source).toContain("function AccountPasskeyManager");
-    expect(source).toContain("<AccountPasskeyManager session={accountSession} isAdministrator={PASSKEY_READINESS_ROLES.has(currentUser.role)} />");
+    expect(source).toContain("<AccountPasskeyManager session={accountSession} isAdministrator={PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role))} />");
     expect(source).toContain("Account passkeys");
   });
 
