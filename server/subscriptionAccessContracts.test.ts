@@ -13,6 +13,7 @@ const profile = read("client/src/components/ProfileIdentityCenter.jsx");
 const billing = read("client/src/components/SubscriptionBillingWorkspace.jsx");
 const dashboard = [dashboardSourceText, billing].join("\n");
 const adapter = read("client/src/lib/subscriptionAccess.js");
+const signupTranslations = read("client/src/lib/signupTranslations.ts");
 
 describe("platform subscription access contracts", () => {
   it("reuses the existing subscription schema and exposes only a least-privilege authenticated access RPC", () => {
@@ -51,9 +52,9 @@ describe("platform subscription access contracts", () => {
   it("keeps onboarding on the database catalog and Free-15 activation RPC", () => {
     expect(dashboard).toContain('fetch("/api/billing/catalog")');
     expect(dashboard).toContain('callWorkspaceRpcWithSessionRefresh("billing_start_free_plan"');
-    expect(dashboard).toContain("from the account menu");
+    expect(signupTranslations).toContain("from the account menu");
     expect(dashboard).toContain("FREE_15");
-    expect(dashboard).toContain("Anza na siku 15 BURE");
+    expect(signupTranslations).toContain("Anza na siku 15 BURE");
   });
 
   it("keeps server access decisions authoritative while allowing the last decision offline", () => {

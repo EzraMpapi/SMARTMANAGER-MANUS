@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const dashboard = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const signupTranslations = readFileSync(new URL("../client/src/lib/signupTranslations.ts", import.meta.url), "utf8");
 const authViews = readFileSync(new URL("../client/src/components/EnterpriseAuthViews.jsx", import.meta.url), "utf8");
 const workspaceSettings = readFileSync(new URL("./workspaceSettings.ts", import.meta.url), "utf8");
 const router = readFileSync(new URL("./routers.ts", import.meta.url), "utf8");
@@ -16,8 +17,9 @@ describe("passkey onboarding and readiness UI", () => {
   });
 
   it("offers passkey enrollment at onboarding completion and preserves secure registration boundaries", () => {
-    expect(dashboard).toContain("Secure this account with a passkey");
-    expect(dashboard).toContain("Create passkey now");
+    expect(signupTranslations).toContain("Secure this account with a passkey");
+    expect(signupTranslations).toContain("Create passkey now");
+    expect(dashboard).toContain("ui.success.passkeyTitle");
     expect(dashboard).toContain("createAccountPasskeyClient");
     expect(dashboard).toContain("registerAccountPasskey(client)");
     expect(dashboard).toContain("passkeySession: { accessToken: workspaceRpc.accessToken, refreshToken: workspaceRpc.refreshToken }");
@@ -25,10 +27,11 @@ describe("passkey onboarding and readiness UI", () => {
   });
 
   it("previews and applies organization logo crops before workspace branding save", () => {
-    expect(dashboard).toContain("Adjust logo crop");
-    expect(dashboard).toContain('aria-label="Logo crop preview"');
+    expect(signupTranslations).toContain("Adjust logo crop");
+    expect(signupTranslations).toContain("Logo crop preview");
+    expect(signupTranslations).toContain("Apply crop");
     expect(dashboard).toContain("canvas.toDataURL(\"image/png\")");
-    expect(dashboard).toContain("Apply crop");
+    expect(dashboard).toContain("ui.cropTitle");
   });
 
   it("exposes a bounded tenant timeout slider and uses the persisted value at the app root", () => {

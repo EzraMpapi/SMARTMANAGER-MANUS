@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const authViewSource = readFileSync(new URL("../client/src/components/EnterpriseAuthViews.jsx", import.meta.url), "utf8");
+const authTranslationsSource = readFileSync(new URL("../client/src/lib/authTranslations.ts", import.meta.url), "utf8");
 const authGatewaySource = readFileSync(new URL("../client/src/components/PublicAuthGateway.jsx", import.meta.url), "utf8");
 const authSessionStorageSource = readFileSync(new URL("../client/src/lib/authSessionStorage.js", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8");
@@ -40,9 +41,10 @@ describe("public authentication experience", () => {
   });
 
   it("gives visible, provider-specific recovery paths when Google, Microsoft, or Apple OAuth returns an error", () => {
-    expect(authViewSource).toContain("Google sign-in was not completed");
-    expect(authViewSource).toContain("Microsoft sign-in was not completed");
-    expect(authViewSource).toContain("Apple sign-in was not completed");
+    expect(authTranslationsSource).toContain("${provider} sign-in was not completed");
+    expect(authTranslationsSource).toContain("Try ${provider} again, or use your work email and password instead.");
+    expect(authViewSource).toContain("const OAUTH_PROVIDER_NAMES = { google: \"Google\", azure: \"Microsoft\", apple: \"Apple\" }");
+    expect(authViewSource).toContain("ui.oauthFailed(providerName)");
     expect(authViewSource).toContain("function retryProvider()");
     expect(authViewSource).toContain("onOAuth(oauthProvider)");
     expect(authViewSource).toContain("function useEmailInstead()");

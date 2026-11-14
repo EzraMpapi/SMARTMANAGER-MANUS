@@ -17,6 +17,7 @@ const trialHardening = read("supabase/migrations/20260822_029_subscription_trial
 const planAdminControls = read("supabase/migrations/20260822_030_subscription_plan_admin_controls.sql");
 const billingSnapshotAliasFix = read("supabase/migrations/20260823_062_fix_billing_snapshot_event_alias.sql");
 const dashboard = read("client/src/BusinessSphereDashboard.jsx");
+const signupTranslations = read("client/src/lib/signupTranslations.ts");
 
 describe("Subscription billing and HarakaPay contracts", () => {
   it("creates tenant-scoped subscription, payment, invoice, usage, profile, and audit persistence with RLS", () => {
@@ -155,11 +156,12 @@ describe("Subscription billing and HarakaPay contracts", () => {
   it("presents Free-15 access and separates the Football Fans Special catalog without unlicensed logos", () => {
     [
       "FREE PLAN — 15 DAYS", "Free access has ended", "Choose Package",
-      "SMART MANAGER BUSINESS PACKAGES", "FOOTBALL FANS SPECIAL", "Chagua timu yako na upate ofa maalum ya SMART MANAGER.",
+      "SMART MANAGER BUSINESS PACKAGES", "FOOTBALL FANS SPECIAL", "Choose your team and unlock a special SMART MANAGER offer.",
       "Start Free", "Change package", "/ month",
     ].forEach((marker) => expect(workspace).toContain(marker));
     [
-      'fetch("/api/billing/catalog")', "billing_start_free_plan", "preferredPlanCode", "FREE PLAN — 15 DAYS",
+      'fetch("/api/billing/catalog")', "billing_start_free_plan", "preferredPlanCode", "ui.modules.planBadge",
     ].forEach((marker) => expect(dashboard).toContain(marker));
+    expect(signupTranslations).toContain("FREE PLAN — 15 DAYS");
   });
 });

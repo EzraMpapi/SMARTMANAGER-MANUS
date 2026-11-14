@@ -48,9 +48,10 @@ export default function PublicAuthGateway() {
   }
 
   async function signIn(workEmail, password) {
-    const validation = validatePasswordLogin(workEmail, password);
+    const normalizedEmail = workEmail.trim().toLowerCase();
+    const validation = validatePasswordLogin(normalizedEmail, password);
     if (validation) throw new Error(validation);
-    const result = await auth.signIn(workEmail, password);
+    const result = await auth.signIn(normalizedEmail, password);
     if (!result?.session || !result?.user?.id) {
       const error = new Error("The authentication server returned an incomplete session.");
       error.code = "AUTH_RESPONSE_INVALID";

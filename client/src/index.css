@@ -2592,12 +2592,14 @@
 .sm-onboarding-mode-button { min-height: 44px; }
 .sm-onboarding-mode-button.is-active { box-shadow: 0 6px 18px rgba(22,163,74,.12); }
 .sm-onboarding-card { box-shadow: 0 24px 70px rgba(15,23,42,.09), 0 2px 8px rgba(15,23,42,.03); }
-.sm-onboarding-card input,
+.sm-onboarding-card input:not([type="checkbox"]):not([type="radio"]),
 .sm-onboarding-card select,
 .sm-onboarding-card textarea { min-height: 46px; border-radius: .85rem; transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease; }
-.sm-onboarding-card input:focus,
+.sm-onboarding-card input:not([type="checkbox"]):not([type="radio"]):focus,
 .sm-onboarding-card select:focus,
 .sm-onboarding-card textarea:focus { border-color: #16a34a; box-shadow: 0 0 0 4px rgba(22,163,74,.10); outline: none; }
+.sm-onboarding-card input[type="checkbox"],
+.sm-onboarding-card input[type="radio"] { width: 1rem; height: 1rem; min-height: 0; flex: none; accent-color: #16a34a; cursor: pointer; }
 .sm-onboarding-form > button[type="submit"],
 .sm-onboarding-form > button:last-child { min-height: 50px; letter-spacing: -.01em; }
 .sm-onboarding-step { color: #94a3b8; }

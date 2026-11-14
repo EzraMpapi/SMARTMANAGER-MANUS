@@ -153,13 +153,13 @@ export default function Home() {
           <div className="mx-auto grid max-w-7xl gap-16 px-5 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-10">
             <div className="max-w-2xl">
               <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-[#C9A96E]/20 bg-[#C9A96E]/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.15em] text-[#C9A96E] shadow-sm">
-                <Sparkles size={13} /> Bidhaa ya Kitanzania kwa Wafanyabiashara
+                <Sparkles size={13} /> {t("heroBadge")}
               </div>
               <h1 className="max-w-xl text-5xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl font-heading">
-                Run the work. <span className="text-[#C9A96E]">See the whole business.</span>
+                {t("heroTitle1")} <span className="text-[#C9A96E]">{t("heroTitle2")}</span>
               </h1>
               <p className="mt-8 max-w-xl text-[18px] leading-8 text-[#94A3B8] sm:text-[19px]">
-                Simamia Biashara Yako. Popote, Wakati Wote. Smart Manager brings commercial, financial, and operational workflows together in one noble command center.
+                {t("heroSubtitle")}
               </p>
               <div className="mt-10 flex flex-col gap-4 sm:flex-row">
                 <Link href="/app" className="sm-public-primary-action inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A96E] px-7 py-4 text-[14px] font-bold text-[#0B1120] shadow-[0_15px_30px_rgba(201,169,110,0.15)] transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
@@ -169,14 +169,14 @@ export default function Home() {
                   <Fingerprint size={16} /> {passkeyPending ? "Opening passkey…" : "Sign in with a passkey"}
                 </button>
                 <a href="#capabilities" className="sm-public-secondary-action inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-7 py-4 text-[14px] font-bold text-white transition-all hover:bg-white/10">
-                  Explore capabilities <ChevronRight size={16} />
+                  {t("exploreCapabilities")} <ChevronRight size={16} />
                 </a>
               </div>
               <p id="public-passkey-status" className="mt-4 min-h-5 max-w-xl text-[13px] text-amber-200" aria-live="polite">{passkeyError}</p>
               <div className="mt-12 flex flex-wrap gap-x-8 gap-y-3 text-[13px] font-medium text-[#64748B]">
-                <span className="inline-flex items-center gap-2"><Check size={16} className="text-[#16A34A]" /> Live operational data</span>
-                <span className="inline-flex items-center gap-2"><Check size={16} className="text-[#16A34A]" /> Connected business modules</span>
-                <span className="inline-flex items-center gap-2"><Check size={16} className="text-[#16A34A]" /> Action-ready workflows</span>
+                <span className="inline-flex items-center gap-2"><Check size={16} className="text-[#16A34A]" /> {t("liveOperationalData")}</span>
+                <span className="inline-flex items-center gap-2"><Check size={16} className="text-[#16A34A]" /> {t("connectedModules")}</span>
+                <span className="inline-flex items-center gap-2"><Check size={16} className="text-[#16A34A]" /> {t("actionReadyWorkflows")}</span>
               </div>
             </div>
 
@@ -186,8 +186,8 @@ export default function Home() {
               <div className="sm-public-preview relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#131C31] p-3 shadow-2xl sm:p-4 gold-glow">
                 <div className="rounded-[1.4rem] bg-[#0B1120] p-5 sm:p-6">
                   <div className="mb-6 flex items-center justify-between">
-                    <div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full bg-[#16A34A] animate-pulse" /><span className="text-[13px] font-bold text-white font-heading tracking-wide">Business Overview</span></div>
-                    <span className="rounded-md bg-[#16A34A]/10 border border-[#16A34A]/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#16A34A]">Live Workspace</span>
+                    <div className="flex items-center gap-3"><span className="h-3 w-3 rounded-full bg-[#16A34A] animate-pulse" /><span className="text-[13px] font-bold text-white font-heading tracking-wide">{t("businessOverview")}</span></div>
+                    <span className="rounded-md bg-[#16A34A]/10 border border-[#16A34A]/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#16A34A]">{t("liveWorkspace")}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     {["Customers", "Inventory", "Finance"].map((label) => (
@@ -198,13 +198,13 @@ export default function Home() {
                     ))}
                   </div>
                   <div className="mt-5 rounded-xl border border-white/5 bg-[#131C31]/50 p-4">
-                    <div className="mb-4 flex items-center justify-between"><span className="text-[12px] font-bold text-white font-heading">Operational Momentum</span><span className="text-[11px] font-semibold text-[#16A34A]">Live Workflow</span></div>
+                    <div className="mb-4 flex items-center justify-between"><span className="text-[12px] font-bold text-white font-heading">{t("operationalMomentum")}</span><span className="text-[11px] font-semibold text-[#16A34A]">Live Workflow</span></div>
                     <div className="flex h-28 items-end gap-2.5">
                       {[44, 58, 36, 72, 62, 88, 76, 95].map((height, index) => <span key={index} className="flex-1 rounded-t-lg bg-gradient-to-t from-[#16A34A] to-[#22C55E]" style={{ height: `${height}%`, opacity: index === 7 ? 1 : 0.4 }} />)}
                     </div>
                   </div>
                   <div className="mt-5 grid grid-cols-[1fr_auto] gap-4 rounded-xl bg-[#C9A96E]/5 border border-[#C9A96E]/10 p-4">
-                    <div><p className="text-[11px] font-bold text-[#C9A96E] font-heading">Next Best Action</p><p className="mt-1.5 text-[12px] leading-5 text-[#94A3B8]">Review the priorities surfaced by your connected business workflows.</p></div>
+                    <div><p className="text-[11px] font-bold text-[#C9A96E] font-heading">{t("nextBestAction")}</p><p className="mt-1.5 text-[12px] leading-5 text-[#94A3B8]">{t("nextBestActionDesc")}</p></div>
                     <span className="sm-public-icon-tile sm-public-icon-tile--gold grid h-10 w-10 place-items-center rounded-xl bg-[#C9A96E] text-[#0B1120] shadow-lg"><ClipboardCheck size={20} /></span>
                   </div>
                 </div>
@@ -217,11 +217,11 @@ export default function Home() {
         <section id="why-smart-manager" className="border-y border-white/5 bg-[#131C31]/30 py-12 sm:py-16">
           <div className="mx-auto grid max-w-7xl gap-8 px-5 sm:grid-cols-3 sm:px-8 lg:px-10">
             {[
-              ["One Workspace", "Centralize customer, inventory, finance, and people workflows in one command center."],
-              ["Live Data Path", "Direct Supabase integration ensures every signal is accurate and action-ready."],
-              ["Built-in Controls", "Role-aware access, audit visibility, and automated reporting for peace of mind."],
+              [t("oneWorkspace"), t("oneWorkspaceDesc")],
+              [t("liveDataPath"), t("liveDataPathDesc")],
+              [t("builtInControls"), t("builtInControlsDesc")],
             ].map(([value, label], index) => (
-              <div key={value} className="relative px-2 sm:px-8 sm:first:pl-0 sm:last:pr-0">
+              <div key={index} className="relative px-2 sm:px-8 sm:first:pl-0 sm:last:pr-0">
                 {index < 2 && <span className="absolute right-0 top-1 hidden h-16 w-px bg-white/5 sm:block" />}
                 <p className="text-[18px] font-extrabold tracking-tight text-white font-heading">{value}</p>
                 <p className="mt-2 max-w-xs text-[14px] leading-6 text-[#94A3B8]">{label}</p>
@@ -233,9 +233,9 @@ export default function Home() {
         {/* Capabilities Section */}
         <section id="capabilities" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10">
           <div className="max-w-2xl">
-            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#C9A96E]">The Noble Ecosystem</p>
-            <h2 className="mt-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">Capabilities that radiate authority.</h2>
-            <p className="mt-6 text-[16px] leading-8 text-[#94A3B8]">Smart Manager keeps core business functions in reach while giving each team the dedicated workflows it needs to move work forward with precision.</p>
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#C9A96E]">{t("ecosystemTitle")}</p>
+            <h2 className="mt-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">{t("ecosystemHeading")}</h2>
+            <p className="mt-6 text-[16px] leading-8 text-[#94A3B8]">{t("ecosystemDesc")}</p>
           </div>
           <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {capabilities.map((capability) => {
@@ -335,11 +335,11 @@ export default function Home() {
           <div className="relative overflow-hidden rounded-[2.5rem] border border-[#C9A96E]/20 bg-gradient-to-br from-[#131C31] to-[#0B1120] px-8 py-16 text-center sm:px-16 sm:py-20 gold-glow">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(201,169,110,0.05),transparent_70%)]" />
             <span className="sm-public-icon-tile sm-public-icon-tile--gold relative z-10 mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#C9A96E] text-[#0B1120] shadow-xl"><Layers3 size={28} /></span>
-            <h2 className="relative z-10 mx-auto mt-8 max-w-2xl text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">Ready to enter the command center?</h2>
-            <p className="relative z-10 mx-auto mt-6 max-w-xl text-[16px] leading-7 text-[#94A3B8]">Launch the Smart Manager ERP dashboard to work with connected modules and live operational data. Salama na Mwaminifu.</p>
+            <h2 className="relative z-10 mx-auto mt-8 max-w-2xl text-4xl font-extrabold tracking-tight text-white sm:text-5xl font-heading">{t("readyCommandCenter")}</h2>
+            <p className="relative z-10 mx-auto mt-6 max-w-xl text-[16px] leading-7 text-[#94A3B8]">{t("readyCommandCenterDesc")}</p>
             <div className="relative z-10 mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href="/app" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A96E] px-8 py-4 text-[15px] font-bold text-[#0B1120] shadow-xl transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
-                Launch Workspace <ArrowRight size={18} />
+                {t("launchWorkspace")} <ArrowRight size={18} />
               </Link>
             </div>
           </div>
@@ -353,9 +353,9 @@ export default function Home() {
           <BrandLogo variant="compact" className="h-11 w-11" />
           <div className="sm-public-footer-meta flex items-center gap-2 text-[12px] font-medium text-[#64748B]">
             <img src="https://upload.wikimedia.org/wikipedia/commons/3/38/Flag_of_Tanzania.svg" alt="Tanzania" className="h-3 w-auto rounded-sm" />
-            <span>Imetengenezwa Tanzania</span>
+            <span>{t("madeInTanzania")}</span>
           </div>
-          <p className="text-[12px] font-medium text-[#475569]">© 2026 Smart Manager · Enterprise Business Ecosystem</p>
+          <p className="text-[12px] font-medium text-[#475569]">{t("copyright")}</p>
         </div>
       </footer>
     </div>
