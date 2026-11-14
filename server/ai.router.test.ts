@@ -55,6 +55,17 @@ describe("AI router and grounded dashboard signals", () => {
     expect(dashboardSource).toContain("grounded in live data");
   });
 
+  it("maps provider failures to actionable fallback states without exposing provider internals", () => {
+    expect(dashboardSource).toContain("ASSISTANT_ERROR_COPY");
+    expect(dashboardSource).toContain("AI_CONFIG_MISSING");
+    expect(dashboardSource).toContain("AI_RATE_LIMITED");
+    expect(dashboardSource).toContain("AI_TIMEOUT");
+    expect(dashboardSource).toContain("Continue without AI");
+    expect(dashboardSource).toContain("data-ai-error-code");
+    expect(routersSource).toContain("assistantErrorMessage");
+    expect(routersSource).toContain("[${error.code}]");
+  });
+
   it("exposes configurePreferences procedure and AI preferences drawer assistant", () => {
     expect(routersSource).toContain("configurePreferences: protectedProcedure");
     expect(routersSource).toContain("dashboard_ai_preferences");

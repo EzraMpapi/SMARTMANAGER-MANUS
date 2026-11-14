@@ -39613,6 +39613,22 @@ function AIAssistant({ company, invoices, inventory, crm, expenses, employees, l
 // per-call by `persona`: which data it sees, which tools it may use, how
 // it introduces itself. Nothing here is persona-specific logic — that all
 // lives in the AI_PERSONAS config above.
+const ASSISTANT_ERROR_COPY = {
+  AI_CONFIG_MISSING: { title: "AI setup needed", message: "Manus AI is not configured on the server. Your business data is safe; contact an administrator to enable the provider.", retryable: false },
+  AI_UNAUTHORIZED: { title: "AI credentials rejected", message: "The Manus AI token was rejected. No business record was changed; contact an administrator to refresh the server credential.", retryable: false },
+  AI_RATE_LIMITED: { title: "AI is busy", message: "Manus AI is handling many requests right now. Wait a moment and try again.", retryable: true },
+  AI_BAD_REQUEST: { title: "Request needs adjustment", message: "The assistant could not process that request. Try a shorter question or remove sensitive/unnecessary detail.", retryable: false },
+  AI_TIMEOUT: { title: "AI response timed out", message: "Manus AI took too long to respond. Your draft is still in the input box and can be retried.", retryable: true },
+  AI_RESPONSE_INVALID: { title: "AI returned an incomplete response", message: "The provider returned no usable answer. Nothing was changed; try the request again.", retryable: true },
+  AI_UNAVAILABLE: { title: "AI temporarily unavailable", message: "The Manus AI service could not be reached. You can keep working without AI and try again later.", retryable: true },
+};
+
+function classifyAssistantError(error) {
+  const raw = String(error?.message || error?.data?.message || "");
+  const code = raw.match(/\[(AI_[A-Z_]+)\]/)?.[1] || "AI_UNAVAILABLE";
+  return { code, ...(ASSISTANT_ERROR_COPY[code] || ASSISTANT_ERROR_COPY.AI_UNAVAILABLE) };
+}
+
 function ChatInterface({ persona, data, onNavigate, currentUser }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -39995,16 +40011,9 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       setMessages(convo);
       await persistTurn(question, responseData.result);
     } catch (e) {
-      const providerMessage = typeof e?.message === "string" ? e.message : "";
-      const message = providerMessage.includes("temporarily unavailable")
-        ? providerMessage
-        : providerMessage.includes("too many requests")
-          ? "The AI Assistant is busy. Please wait a minute and try again."
-          : providerMessage.includes("shorten or rephrase")
-            ? providerMessage
-            : "The AI Assistant could not respond right now. Please try again.";
-      notify(message, "error");
-      setAssistantError({ message, question });
+      const failure = classifyAssistantError(e);
+      notify(failure.message, "error");
+      setAssistantError({ ...failure, question });
       setMessages(messages);
       setInput(question);
     } finally {
@@ -40093,7 +40102,27 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
           </div>
         )}
       </div>
-      {assistantError && !busy && <div role="alert" className="mx-3 mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-[12px] text-rose-800"><span>{assistantError.message}</span><button type="button" onClick={() => send(assistantError.question)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 py-1.5 font-semibold text-rose-800 transition hover:bg-rose-100"><RotateCcw size={13}/>Try again</button></div>}
+      {assistantError && !busy && (
+        <div role="alert" data-ai-error-code={assistantError.code} className="mx-3 mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-[12px] text-rose-900">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle size={16} className="mt-0.5 shrink-0 text-rose-600" />
+            <div className="min-w-0 flex-1">
+              <p className="font-bold">{assistantError.title}</p>
+              <p className="mt-0.5 leading-relaxed text-rose-800">{assistantError.message}</p>
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                {assistantError.retryable && (
+                  <button type="button" onClick={() => send(assistantError.question)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-rose-700 px-3 py-1.5 font-semibold text-white transition hover:bg-rose-800">
+                    <RotateCcw size={13} /> Try again
+                  </button>
+                )}
+                <button type="button" onClick={() => { setAssistantError(null); setInput(assistantError.question || ""); }} className="inline-flex min-h-9 items-center rounded-lg border border-rose-300 bg-white px-3 py-1.5 font-semibold text-rose-800 transition hover:bg-rose-100">
+                  Continue without AI
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         {anomalies.length > 0 && (
           <div className="rounded-xl border border-[#C9A96E]/30 bg-[#C9A96E]/5 p-3.5">
@@ -40299,7 +40328,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
           </button>
           <input
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => { setInput(e.target.value); if (assistantError) setAssistantError(null); }}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
             placeholder={listening ? "Listening..." : "Ask anything, or use the mic..."}
             disabled={busy}

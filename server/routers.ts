@@ -68,6 +68,19 @@ import {
   workforceRoleDecisionInput,
 } from "./posWorkforceRpcAdapters";
 
+function assistantErrorMessage(error: AssistantProviderError) {
+  const safeMessages = {
+    AI_CONFIG_MISSING: "Manus AI is not configured on the server. Contact an administrator.",
+    AI_UNAUTHORIZED: "The Manus AI credentials were rejected. Contact an administrator.",
+    AI_RATE_LIMITED: "Manus AI is busy right now. Please try again shortly.",
+    AI_BAD_REQUEST: "The assistant request was rejected. Please shorten or rephrase it.",
+    AI_TIMEOUT: "Manus AI took too long to respond. Please try again.",
+    AI_RESPONSE_INVALID: "Manus AI returned an unusable response. Please try again.",
+    AI_UNAVAILABLE: "Manus AI is temporarily unavailable. Please try again shortly.",
+  } as const;
+  return `[${error.code}] ${safeMessages[error.code] || safeMessages.AI_UNAVAILABLE}`;
+}
+
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
 function enforceAssistantRateLimit(identity: string) {
@@ -652,16 +665,17 @@ export const appRouter = router({
         } catch (error) {
           if (error instanceof AssistantProviderError) {
             if (error.status === 429) {
-              throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "The AI provider is busy. Please try again shortly." });
+              throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: assistantErrorMessage(error) });
             }
             if (error.status === 400) {
-              throw new TRPCError({ code: "BAD_REQUEST", message: "The assistant request could not be processed. Please shorten or rephrase it." });
+              throw new TRPCError({ code: "BAD_REQUEST", message: assistantErrorMessage(error) });
             }
             if (error.status === 401 || error.status === 403 || error.status === 503) {
-              throw new TRPCError({ code: "PRECONDITION_FAILED", message: "The AI Assistant service is temporarily unavailable. Please contact an administrator." });
+              throw new TRPCError({ code: "PRECONDITION_FAILED", message: assistantErrorMessage(error) });
             }
+            throw new TRPCError({ code: "BAD_GATEWAY", message: assistantErrorMessage(error) });
           }
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The AI Assistant could not be reached. Please try again shortly." });
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "[AI_UNAVAILABLE] Manus AI is temporarily unavailable. Please try again shortly." });
         }
       }),
     requestActionApproval: protectedProcedure
