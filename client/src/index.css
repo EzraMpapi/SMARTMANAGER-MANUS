@@ -4490,6 +4490,12 @@
   color: var(--sm-ink) !important;
 }
 
+/* The landing header is sticky, so anchored sections need breathing room when
+   the browser scrolls to them. */
+.sm-public-landing section[id] {
+  scroll-margin-top: 6rem;
+}
+
 .sm-public-landing [class~="bg-[#0B1120]"],
 .sm-public-landing [class~="bg-[#131C31]"],
 .sm-public-landing [class~="bg-[#131C31]/30"],
@@ -4537,6 +4543,12 @@
 .sm-public-landing [class~="text-[#16A34A]"],
 .sm-public-landing [class~="text-[#D1FAE5]"] {
   color: var(--sm-brand) !important;
+}
+
+/* Passkey actions sit on a translucent brand tint, so keep their label light
+   instead of reusing the brand green. */
+.sm-public-landing .sm-public-passkey-action {
+  color: #D1FAE5 !important;
 }
 
 .sm-public-landing [class~="border-white/5"],

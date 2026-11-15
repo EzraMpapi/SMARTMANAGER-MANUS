@@ -24,8 +24,11 @@ import {
   Stethoscope,
   Landmark,
   PlayCircle,
+  Menu,
+  X,
+  ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { AnimatedGoldMesh } from "../components/AnimatedGoldMesh";
@@ -74,6 +77,55 @@ export default function Home() {
   const [passkeyPending, setPasskeyPending] = useState(false);
   const [passkeyError, setPasskeyError] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState("");
+
+  const navLinks = [
+    { id: "capabilities", href: "#capabilities", label: t("capabilities") },
+    { id: "workflow", href: "#workflow", label: "How it works" },
+    { id: "industries", href: "#industries", label: "Industries" },
+    { id: "pricing", href: "#pricing", label: "Plans" },
+    { id: "why-smart-manager", href: "#why-smart-manager", label: t("whyUs") },
+    { id: "launch", href: "#launch", label: t("launch") },
+  ];
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileNavOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+    const sections = navLinks
+      .map((link) => document.getElementById(link.id))
+      .filter((section): section is HTMLElement => Boolean(section));
+    if (!sections.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) setActiveSection(visible.target.id);
+      },
+      { rootMargin: "-88px 0px -55% 0px", threshold: [0.05, 0.25, 0.5] }
+    );
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+    // The anchors are static for the lifetime of the page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function signInWithPublicPasskey() {
     if (!PUBLIC_SUPABASE_URL || !PUBLIC_SUPABASE_ANON_KEY) {
@@ -94,52 +146,104 @@ export default function Home() {
   }
 
   return (
-    <div className="sm-public-landing min-h-screen overflow-x-hidden bg-[var(--sm-canvas)] text-[var(--sm-ink)]">
+    <div className="sm-public-landing min-h-screen overflow-x-clip bg-[var(--sm-canvas)] text-[var(--sm-ink)]">
       {/* Navigation */}
-      <header className="sm-public-header relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10">
-        <Link href="/" className="flex items-center" aria-label="Smart Manager home"><BrandLogo variant="compact" priority className="h-12 w-12 shadow-lg sm:h-14 sm:w-14" /></Link>
-        <div className="flex items-center gap-4">
-          <nav className="sm-public-nav hidden items-center gap-8 text-[13px] font-medium text-[#94A3B8] md:flex" aria-label="Main navigation">
-            <a href="#capabilities" className="transition-colors hover:text-[#C9A96E]">{t("capabilities")}</a>
-            <a href="#workflow" className="transition-colors hover:text-[#C9A96E]">How it works</a>
-            <a href="#industries" className="transition-colors hover:text-[#C9A96E]">Industries</a>
-            <a href="#pricing" className="transition-colors hover:text-[#C9A96E]">Plans</a>
-            <a href="#why-smart-manager" className="transition-colors hover:text-[#C9A96E]">{t("whyUs")}</a>
-            <a href="#launch" className="transition-colors hover:text-[#C9A96E]">{t("launch")}</a>
-            <button type="button" onClick={() => setFeedbackOpen(true)} className="transition-colors hover:text-[#C9A96E]">Feedback</button>
+      <header className={`sm-public-header sticky top-0 z-40 w-full border-b backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-300 ${scrolled ? "border-white/10 bg-[#0B1120]/90 shadow-[0_24px_48px_-32px_rgba(2,6,23,0.95)]" : "border-white/5 bg-[#0B1120]/55"}`}>
+        <div className="mx-auto grid h-[72px] w-full max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-3 px-5 sm:px-8 lg:px-10">
+          <Link href="/" className="group flex shrink-0 items-center gap-3" aria-label="Smart Manager home">
+            <BrandLogo variant="compact" priority className="h-10 w-10 rounded-[14px] shadow-[0_12px_28px_-12px_rgba(22,163,74,0.85)] ring-1 ring-white/10 transition-transform duration-300 group-hover:scale-[1.04]" />
+            <span className="hidden flex-col leading-none sm:flex">
+              <span className="text-[15px] font-extrabold tracking-[-0.01em] text-white">SMART <span className="text-[#C9A96E]">MANAGER</span></span>
+              <span className="mt-1.5 text-[9.5px] font-semibold uppercase tracking-[0.24em] text-[#7C8AA5]">{t("brandSubtitle")}</span>
+            </span>
+          </Link>
+
+          <nav className="sm-public-nav hidden items-center gap-0.5 justify-self-center rounded-full border border-white/10 bg-white/[0.04] p-1 lg:flex" aria-label="Main navigation">
+            {navLinks.map((link) => (
+              <a
+                key={link.id}
+                href={link.href}
+                aria-current={activeSection === link.id ? "true" : undefined}
+                className={`whitespace-nowrap rounded-full px-3 py-2 text-[12px] font-semibold transition-colors duration-200 ${activeSection === link.id ? "bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]" : "text-[#94A3B8] hover:bg-white/5 hover:text-white"}`}
+              >
+                {link.label}
+              </a>
+            ))}
           </nav>
-          
-          <div className="sm-public-control-group flex items-center gap-2 border-l border-white/10 pl-4">
+
+          <div className="sm-public-control-group flex items-center justify-self-end gap-2">
             <button
               type="button"
               onClick={toggleTheme}
-              className="sm-public-icon-button grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10"
+              className="sm-public-icon-button hidden h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-white transition-colors hover:border-white/20 hover:bg-white/10 sm:grid"
               title="Toggle theme"
             >
               {theme === "dark" ? <Sun size={15} className="text-[#C9A96E]" /> : <Moon size={15} className="text-[#C9A96E]" />}
             </button>
             <label
-              className="sm-public-language-control sm-language-control inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-white/10"
+              className="sm-public-language-control sm-language-control relative inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 text-[11.5px] font-bold text-white transition-colors hover:border-white/20 hover:bg-white/10 focus-within:ring-2 focus-within:ring-[#C9A96E]/40"
               title={t("switchLanguage")}
             >
-              <Globe size={14} className="text-[#16A34A]" />
+              <Globe size={13} className="text-[#16A34A]" />
               <span className="sm-language-code" aria-hidden="true">{lang.toUpperCase()}</span>
-              <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value as typeof lang)} className="sm-language-select max-w-[92px] appearance-none bg-transparent outline-none">{languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}</select>
+              <ChevronDown size={12} className="text-[#64748B]" aria-hidden="true" />
+              <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value as typeof lang)} className="sm-language-select absolute inset-0 h-full w-full cursor-pointer appearance-none rounded-full bg-transparent opacity-0 outline-none">{languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}</select>
             </label>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setFeedbackOpen(true)} className="sm-public-secondary-action inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-[12px] font-bold text-white transition-all hover:bg-white/10 active:scale-[0.97]" aria-label="Open feedback form">
-              <MessageSquarePlus size={15} /><span className="hidden lg:inline">Feedback</span>
+            <span className="mx-0.5 hidden h-6 w-px bg-white/10 sm:block" aria-hidden="true" />
+
+            <button type="button" onClick={() => setFeedbackOpen(true)} className="sm-public-secondary-action hidden h-9 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 text-[12px] font-bold text-white transition-all hover:border-white/20 hover:bg-white/10 active:scale-[0.97] xl:inline-flex" aria-label="Open feedback form">
+              <MessageSquarePlus size={15} /><span className="hidden 2xl:inline">Feedback</span>
             </button>
-            <button type="button" onClick={signInWithPublicPasskey} disabled={passkeyPending} aria-describedby={passkeyError ? "public-passkey-status" : undefined} className="sm-public-passkey-action inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#16A34A]/35 bg-[#16A34A]/10 px-3 text-[12px] font-bold text-[#D1FAE5] transition-all hover:bg-[#16A34A]/20 active:scale-[0.97] disabled:cursor-wait disabled:opacity-70" aria-label="Sign in with a passkey">
-              <Fingerprint size={15} /><span className="hidden sm:inline">{passkeyPending ? "Opening…" : "Passkey"}</span>
+            <button type="button" onClick={signInWithPublicPasskey} disabled={passkeyPending} aria-describedby={passkeyError ? "public-passkey-status" : undefined} className="sm-public-passkey-action hidden h-9 items-center justify-center gap-2 rounded-full border border-[#16A34A]/35 bg-[#16A34A]/10 px-3 text-[12px] font-bold text-[#D1FAE5] transition-all hover:border-[#16A34A]/60 hover:bg-[#16A34A]/20 active:scale-[0.97] disabled:cursor-wait disabled:opacity-70 md:inline-flex" aria-label="Sign in with a passkey">
+              <Fingerprint size={15} /><span>{passkeyPending ? "Opening…" : "Passkey"}</span>
             </button>
-            <Link href="/app" className="sm-public-primary-action inline-flex items-center gap-2 rounded-lg bg-[#C9A96E] px-5 py-2.5 text-[13px] font-bold text-[#0B1120] shadow-lg transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
+            <Link href="/app" className="sm-public-primary-action inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full bg-[#C9A96E] px-4 text-[12.5px] font-bold text-[#0B1120] shadow-[0_14px_30px_-16px_rgba(201,169,110,0.95)] transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97] sm:px-5">
               {t("launchApp")} <ArrowRight size={14} />
             </Link>
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen((open) => !open)}
+              aria-expanded={mobileNavOpen}
+              aria-controls="public-mobile-nav"
+              className="sm-public-icon-button grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10 lg:hidden"
+              aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"}
+            >
+              {mobileNavOpen ? <X size={17} /> : <Menu size={17} />}
+            </button>
           </div>
         </div>
+
+        {mobileNavOpen ? (
+          <div id="public-mobile-nav" className="border-t border-white/10 bg-[#0B1120]/97 px-5 pb-6 pt-3 shadow-[0_30px_60px_-30px_rgba(2,6,23,0.9)] backdrop-blur-2xl sm:px-8 lg:hidden">
+            <nav className="flex flex-col" aria-label="Mobile navigation">
+              {navLinks.map((link) => (
+                <a
+                  key={link.id}
+                  href={link.href}
+                  onClick={() => setMobileNavOpen(false)}
+                  aria-current={activeSection === link.id ? "true" : undefined}
+                  className={`flex items-center justify-between border-b border-white/5 py-3 text-[14px] font-semibold transition-colors ${activeSection === link.id ? "text-[#C9A96E]" : "text-slate-200 hover:text-white"}`}
+                >
+                  {link.label}
+                  <ChevronRight size={15} className="text-[#475569]" />
+                </a>
+              ))}
+            </nav>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+              <button type="button" onClick={() => { setMobileNavOpen(false); signInWithPublicPasskey(); }} disabled={passkeyPending} className="sm-public-passkey-action inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[#16A34A]/35 bg-[#16A34A]/10 px-4 text-[13px] font-bold text-[#D1FAE5] transition-all hover:bg-[#16A34A]/20 active:scale-[0.98] disabled:cursor-wait disabled:opacity-70">
+                <Fingerprint size={16} /> {passkeyPending ? "Opening…" : "Sign in with a passkey"}
+              </button>
+              <button type="button" onClick={() => { setMobileNavOpen(false); setFeedbackOpen(true); }} className="sm-public-secondary-action inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 text-[13px] font-bold text-white transition-all hover:bg-white/10 active:scale-[0.98]">
+                <MessageSquarePlus size={16} /> Feedback
+              </button>
+              <button type="button" onClick={toggleTheme} className="sm-public-secondary-action inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 text-[13px] font-bold text-white transition-all hover:bg-white/10 active:scale-[0.98]">
+                {theme === "dark" ? <Sun size={16} className="text-[#C9A96E]" /> : <Moon size={16} className="text-[#C9A96E]" />}
+                {theme === "dark" ? "Light mode" : "Dark mode"}
+              </button>
+            </div>
+          </div>
+        ) : null}
       </header>
 
       <main>
