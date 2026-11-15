@@ -10,4 +10,11 @@ describe("global command palette keyboard behavior", () => {
     expect(palette).toContain('else if (e.key === "Enter" && results[selectedIndex])');
     expect(palette).toContain(">Esc</kbd>");
   });
+
+  it("uses the live palette state and exposes the keyboard shortcut accessibly", () => {
+    expect(source).not.toContain("setCmdOpen");
+    expect(source).toContain('aria-keyshortcuts="Control+K Meta+K"');
+    expect(source).toContain("const paletteTriggerRef = useRef(null)");
+    expect(source).toContain("if (!paletteOpen) paletteTriggerRef.current?.focus()");
+  });
 });

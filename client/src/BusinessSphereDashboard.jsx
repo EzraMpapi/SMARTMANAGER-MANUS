@@ -48873,16 +48873,6 @@ function SmartManager() {
     setIdleSecondsRemaining(0);
   }
   const [active, setActive] = useState("dashboard");
-  // CmdK handled by paletteOpen state (see topbar)
-
-  // Global ⌘K / Ctrl+K — open command palette from anywhere
-  useEffect(() => {
-    function onKey(e) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setCmdOpen((v) => !v); }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const [isDesktopNavigation, setIsDesktopNavigation] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const sidebarHiddenFromAssistiveTech = !isDesktopNavigation && !sidebarOpen;
@@ -49439,6 +49429,7 @@ function SmartManager() {
   // most SME-focused competitors bother with. Listens at the document
   // level so it works regardless of which module currently has focus.
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const paletteTriggerRef = useRef(null);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [createMenuMounted, setCreateMenuMounted] = useState(false);
 
@@ -49461,6 +49452,9 @@ function SmartManager() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
+  useEffect(() => {
+    if (!paletteOpen) paletteTriggerRef.current?.focus();
+  }, [paletteOpen]);
 
   // Real, per-device dark mode preference for the App Shell — the same
   // localStorage pattern already proven for App Lock, since visual theme
@@ -49769,9 +49763,11 @@ function SmartManager() {
            <div className="dashboard-topbar-actions dashboard-topbar-actions-polished flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
              <button
                            type="button"
+                           ref={paletteTriggerRef}
                            onClick={() => setPaletteOpen(true)}
                            className="dashboard-topbar-search dashboard-topbar-search-collapsed dashboard-topbar-search-hero group relative inline-flex h-10 w-10 min-w-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-transparent hover:text-slate-950 active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 focus-visible:ring-offset-2"
                            aria-label="Search everything"
+                           aria-keyshortcuts="Control+K Meta+K"
                            title="Search everything"
                            aria-expanded={paletteOpen}
                          >
