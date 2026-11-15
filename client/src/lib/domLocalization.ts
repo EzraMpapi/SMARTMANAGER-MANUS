@@ -5660,115 +5660,243 @@ const PHRASES: Record<string, Phrase> = {
   Admin: { sw: "Utawala", fr: "Admin", es: "Admin", pt: "Admin", zh: "管理", ar: "الإدارة", de: "Admin", hi: "एडमिन", ja: "管理" },
 };
 
+export type PhraseDictionary = Record<string, string>;
+
 const originals = new WeakMap<Text, string>();
-let observer: MutationObserver | null = null;
+const observerState = { current: null as MutationObserver | null };
 let activeLanguage: Lang = "en";
+const runtimeDictionaries = new Map<Lang, PhraseDictionary>();
+// Every string (source or already-rendered translation) the bridge recognises.
+// This lets a language switch re-render text that is currently shown in a
+// previously selected language instead of leaving it stranded.
+const variantIndex = new Map<string, Set<string>>();
+let normalizedIndex = new Map<string, string>();
+const documentTitleOriginal = { value: "" };
 
-function canonicalValue(value: string): string {
-  const trimmed = value.trim();
-  if (PHRASES[trimmed]) return trimmed;
-  for (const [source, phrase] of Object.entries(PHRASES)) {
-    if (Object.values(phrase).some(translated => translated === trimmed))
-      return source;
+const TRANSLATED_ATTRIBUTES = ["aria-label", "title", "placeholder", "alt"];
+
+function normalizeKey(value: string): string {
+  return value
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s.:!?…;]+$/g, "")
+    .trim();
+}
+
+function registerVariants(source: string, values: Array<string | undefined>) {
+  let set = variantIndex.get(source);
+  if (!set) {
+    set = new Set<string>();
+    variantIndex.set(source, set);
   }
-  return value;
+  for (const value of values) if (value) set.add(value.trim());
 }
 
-function translateValue(value: string): string {
-  const leading = value.match(/^\s*/)?.[0] || "";
-  const trailing = value.match(/\s*$/)?.[0] || "";
-  const canonical = canonicalValue(value);
-  const phrase = PHRASES[canonical.trim()];
-  return `${leading}${phrase?.[activeLanguage] || canonical}${trailing}`;
+function rebuildIndex() {
+  normalizedIndex = new Map();
+  for (const [source, phrase] of Object.entries(PHRASES)) {
+    const key = normalizeKey(source);
+    if (!normalizedIndex.has(key)) normalizedIndex.set(key, source);
+    registerVariants(source, [source, ...Object.values(phrase)]);
+  }
+  for (const dictionary of Array.from(runtimeDictionaries.values())) {
+    for (const [source, translated] of Object.entries(dictionary)) {
+      const key = normalizeKey(source);
+      if (!normalizedIndex.has(key)) normalizedIndex.set(key, source);
+      registerVariants(source, [source, translated]);
+    }
+  }
 }
 
-function renderPhrase(source: string, template: string): string {
+function translateSource(source: string): string | null {
+  const curated = PHRASES[source]?.[activeLanguage];
+  if (curated) return curated;
+  const runtime = runtimeDictionaries.get(activeLanguage);
+  if (runtime?.[source]) return runtime[source];
+  return null;
+}
+
+function canonicalSource(value: string): string | null {
+  const trimmed = value.replace(/\s+/g, " ").trim();
+  if (!trimmed) return null;
+  if (PHRASES[trimmed] || runtimeDictionaries.get(activeLanguage)?.[trimmed])
+    return trimmed;
+  const normalized = normalizedIndex.get(normalizeKey(trimmed));
+  if (normalized) return normalized;
+  // Interpolated counters such as "12 Items" keep the number and localise the
+  // words that follow it.
+  const numeric = trimmed.match(/^([\d.,]+\s*[%+]?\s+)(\S.*)$/);
+  if (numeric) return canonicalSource(numeric[2]);
+  return null;
+}
+
+function stripNumericPrefix(value: string): string {
+  return value.replace(/^[\d.,]+\s*[%+]?\s+/, "");
+}
+
+function isKnownRendered(source: string, value: string): boolean {
+  const trimmed = value.trim();
+  const withoutPrefix = stripNumericPrefix(trimmed);
+  const sourceCore = source.trim();
+  if (trimmed === sourceCore || withoutPrefix === sourceCore) return true;
+  const variants = variantIndex.get(source);
+  if (!variants) return false;
+  return variants.has(trimmed) || variants.has(withoutPrefix);
+}
+
+function renderValue(source: string, template: string): string {
+  const translated = translateSource(source);
   const leading = template.match(/^\s*/)?.[0] || "";
   const trailing = template.match(/\s*$/)?.[0] || "";
-  return `${leading}${PHRASES[source]?.[activeLanguage] || source}${trailing}`;
-}
-
-function isRenderedFrom(source: string, rendered: string): boolean {
-  const phrase = PHRASES[source];
-  if (!phrase) return false;
-  const trimmed = rendered.trim();
-  return trimmed === source || Object.values(phrase).includes(trimmed);
+  const core = template.trim();
+  let prefix = "";
+  if (core !== source) {
+    const numeric = core.match(/^([\d.,]+\s*[%+]?\s+)/);
+    if (numeric && !source.startsWith(numeric[1])) prefix = numeric[1];
+  }
+  // English (or a source with no translation in the active language) restores
+  // the canonical source text, which is how selecting English reverts a
+  // previously translated page.
+  if (!translated) {
+    if (core === source) return template;
+    return `${leading}${prefix}${source}${trailing}`;
+  }
+  return `${leading}${prefix}${translated}${trailing}`;
 }
 
 function visit(root: Node) {
   if (root.nodeType === Node.TEXT_NODE) {
     const text = root as Text;
     const current = text.nodeValue || "";
-    const trimmed = current.trim();
+    if (!current.trim()) return;
     const cached = originals.get(text);
     // Only text this bridge knows as a phrase is ours to translate. Everything
     // else belongs to React and must be left untouched, otherwise in-place
     // updates are reverted to whatever value was first seen here.
-    const source = cached && isRenderedFrom(cached, current)
+    const source = cached && isKnownRendered(cached, current)
       ? cached
-      : PHRASES[trimmed]
-        ? trimmed
-        : null;
+      : canonicalSource(current);
     if (!source) {
       if (cached) originals.delete(text);
       return;
     }
     originals.set(text, source);
-    const translated = renderPhrase(source, current);
+    const translated = renderValue(source, current);
     if (current !== translated) text.nodeValue = translated;
     return;
   }
   if (root.nodeType !== Node.ELEMENT_NODE) return;
   const element = root as HTMLElement;
-  for (const attribute of ["aria-label", "title", "placeholder"]) {
+  for (const attribute of TRANSLATED_ATTRIBUTES) {
     const originalKey = `data-i18n-original-${attribute}`;
     const current = element.getAttribute(attribute);
     const original = element.getAttribute(originalKey) || current;
-    if (original && PHRASES[canonicalValue(original).trim()]) {
-      if (!element.hasAttribute(originalKey))
-        element.setAttribute(originalKey, original);
-      element.setAttribute(attribute, translateValue(original));
-    }
+    if (!original) continue;
+    const source = canonicalSource(original);
+    if (!source) continue;
+    if (!element.hasAttribute(originalKey))
+      element.setAttribute(originalKey, original);
+    const translated = renderValue(source, original);
+    if (translated !== current) element.setAttribute(attribute, translated);
   }
   // Form controls have no user-facing text children, but their accessible
   // attributes above still need localization. Never touch input values.
+  // <option> text lives in child text nodes, so it is deliberately traversed.
   if (
     ["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "INPUT"].includes(
       element.tagName
     )
   )
     return;
+  // Language pickers must always show each language in its own native form.
+  if (
+    element.hasAttribute("data-i18n-skip") ||
+    element.getAttribute("translate") === "no" ||
+    (element.tagName === "SELECT" &&
+      typeof element.className === "string" &&
+      element.className.includes("language-select"))
+  )
+    return;
   for (const child of Array.from(root.childNodes)) visit(child);
 }
 
-export function installDocumentLocalization(language: Lang) {
-  if (typeof document === "undefined") return () => undefined;
-  activeLanguage = language;
-  observer?.disconnect();
-  visit(document.body);
-  observer = new MutationObserver(records => {
-    observer?.disconnect();
+function localizeDocumentTitle() {
+  if (typeof document === "undefined") return;
+  const current = document.title;
+  if (!current) return;
+  const cached = documentTitleOriginal.value;
+  const base = cached && isKnownRendered(cached, current) ? cached : current;
+  const source = canonicalSource(base);
+  if (!source) return;
+  documentTitleOriginal.value = source;
+  const translated = renderValue(source, base);
+  if (translated !== current) document.title = translated;
+}
+
+function observeDocument() {
+  observerState.current?.disconnect();
+  observerState.current = new MutationObserver(records => {
+    observerState.current?.disconnect();
     for (const record of records) {
       if (record.type === "characterData") visit(record.target);
       record.addedNodes.forEach(visit);
     }
-    observer?.observe(document.body, {
+    observerState.current?.observe(document.body, {
       childList: true,
       subtree: true,
       characterData: true,
     });
   });
-  observer.observe(document.body, {
+  observerState.current.observe(document.body, {
     childList: true,
     subtree: true,
     characterData: true,
   });
-  return () => observer?.disconnect();
 }
 
-export function setDocumentLocalization(language: Lang) {
+export function installDocumentLocalization(
+  language: Lang,
+  dictionary?: PhraseDictionary
+) {
+  if (typeof document === "undefined") return () => undefined;
+  if (dictionary) runtimeDictionaries.set(language, dictionary);
   activeLanguage = language;
-  if (typeof document !== "undefined" && document.body) visit(document.body);
+  rebuildIndex();
+  visit(document.body);
+  localizeDocumentTitle();
+  observeDocument();
+  return () => observerState.current?.disconnect();
+}
+
+export function setDocumentLocalization(
+  language: Lang,
+  dictionary?: PhraseDictionary
+) {
+  if (dictionary) runtimeDictionaries.set(language, dictionary);
+  activeLanguage = language;
+  rebuildIndex();
+  if (typeof document !== "undefined" && document.body) {
+    visit(document.body);
+    localizeDocumentTitle();
+  }
+}
+
+/**
+ * Registers a lazily loaded phrase dictionary (e.g. the generated
+ * per-language bundles) and re-applies the active language immediately.
+ */
+export function registerPhraseDictionary(
+  language: Lang,
+  dictionary: PhraseDictionary
+) {
+  runtimeDictionaries.set(language, dictionary);
+  if (language !== activeLanguage) return;
+  rebuildIndex();
+  if (typeof document !== "undefined" && document.body) {
+    visit(document.body);
+    localizeDocumentTitle();
+  }
 }
 
 export const localizedPhraseCount = Object.keys(PHRASES).length;
