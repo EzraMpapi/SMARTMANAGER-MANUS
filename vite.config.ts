@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type HtmlTagDescriptor, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+import { visualizer } from "rollup-plugin-visualizer";
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
@@ -185,7 +186,25 @@ function vitePluginDeploymentVersion(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginDeploymentVersion()];
+const plugins = [
+  react(),
+  tailwindcss(),
+  jsxLocPlugin(),
+  vitePluginManusRuntime(),
+  vitePluginManusDebugCollector(),
+  vitePluginDeploymentVersion(),
+  ...(process.env.ANALYZE === "true"
+    ? [
+        visualizer({
+          filename: path.resolve(PROJECT_ROOT, "dist/bundle-stats.html"),
+          template: "treemap",
+          open: false,
+          gzipSize: true,
+          brotliSize: true,
+        }),
+      ]
+    : []),
+];
 
 export default defineConfig({
   plugins,

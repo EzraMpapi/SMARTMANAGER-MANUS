@@ -64,6 +64,9 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: NODE_OPTIONS="--max-old-space-size=4096" pnpm build
 
+      - name: Check JavaScript bundle budgets
+        run: pnpm run check:bundle
+
       - name: Notify Slack on Success
         if: success() && env.SLACK_WEBHOOK_URL != ''
         env:
