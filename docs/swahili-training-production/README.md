@@ -49,6 +49,7 @@ This package contains the versioned, evidence-based pre-production work for the 
 | [`animation-assembly-foundation-ch01-15.md`](./animation-assembly-foundation-ch01-15.md) | Reviewable 01–15 animation assembly plan, chapter gates, subtitle/audio ledger, and master-video boundary. |
 | [`animation-asset-ledger.md`](./animation-asset-ledger.md) | External-only media provenance and permitted-use ledger, including the short fictional animation pilot. |
 | [`animation-pilot-validation.md`](./animation-pilot-validation.md) | Technical validation and editorial review requirements for the animation pilot. |
+| [`animation-continuation-ch16-18.md`](./animation-continuation-ch16-18.md) | Deterministic, text-free Chapters 16–18 continuation note, technical QA, provenance, and editorial-use boundary. |
 
 ## External production media
 
@@ -64,6 +65,7 @@ Generated media intentionally remains outside the Git repository to avoid bloati
 | Finance workflow concept | `chapter-01/finance-workflow-concept.png` | Generated, reviewed, 2560×1440 PNG; conceptual cutaway only |
 | Controlled Dashboard/Finance/Inventory/Sales frames | `kmkm-redacted/*-training-redacted.png` | Generated externally, final privacy review passed; module-shell orientation only |
 | Chapters 01–15 animation assembly pilot | `ch01-15-animation-assembly-pilot.mp4` | Generated externally; technically verified 10.005 s H.264 1280×720, fictional/text-free review artifact only; not a master-video segment |
+| Chapters 16–18 animation continuation | `ch16-18/finance-accounting-payroll-continuation.mp4` | Deterministic external render; technically verified 5.000 s H.264 1280×720 at 24 fps, no audio; neutral review plate only |
 
 ## Assembly rule
 
@@ -71,4 +73,4 @@ No master video is assembled until every chapter has a privacy-screened UI captu
 
 ## Next production batch
 
-The next safe batch is People/HR and Finance in the master course sequence. It must create any new UI evidence only after it passes the capture-readiness gate. Any new UI recording must come from an approved disposable/demo session and must not contain production records, personal data, credentials, tokens, or dynamic counts. Any external-service or configuration-dependent capability must retain its qualifier. The 01–15 animation pilot remains a short review artifact; full master assembly waits for all per-chapter audio, VTT, UI, and QA gates.
+The next safe batch is People/HR and Finance in the master course sequence. It must create any new UI evidence only after it passes the capture-readiness gate. Any new UI recording must come from an approved disposable/demo session and must not contain production records, personal data, credentials, tokens, or dynamic counts. Any external-service or configuration-dependent capability must retain its qualifier. The 01–15 animation pilot and the 16–18 continuation remain short review artifacts; full master assembly waits for all per-chapter audio, VTT, UI, and QA gates.

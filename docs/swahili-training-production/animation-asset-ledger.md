@@ -10,6 +10,8 @@ All media files in this ledger remain outside the Git repository. The ledger cap
 | Finance concept plate | `/home/ubuntu/smartmanager-training-assets/chapter-01/finance-workflow-concept.png` | Later Finance explanatory cutaway | Available | Ledger, payment, fiscalization, or result proof. |
 | Approved redacted orientation frames | `/home/ubuntu/smartmanager-training-assets/kmkm-redacted/*-training-redacted.png` | Dashboard/Finance/Inventory/Sales navigation context | Available | Any record, tenant, role, action, or outcome proof. |
 | Ch01–15 animation assembly pilot | `/home/ubuntu/smartmanager-training-assets/ch01-15-animation-assembly-pilot.mp4` | Motion-style review | Generated; MP4 technically verified: 10.005 s, H.264 1280×720 at 24 fps, 2,453,108 bytes | Master video claim, product UI claim, voiceover source, workflow evidence. |
+| Ch16–18 continuation reference | `/home/ubuntu/smartmanager-training-assets/ch16-18/finance-accounting-payroll-continuation-reference.png` | Abstract continuity reference for Finance, Accounting, and Payroll | Deterministic fictional frame; no text, UI, logo, or record | Product/UI claim, employee or financial data, workflow evidence. |
+| Ch16–18 continuation MP4 | `/home/ubuntu/smartmanager-training-assets/ch16-18/finance-accounting-payroll-continuation.mp4` | External editorial transition/review plate | Deterministic render; MP4 verified: 5.000 s, H.264 1280×720 at 24 fps, no audio | Chapter master, complete sequence, narration source, product/workflow evidence. See `animation-continuation-ch16-18.md`. |
 
 ## Media handling rule
 

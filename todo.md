@@ -636,10 +636,10 @@
 - [x] Verify the final `main` branch state and record the completed training-package synchronization.
 
 ## Chapters 16–18 Animation Continuation Pilot
-- [ ] Review the existing fictional animation pilot, Finance concept visual, and Chapter 16–18 privacy boundaries before extending the motion package.
-- [ ] Generate a text-free fictional animation continuation for Financial Management, Accounting, and Payroll using only conceptual props and characters.
-- [ ] Verify the continuation media integrity, record its external-only use and editorial QA boundary, and confirm it is not a complete chapter sequence or master video.
-- [ ] Run the focused documentation contract and synchronize the reviewed continuation package to GitHub main through the protected-branch workflow.
+- [x] Review the existing fictional animation pilot, Finance concept visual, and Chapter 16–18 privacy boundaries before extending the motion package.
+- [x] Generate a text-free fictional animation continuation for Financial Management, Accounting, and Payroll using only conceptual props and characters. The AI attempt did not start because media credits were unavailable; a deterministic FFmpeg continuation was rendered instead.
+- [x] Verify the continuation media integrity, record its external-only use and editorial QA boundary, and confirm it is not a complete chapter sequence or master video.
+- [x] Run the focused documentation contract and synchronize the reviewed continuation package to GitHub main through the protected-branch workflow.
 
 ## Reference-Directed Responsive Dashboard Rebuild
 - [x] Inspect current dashboard routes, layout, live-data contracts, navigation, reusable UI components, and existing responsive tests without modifying production data.
