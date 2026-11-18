@@ -13034,7 +13034,55 @@ function printBarcodeLabels(items) {
   win.document.write(`<html><head><title>Inventory barcode labels</title><style>@page{margin:8mm}body{font-family:Arial;margin:0}.sheet{display:grid;grid-template-columns:repeat(3,1fr);gap:8mm}.label{min-height:42mm;border:1px dashed #9CA3AF;padding:5mm;text-align:center;break-inside:avoid}.name{font-size:11px;font-weight:700;min-height:14px}.image{width:28px;height:28px;object-fit:cover;border-radius:4px;margin:4px auto}.bars{height:52px;display:flex;align-items:flex-end;justify-content:center;margin-top:5px}.code{font-family:monospace;font-size:10px;letter-spacing:2px;margin-top:3px}.sku{font-size:9px;color:#6B7280;margin-top:2px}</style></head><body><div class="sheet">${labels}</div><script>window.onload=()=>window.print()</script></body></html>`); win.document.close();
 }
 
-function Inventory({ inventory, suppliersHook }) {
+function OwnerCrossWarehouseSummary({ session, currentUser }) {
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const role = String(currentUser?.role || session?.role || "").toLowerCase();
+  const isOwner = role.includes("owner") || role === "ceo" || role.includes("super administrator") || role.includes("platform administrator");
+  if (!isOwner || !IS_CONFIGURED || !session?.accessToken || session?.demo) return null;
+
+  async function loadReport() {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await callRpc("warehouse_cross_warehouse_summary", {}, session.accessToken);
+      setReport(result || null);
+    } catch (reportError) {
+      setError(reportError?.message || "The cross-warehouse report could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const totals = report?.totals || {};
+  const warehouses = Array.isArray(report?.warehouses) ? report.warehouses : [];
+  const number = (value) => Number(value || 0).toLocaleString();
+  const moneyValue = (value) => `TZS ${Math.round(Number(value || 0)).toLocaleString()}`;
+  return (
+    <section className="rounded-xl border border-emerald-100 bg-emerald-50/45 p-4" aria-label="Cross-warehouse stock summary">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-2.5">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-emerald-100 text-emerald-700"><Building2 size={17} aria-hidden="true" /></div>
+          <div><h2 className="text-[13px] font-bold text-slate-800">All warehouses summary</h2><p className="mt-0.5 text-[11px] leading-4 text-slate-500">Owner-only aggregate report. Your normal inventory view remains scoped to the active warehouse.</p></div>
+        </div>
+        <button type="button" onClick={loadReport} disabled={loading} className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-emerald-800 disabled:cursor-wait disabled:opacity-60">
+          {loading ? <LoaderCircle size={13} className="animate-spin" /> : <BarChart3 size={13} />} {loading ? "Loading…" : report ? "Refresh report" : "View summary"}
+        </button>
+      </div>
+      {error && <p role="alert" className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-700">{error}</p>}
+      {report && !error && <>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[['Warehouses', number(warehouses.length)], ['SKUs', number(totals.sku_count)], ['Quantity', number(totals.quantity)], ['Stock value', moneyValue(totals.stock_value)]].map(([label, value]) => <div key={label} className="rounded-lg border border-emerald-100 bg-white/80 p-2.5"><p className="text-[10px] uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 text-[14px] font-bold text-slate-800">{value}</p></div>)}
+        </div>
+        <div className="mt-3 overflow-x-auto rounded-lg border border-emerald-100 bg-white"><table className="w-full min-w-[560px] text-left text-[11px]"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400"><tr><th className="px-3 py-2">Warehouse</th><th className="px-3 py-2 text-right">SKUs</th><th className="px-3 py-2 text-right">Quantity</th><th className="px-3 py-2 text-right">Stock value</th><th className="px-3 py-2 text-right">Low stock</th></tr></thead><tbody className="divide-y divide-slate-100">{warehouses.map((warehouse) => <tr key={warehouse.warehouse_id}><td className="px-3 py-2 font-semibold text-slate-700">{warehouse.warehouse_name || "Unnamed warehouse"}</td><td className="px-3 py-2 text-right text-slate-600">{number(warehouse.sku_count)}</td><td className="px-3 py-2 text-right text-slate-600">{number(warehouse.quantity)}</td><td className="px-3 py-2 text-right text-slate-600">{moneyValue(warehouse.stock_value)}</td><td className={`px-3 py-2 text-right font-semibold ${Number(warehouse.low_stock_count) > 0 ? "text-amber-700" : "text-emerald-700"}`}>{number(warehouse.low_stock_count)}</td></tr>)}</tbody></table></div>
+        <p className="mt-2 text-[10px] text-slate-400">Generated {report.generatedAt ? new Date(report.generatedAt).toLocaleString() : "just now"}. No individual stock rows are exposed by this report.</p>
+      </>}
+    </section>
+  );
+}
+
+function Inventory({ inventory, suppliersHook, session, currentUser }) {
   const [tab, setTab] = useState("stock");
   const [warehouse, setWarehouse] = useState("all");
   const [category, setCategory] = useState("all");
@@ -13282,6 +13330,7 @@ function Inventory({ inventory, suppliersHook }) {
           {"Could not reach Supabase — check your connection."}
         </div>
       )}
+      <OwnerCrossWarehouseSummary session={session} currentUser={currentUser} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Inventory</h1>
@@ -49955,7 +50004,7 @@ function SmartManager() {
           {active === "sales" && <Sales invoices={invoices} inventory={inventory} subscriptionsHook={subscriptions} quotationsHook={quotations} crm={crm} currentUser={currentUser} intent={intent} clearIntent={clearIntent} />}
           {active === "billing" && canManageBilling && <SubscriptionBillingWorkspace accessToken={session?.accessToken || getStoredAccessToken()} company={company} onBack={() => go("dashboard")} />}
           {active === "global-admin" && <GlobalAdminControlCenter />}
-          {active === "inventory" && <Inventory inventory={inventory} suppliersHook={suppliers} />}
+          {active === "inventory" && <Inventory inventory={inventory} suppliersHook={suppliers} session={session} currentUser={currentUser} />}
           {active === "procurement" && <Procurement inventory={inventory} suppliersHook={suppliers} expensesHook={expenses} currentUser={currentUser} canManage={canManage} />}
           {active === "finance" && <Finance invoices={invoices} expensesHook={expenses} posTransactionsHook={posTransactions} employeesHook={employees} inventoryHook={inventory} currentUser={currentUser} intent={intent} clearIntent={clearIntent} company={company} />}
       {active === "reports" && <Reports invoices={invoices} inventory={inventory} expensesHook={expenses} company={company} schedulesHook={scheduledWorkflows} posTransactions={rowsOf(posTransactions)} onNavigate={go} currentUser={currentUser} />}
