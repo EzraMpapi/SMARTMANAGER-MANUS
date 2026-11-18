@@ -1296,6 +1296,81 @@ export async function runCompanyTableMutation(table, operation, payload, { match
   return result;
 }
 
+function WarehouseScopeSwitcher({ session, currentUser }) {
+  const [warehouses, setWarehouses] = useState([]);
+  const [activeWarehouseId, setActiveWarehouseId] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const isLive = Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo && session?.company?.id);
+  const storageKey = `smart-manager:warehouse:${session?.company?.id || "workspace"}:${currentUser?.id || session?.userId || "user"}`;
+
+  useEffect(() => {
+    if (!isLive) {
+      setWarehouses([]);
+      setActiveWarehouseId("");
+      return undefined;
+    }
+    let disposed = false;
+    (async () => {
+      try {
+        const rows = await sb("inventory_warehouses").select("id,name,status,data").order("name", { ascending: true }).run();
+        const available = (Array.isArray(rows) ? rows : []).filter((row) => !["archived", "inactive", "disabled"].includes(String(row.status || "").toLowerCase()));
+        if (disposed) return;
+        setWarehouses(available);
+        let saved = "";
+        try { saved = window.localStorage.getItem(storageKey) || ""; } catch (_error) { /* storage is optional */ }
+        const next = available.some((row) => row.id === saved) ? saved : available[0]?.id || "";
+        if (next) {
+          const result = await callRpc("warehouse_set_active", { p_warehouse_id: next }, session.accessToken);
+          if (disposed) return;
+          setActiveWarehouseId(result?.warehouseId || next);
+          try { window.localStorage.setItem(storageKey, result?.warehouseId || next); } catch (_error) { /* storage is optional */ }
+          window.dispatchEvent(new CustomEvent("smart-manager:warehouse-updated", { detail: { warehouseId: result?.warehouseId || next } }));
+        }
+      } catch (loadError) {
+        if (!disposed) setError(loadError?.message || "Warehouse context is unavailable.");
+      }
+    })();
+    return () => { disposed = true; };
+  }, [isLive, session?.accessToken, session?.company?.id, session?.userId, storageKey]);
+
+  async function switchWarehouse(event) {
+    const next = event.target.value;
+    if (!next || next === activeWarehouseId || pending) return;
+    const previous = activeWarehouseId;
+    setPending(true);
+    setError("");
+    try {
+      const result = await callRpc("warehouse_set_active", { p_warehouse_id: next }, session.accessToken);
+      const confirmedId = result?.warehouseId || next;
+      setActiveWarehouseId(confirmedId);
+      try { window.localStorage.setItem(storageKey, confirmedId); } catch (_error) { /* storage is optional */ }
+      window.dispatchEvent(new CustomEvent("smart-manager:warehouse-updated", { detail: { warehouseId: confirmedId } }));
+      notify(`Warehouse changed to ${result?.warehouseName || warehouses.find((row) => row.id === confirmedId)?.name || "selected warehouse"}.`);
+    } catch (switchError) {
+      setActiveWarehouseId(previous);
+      setError(switchError?.message || "You are not authorised to use that warehouse.");
+      notify("Warehouse switch was rejected. Your current warehouse is unchanged.", "error");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  if (!isLive || warehouses.length === 0) return null;
+  const activeName = warehouses.find((row) => row.id === activeWarehouseId)?.name || "Select warehouse";
+  return (
+    <label className="dashboard-topbar-warehouse-control inline-flex min-h-9 max-w-[170px] shrink items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-2 text-[10px] font-bold text-slate-600" title={`Active warehouse: ${activeName}`}>
+      <Building2 size={14} className="shrink-0 text-emerald-700" aria-hidden="true" />
+      <span className="sr-only">Active warehouse</span>
+      <select aria-label="Active warehouse" value={activeWarehouseId} onChange={switchWarehouse} disabled={pending} className="min-w-0 max-w-[125px] appearance-none truncate bg-transparent pr-0 outline-none disabled:opacity-60">
+        {warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name || "Unnamed warehouse"}</option>)}
+      </select>
+      <ChevronDown size={12} className="shrink-0 text-slate-400" aria-hidden="true" />
+      {error && <span className="sr-only" role="alert">{error}</span>}
+    </label>
+  );
+}
+
 function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
   // Demo mode serves seed rows instantly. Live mode starts empty and, once a
   // module has rows, keeps them visible during refreshes so navigation does
@@ -1370,15 +1445,18 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
   useEffect(() => {
     if (!isLive || typeof window === "undefined") return undefined;
     const reloadAfterSessionUpdate = () => { reload(); };
+    const reloadAfterWarehouseUpdate = () => { reload(); };
     const reloadAfterOfflineHydration = (event) => {
       if (event?.detail?.hydrated) reload();
     };
     window.addEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
+    window.addEventListener("smart-manager:warehouse-updated", reloadAfterWarehouseUpdate);
     window.addEventListener("smart-manager:offline-sync-updated", reloadAfterOfflineHydration);
     const replayAfterOnline = async () => { await replayCompanyTableOutbox(); await reload(); };
     window.addEventListener("online", replayAfterOnline);
     return () => {
       window.removeEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
+      window.removeEventListener("smart-manager:warehouse-updated", reloadAfterWarehouseUpdate);
       window.removeEventListener("smart-manager:offline-sync-updated", reloadAfterOfflineHydration);
       window.removeEventListener("online", replayAfterOnline);
     };
@@ -49805,6 +49883,7 @@ function SmartManager() {
                             </select>
                             <ChevronDown size={12} className="text-slate-400" aria-hidden="true" />
                           </label>}
+             <WarehouseScopeSwitcher session={session} currentUser={currentUser} />
              <span className="dashboard-topbar-divider dashboard-topbar-profile-divider" aria-hidden="true" />
              <div className="dashboard-topbar-profile-slot">
                             <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
