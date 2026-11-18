@@ -22,6 +22,7 @@ import {
 import { createDashboardAdditionalModules } from "./dashboardAdditionalModules.jsx";
 import { createDashboardExtractedModules } from "./dashboardExtractedModules.jsx";
 import { createDashboardStaticData } from "./dashboardStaticData.js";
+import { AI_PROMPT_TEMPLATES, AI_QUICK_ACTIONS, actionsForScopes } from "./aiPromptCatalog.js";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   BarChart, Bar, CartesianGrid, Cell,
@@ -39297,81 +39298,6 @@ const AI_PERSONAS = [
 // remain prompts (not direct mutations): the assistant gets the live scoped
 // snapshot, explains its evidence, and any proposed business action still
 // follows the existing approval workflow.
-const AI_QUICK_ACTIONS = [
-  {
-    id: "executive-brief",
-    label: "Executive brief",
-    description: "A fast health check with priorities",
-    icon: Gauge,
-    color: "#16A34A",
-    scopes: ["finance", "sales", "inventory", "hr"],
-    prompt: "Give me a concise executive briefing: current business health, three evidence-backed risks, three opportunities, and the most important actions for the next 7 days. Use the live snapshot only.",
-  },
-  {
-    id: "cash-collections",
-    label: "Cash & collections",
-    description: "Find receivables that need attention",
-    icon: WalletCards,
-    color: "#2563EB",
-    scopes: ["finance"],
-    prompt: "Review cash position and receivables. Rank the invoices or collection issues that need attention first, explain the evidence and amounts, and suggest a practical follow-up plan. Do not invent payment dates.",
-  },
-  {
-    id: "expense-watch",
-    label: "Expense watch",
-    description: "Spot unusual or avoidable spend",
-    icon: ReceiptText,
-    color: "#F59E0B",
-    scopes: ["finance"],
-    prompt: "Review the supplied expenses for unusual, concentrated, duplicate-looking, or avoidable spending patterns. Separate confirmed observations from questions to investigate and recommend three controls.",
-  },
-  {
-    id: "reorder-plan",
-    label: "Reorder plan",
-    description: "Prioritize low stock and cost",
-    icon: Package,
-    color: "#7C3AED",
-    scopes: ["inventory", "suppliers"],
-    prompt: "Build a prioritized reorder plan from the live inventory snapshot. List items below reorder level, estimated replenishment cost using supplied unit costs, urgency, and supplier lead-time considerations. Never invent stock or supplier data.",
-  },
-  {
-    id: "pipeline-coach",
-    label: "Pipeline coach",
-    description: "Choose the next best sales moves",
-    icon: TrendingUp,
-    color: "#EA580C",
-    scopes: ["sales"],
-    prompt: "Analyze the current sales pipeline by stage and value. Identify the highest-leverage opportunities, missing follow-up evidence, and draft three specific next-step messages for the most important open deals.",
-  },
-  {
-    id: "workforce-pulse",
-    label: "Workforce pulse",
-    description: "Summarize people and leave signals",
-    icon: Users,
-    color: "#0891B2",
-    scopes: ["hr"],
-    prompt: "Summarize workforce health from the supplied employee and leave data: payroll context, pending leave patterns, staffing risks, and three manager actions. Keep employee-sensitive conclusions grounded and respectful.",
-  },
-  {
-    id: "supplier-review",
-    label: "Supplier review",
-    description: "Compare lead times and risk",
-    icon: ClipboardCheck,
-    color: "#475569",
-    scopes: ["suppliers", "inventory"],
-    prompt: "Review suppliers for lead-time, availability, and purchasing risk using only the supplied data. Recommend which supplier relationships need follow-up and what evidence should be collected next.",
-  },
-  {
-    id: "90-day-outlook",
-    label: "90-day outlook",
-    description: "Turn current signals into a plan",
-    icon: CalendarCheck,
-    color: "#DB2777",
-    scopes: ["finance", "sales", "inventory"],
-    prompt: "Create a grounded 90-day outlook using the current finance, sales, and inventory snapshot. Include base-case signals, downside risks, leading indicators to monitor weekly, and a short action plan.",
-  },
-];
-
 // Tool contract exposed to the model. Deliberately scoped to shared tables
 // the assistant already reads — no tool touches data it can't see. Each
 // persona above only offers the subset relevant to its role.
@@ -39613,6 +39539,22 @@ function AIAssistant({ company, invoices, inventory, crm, expenses, employees, l
 // per-call by `persona`: which data it sees, which tools it may use, how
 // it introduces itself. Nothing here is persona-specific logic — that all
 // lives in the AI_PERSONAS config above.
+const ASSISTANT_ERROR_COPY = {
+  AI_CONFIG_MISSING: { title: "AI setup needed", message: "Manus AI is not configured on the server. Your business data is safe; contact an administrator to enable the provider.", retryable: false },
+  AI_UNAUTHORIZED: { title: "AI credentials rejected", message: "The Manus AI token was rejected. No business record was changed; contact an administrator to refresh the server credential.", retryable: false },
+  AI_RATE_LIMITED: { title: "AI is busy", message: "Manus AI is handling many requests right now. Wait a moment and try again.", retryable: true },
+  AI_BAD_REQUEST: { title: "Request needs adjustment", message: "The assistant could not process that request. Try a shorter question or remove sensitive/unnecessary detail.", retryable: false },
+  AI_TIMEOUT: { title: "AI response timed out", message: "Manus AI took too long to respond. Your draft is still in the input box and can be retried.", retryable: true },
+  AI_RESPONSE_INVALID: { title: "AI returned an incomplete response", message: "The provider returned no usable answer. Nothing was changed; try the request again.", retryable: true },
+  AI_UNAVAILABLE: { title: "AI temporarily unavailable", message: "The Manus AI service could not be reached. You can keep working without AI and try again later.", retryable: true },
+};
+
+function classifyAssistantError(error) {
+  const raw = String(error?.message || error?.data?.message || "");
+  const code = raw.match(/\[(AI_[A-Z_]+)\]/)?.[1] || "AI_UNAVAILABLE";
+  return { code, ...(ASSISTANT_ERROR_COPY[code] || ASSISTANT_ERROR_COPY.AI_UNAVAILABLE) };
+}
+
 function ChatInterface({ persona, data, onNavigate, currentUser }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -39626,7 +39568,8 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
   const speechSupported = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   const tools = AI_TOOLS_ALL.filter((t) => persona.tools.includes(t.name));
-  const quickActions = AI_QUICK_ACTIONS.filter((action) => action.scopes.some((scope) => persona.scope.includes(scope))).slice(0, 6);
+  const quickActions = actionsForScopes(AI_QUICK_ACTIONS, persona.scope, 6);
+  const promptTemplates = actionsForScopes(AI_PROMPT_TEMPLATES, persona.scope, 4);
   const assistantMutation = trpc.ai.assist.useMutation();
   const requestApprovalMutation = trpc.ai.requestActionApproval.useMutation();
   const decideApprovalMutation = trpc.ai.decideActionApproval.useMutation();
@@ -39995,16 +39938,9 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       setMessages(convo);
       await persistTurn(question, responseData.result);
     } catch (e) {
-      const providerMessage = typeof e?.message === "string" ? e.message : "";
-      const message = providerMessage.includes("temporarily unavailable")
-        ? providerMessage
-        : providerMessage.includes("too many requests")
-          ? "The AI Assistant is busy. Please wait a minute and try again."
-          : providerMessage.includes("shorten or rephrase")
-            ? providerMessage
-            : "The AI Assistant could not respond right now. Please try again.";
-      notify(message, "error");
-      setAssistantError({ message, question });
+      const failure = classifyAssistantError(e);
+      notify(failure.message, "error");
+      setAssistantError({ ...failure, question });
       setMessages(messages);
       setInput(question);
     } finally {
@@ -40092,8 +40028,60 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
             </div>
           </div>
         )}
+        {promptTemplates.length > 0 && (
+          <div className="mt-2.5 border-t border-slate-200/70 pt-2.5">
+            <div className="mb-1.5 flex items-center gap-1.5">
+              <FileText size={12} className="text-[#2563EB]" />
+              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Prompt templates</span>
+              <span className="text-[10px] text-slate-400">· editable starting points</span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+              {promptTemplates.map((template) => {
+                const Icon = template.icon;
+                return (
+                  <button
+                    key={template.id}
+                    type="button"
+                    onClick={() => { setInput(template.prompt); setAssistantError(null); }}
+                    disabled={busy}
+                    title={template.prompt}
+                    className="group flex min-w-0 items-center gap-2 rounded-lg border border-dashed border-slate-200/90 bg-slate-50/60 px-2.5 py-2 text-left transition-colors hover:border-[#2563EB]/40 hover:bg-[#2563EB]/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md" style={{ backgroundColor: `${template.color}14`, color: template.color }}>
+                      <Icon size={14} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[11px] font-semibold text-slate-700 group-hover:text-[#111827]">{template.label}</span>
+                      <span className="block truncate text-[10px] text-slate-400">{template.description}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
-      {assistantError && !busy && <div role="alert" className="mx-3 mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-[12px] text-rose-800"><span>{assistantError.message}</span><button type="button" onClick={() => send(assistantError.question)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 py-1.5 font-semibold text-rose-800 transition hover:bg-rose-100"><RotateCcw size={13}/>Try again</button></div>}
+      {assistantError && !busy && (
+        <div role="alert" data-ai-error-code={assistantError.code} className="mx-3 mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-[12px] text-rose-900">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle size={16} className="mt-0.5 shrink-0 text-rose-600" />
+            <div className="min-w-0 flex-1">
+              <p className="font-bold">{assistantError.title}</p>
+              <p className="mt-0.5 leading-relaxed text-rose-800">{assistantError.message}</p>
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                {assistantError.retryable && (
+                  <button type="button" onClick={() => send(assistantError.question)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-rose-700 px-3 py-1.5 font-semibold text-white transition hover:bg-rose-800">
+                    <RotateCcw size={13} /> Try again
+                  </button>
+                )}
+                <button type="button" onClick={() => { setAssistantError(null); setInput(assistantError.question || ""); }} className="inline-flex min-h-9 items-center rounded-lg border border-rose-300 bg-white px-3 py-1.5 font-semibold text-rose-800 transition hover:bg-rose-100">
+                  Continue without AI
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         {anomalies.length > 0 && (
           <div className="rounded-xl border border-[#C9A96E]/30 bg-[#C9A96E]/5 p-3.5">
@@ -40299,7 +40287,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
           </button>
           <input
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => { setInput(e.target.value); if (assistantError) setAssistantError(null); }}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
             placeholder={listening ? "Listening..." : "Ask anything, or use the mic..."}
             disabled={busy}
@@ -48885,16 +48873,6 @@ function SmartManager() {
     setIdleSecondsRemaining(0);
   }
   const [active, setActive] = useState("dashboard");
-  // CmdK handled by paletteOpen state (see topbar)
-
-  // Global ⌘K / Ctrl+K — open command palette from anywhere
-  useEffect(() => {
-    function onKey(e) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setCmdOpen((v) => !v); }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const [isDesktopNavigation, setIsDesktopNavigation] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const sidebarHiddenFromAssistiveTech = !isDesktopNavigation && !sidebarOpen;
@@ -49451,6 +49429,7 @@ function SmartManager() {
   // most SME-focused competitors bother with. Listens at the document
   // level so it works regardless of which module currently has focus.
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const paletteTriggerRef = useRef(null);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [createMenuMounted, setCreateMenuMounted] = useState(false);
 
@@ -49473,6 +49452,9 @@ function SmartManager() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
+  useEffect(() => {
+    if (!paletteOpen) paletteTriggerRef.current?.focus();
+  }, [paletteOpen]);
 
   // Real, per-device dark mode preference for the App Shell — the same
   // localStorage pattern already proven for App Lock, since visual theme
@@ -49781,9 +49763,11 @@ function SmartManager() {
            <div className="dashboard-topbar-actions dashboard-topbar-actions-polished flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
              <button
                            type="button"
+                           ref={paletteTriggerRef}
                            onClick={() => setPaletteOpen(true)}
                            className="dashboard-topbar-search dashboard-topbar-search-collapsed dashboard-topbar-search-hero group relative inline-flex h-10 w-10 min-w-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-transparent hover:text-slate-950 active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 focus-visible:ring-offset-2"
                            aria-label="Search everything"
+                           aria-keyshortcuts="Control+K Meta+K"
                            title="Search everything"
                            aria-expanded={paletteOpen}
                          >

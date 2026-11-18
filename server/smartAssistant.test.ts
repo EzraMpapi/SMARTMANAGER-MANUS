@@ -4,7 +4,7 @@ const { invokeMock, listModelsMock } = vi.hoisted(() => ({ invokeMock: vi.fn(), 
 
 vi.mock("./_core/llm", () => ({ invokeLLM: invokeMock, listLLMModels: listModelsMock }));
 
-import { runSmartAssistant } from "./smartAssistant";
+import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
 
 const input = {
   message: "Which team should review stock risk?",
@@ -65,5 +65,27 @@ describe("runSmartAssistant", () => {
     const result = await runSmartAssistant(input);
 
     expect(result.actions).toEqual([{ type: "navigate", label: "Open CRM", target: "crm" }]);
+  });
+
+  it("classifies provider rate limits as retryable without exposing upstream details", async () => {
+    invokeMock.mockRejectedValue(new Error("LLM invoke failed: 429 Too Many Requests – upstream detail"));
+
+    await expect(runSmartAssistant(input)).rejects.toMatchObject({
+      name: "AssistantProviderError",
+      code: "AI_RATE_LIMITED",
+      status: 429,
+      retryable: true,
+      message: "Manus AI provider is rate limited.",
+    } satisfies Partial<AssistantProviderError>);
+  });
+
+  it("classifies missing Manus credentials as a non-retryable configuration failure", async () => {
+    invokeMock.mockRejectedValue(new Error("Manus built-in AI is not configured: set BUILT_IN_FORGE_API_KEY"));
+
+    await expect(runSmartAssistant(input)).rejects.toMatchObject({
+      code: "AI_CONFIG_MISSING",
+      status: 503,
+      retryable: false,
+    });
   });
 });

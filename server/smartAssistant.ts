@@ -62,15 +62,38 @@ export type SmartAssistantResponse = {
   source: "builtin";
 };
 
+export type AssistantErrorCode =
+  | "AI_CONFIG_MISSING"
+  | "AI_UNAUTHORIZED"
+  | "AI_RATE_LIMITED"
+  | "AI_BAD_REQUEST"
+  | "AI_TIMEOUT"
+  | "AI_RESPONSE_INVALID"
+  | "AI_UNAVAILABLE";
+
 export class AssistantProviderError extends Error {
   constructor(
     message: string,
     public readonly status: number,
     public readonly retryable: boolean,
+    public readonly code: AssistantErrorCode = "AI_UNAVAILABLE",
   ) {
     super(message);
     this.name = "AssistantProviderError";
   }
+}
+
+function providerFailure(error: unknown): AssistantProviderError {
+  const detail = error instanceof Error ? error.message : "The AI service could not be reached.";
+  if (detail.includes("BUILT_IN_FORGE_API_KEY") || detail.includes("BUILT_IN_FORGE_API_URL")) {
+    return new AssistantProviderError("Manus AI provider configuration is missing.", 503, false, "AI_CONFIG_MISSING");
+  }
+  const status = Number(detail.match(/(?:failed:|status)\s+(\d{3})/)?.[1] || 0);
+  if (status === 401 || status === 403) return new AssistantProviderError("Manus AI provider rejected its credentials.", status, false, "AI_UNAUTHORIZED");
+  if (status === 429) return new AssistantProviderError("Manus AI provider is rate limited.", status, true, "AI_RATE_LIMITED");
+  if (status === 400 || status === 413 || status === 422) return new AssistantProviderError("The assistant request was rejected. Please shorten or rephrase it.", status, false, "AI_BAD_REQUEST");
+  if (/timeout|timed out|abort/i.test(detail)) return new AssistantProviderError("Manus AI took too long to respond.", 504, true, "AI_TIMEOUT");
+  return new AssistantProviderError("Manus AI is temporarily unavailable.", status || 502, true, "AI_UNAVAILABLE");
 }
 
 function toText(value: unknown, maximum: number) {
@@ -257,7 +280,7 @@ export async function runSmartAssistant(input: SmartAssistantInput): Promise<Sma
       response = await invokeLLM(request);
     }
     const content = toText(response.choices[0]?.message?.content, 14_000);
-    if (!content) throw new AssistantProviderError("The AI service returned no usable response.", 502, true);
+    if (!content) throw new AssistantProviderError("The AI service returned no usable response.", 502, true, "AI_RESPONSE_INVALID");
     const usage = {
       promptTokens: typeof response.usage?.prompt_tokens === "number" ? response.usage.prompt_tokens : undefined,
       completionTokens: typeof response.usage?.completion_tokens === "number" ? response.usage.completion_tokens : undefined,
@@ -266,10 +289,7 @@ export async function runSmartAssistant(input: SmartAssistantInput): Promise<Sma
     return normalizeStructuredResponse(content, usage, toText(response.model, 100) || model);
   } catch (error) {
     if (error instanceof AssistantProviderError) throw error;
-    const detail = error instanceof Error ? error.message.slice(0, 280) : "The AI service could not be reached.";
-    const statusMatch = detail.match(/\b(400|401|403|429|502|503)\b/);
-    const status = statusMatch ? Number(statusMatch[1]) : 502;
-    throw new AssistantProviderError(detail, status, status === 429 || status >= 500);
+    throw providerFailure(error);
   }
 
 }

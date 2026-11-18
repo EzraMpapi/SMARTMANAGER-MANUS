@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useMemo, useState, useEffect } from "react";
 import { trpc } from "../lib/trpc";
 import { useAuthContext } from "./AuthContext";
-import { installDocumentLocalization, setDocumentLocalization } from "../lib/domLocalization";
+import { installDocumentLocalization, registerPhraseDictionary, setDocumentLocalization } from "../lib/domLocalization";
+import { loadLanguageDictionary } from "../lib/localizationDictionaries";
 
 export type Lang = "en" | "sw" | "fr" | "es" | "pt" | "zh" | "ar" | "de" | "hi" | "ja";
 
@@ -247,7 +248,22 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     syncLanguageDocument(lang);
   }, [lang]);
   useEffect(() => installDocumentLocalization(lang), []);
-  useEffect(() => setDocumentLocalization(lang), [lang]);
+  // Curated phrases and layout direction apply immediately; the generated
+  // phrase bundle for the selected language is loaded next and re-applied so
+  // every rendered label switches without a page refresh.
+  useEffect(() => {
+    let cancelled = false;
+    setDocumentLocalization(lang);
+    if (lang === "en") return () => { cancelled = true; };
+    loadLanguageDictionary(lang)
+      .then((dictionary) => {
+        if (cancelled) return;
+        registerPhraseDictionary(lang, dictionary);
+        setDocumentLocalization(lang);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [lang]);
   const t = (key: string) => translations[lang]?.[key] || translations.en[key] || key;
   return <LanguageContext.Provider value={{ lang, setLang, t, languageOptions: LANGUAGE_OPTIONS }}>{children}</LanguageContext.Provider>;
 }
@@ -266,6 +282,20 @@ export function useLanguageOptional(): LanguageContextType {
   const [fallbackLang, setFallbackLang] = useState<Lang>(initialLanguage);
   useEffect(() => {
     if (!context) syncLanguageDocument(fallbackLang);
+  }, [context, fallbackLang]);
+  useEffect(() => {
+    if (context) return;
+    let cancelled = false;
+    setDocumentLocalization(fallbackLang);
+    if (fallbackLang === "en") return () => { cancelled = true; };
+    loadLanguageDictionary(fallbackLang)
+      .then((dictionary) => {
+        if (cancelled) return;
+        registerPhraseDictionary(fallbackLang, dictionary);
+        setDocumentLocalization(fallbackLang);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
   }, [context, fallbackLang]);
   const fallback = useMemo<LanguageContextType>(() => ({
     lang: fallbackLang,

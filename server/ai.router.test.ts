@@ -47,12 +47,31 @@ describe("AI router and grounded dashboard signals", () => {
 
   it("exposes role-aware specialized AI shortcuts without bypassing the assistant approval flow", () => {
     expect(dashboardSource).toContain("AI_QUICK_ACTIONS");
-    expect(dashboardSource).toContain("Executive brief");
-    expect(dashboardSource).toContain("Cash & collections");
-    expect(dashboardSource).toContain("Reorder plan");
-    expect(dashboardSource).toContain("Pipeline coach");
+    expect(dashboardSource).toContain("from \"./aiPromptCatalog.js\"");
+    expect(dashboardSource).toContain("actionsForScopes(AI_QUICK_ACTIONS");
     expect(dashboardSource).toContain("Specialized tools");
     expect(dashboardSource).toContain("grounded in live data");
+    expect(dashboardSource).toContain("AI_PROMPT_TEMPLATES");
+    expect(dashboardSource).toContain("actionsForScopes(AI_PROMPT_TEMPLATES");
+    const catalogSource = readFileSync(new URL("../client/src/aiPromptCatalog.js", import.meta.url), "utf8");
+    expect(catalogSource).toContain("Executive brief");
+    expect(catalogSource).toContain("Board update");
+    expect(catalogSource).toContain("Customer follow-up");
+    expect(catalogSource).toContain("Month-end close");
+    expect(catalogSource).toContain("Risk register");
+    expect(catalogSource).toContain("Weekly KPI review");
+    expect(catalogSource).toContain("SOP draft");
+  });
+
+  it("maps provider failures to actionable fallback states without exposing provider internals", () => {
+    expect(dashboardSource).toContain("ASSISTANT_ERROR_COPY");
+    expect(dashboardSource).toContain("AI_CONFIG_MISSING");
+    expect(dashboardSource).toContain("AI_RATE_LIMITED");
+    expect(dashboardSource).toContain("AI_TIMEOUT");
+    expect(dashboardSource).toContain("Continue without AI");
+    expect(dashboardSource).toContain("data-ai-error-code");
+    expect(routersSource).toContain("assistantErrorMessage");
+    expect(routersSource).toContain("[${error.code}]");
   });
 
   it("exposes configurePreferences procedure and AI preferences drawer assistant", () => {
