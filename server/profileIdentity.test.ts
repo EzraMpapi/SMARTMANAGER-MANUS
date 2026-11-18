@@ -34,6 +34,7 @@ function installProfileFetch({ extended = true, includeEmployee = true, includeN
     if (url.includes("/rest/v1/companies?")) return json([{ id: "company-1", name: "Example Workspace", category: "services", region: "Dar es Salaam", country: "Tanzania" }]);
     if (url.includes("/rest/v1/hr_employees?")) return includeEmployee ? json([{ id: "employee-1", company_id: "company-1", profile_id: "user-1", employee_number: "EMP-001", department_id: "department-1", position_id: "position-1", timezone: "Africa/Dar_es_Salaam", status: "Active" }]) : json([]);
     if (url.includes("/rest/v1/hr_notifications?")) return includeNotifications ? json([{ id: "notification-1", title: "Welcome", body: "Welcome to the workspace", type: "system", read_at: null, created_at: "2026-08-23T07:00:00.000Z" }]) : json([]);
+    if (url.includes("/rest/v1/audit_log?")) return json([{ id: "audit-1", action: "Profile sign-in verified", module: "Authentication", actor: "Person Example", subject: "user-1", details: "Session verified", created_at: "2026-08-23T07:05:00.000Z" }]);
     throw new Error(`Unexpected fetch in test: ${url}`);
   }) as any;
 }
@@ -59,6 +60,7 @@ describe("profile identity center service", () => {
     expect(result.profile.role).toBe("Employee");
     expect(result.work.employeeNumber).toBe("EMP-001");
     expect(result.activity[0]?.id).toBe("notification-1");
+    expect(result.auditHistory[0]?.id).toBe("audit-1");
     const urls = (global.fetch as any).mock.calls.map((call: any[]) => String(call[0]));
     expect(urls.some((url: string) => url.includes("id=eq.user-1") && url.includes("company_id=eq.company-1"))).toBe(true);
     expect(urls.some((url: string) => url.includes("profile_id=eq.user-1") && url.includes("company_id=eq.company-1"))).toBe(true);

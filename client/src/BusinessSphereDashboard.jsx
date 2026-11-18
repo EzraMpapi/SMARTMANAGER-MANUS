@@ -37186,13 +37186,13 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="sm-settings-page space-y-6 max-w-3xl">
       <div>
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Settings</h1>
         <p className="text-[13px] text-slate-500 mt-1">Company profile, module entitlements, and connection status</p>
       </div>
 
-      <section className="flex flex-col gap-3 rounded-xl border border-sky-100 bg-sky-50/70 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-label="Personal dashboard customization">
+      <section className="sm-settings-banner flex flex-col gap-3 rounded-xl border border-sky-100 bg-sky-50/70 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-label="Personal dashboard customization">
         <div className="flex items-start gap-3">
           <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-sky-700 shadow-sm"><Sliders size={16} /></span>
           <div><p className="text-[12.5px] font-bold text-sky-950">Personal dashboard layout</p><p className="mt-0.5 text-[11.5px] leading-5 text-sky-900/75">Choose optional command-bar controls, your menu presentation and visible permitted groups, plus dashboard panels. Access rights do not change.</p></div>
@@ -37202,7 +37202,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
 
       {canManageBilling && <section className="flex flex-col gap-3 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-label="Subscription and billing"><div className="flex items-start gap-3"><span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-emerald-700 shadow-sm"><CreditCard size={16} /></span><div><p className="text-[12.5px] font-bold text-emerald-950">Subscription &amp; Billing</p><p className="mt-0.5 text-[11.5px] leading-5 text-emerald-900/75">Company-level plan, trial, invoice and provider-confirmed payment controls.</p></div></div><button type="button" onClick={onOpenBilling} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-[11.5px] font-bold text-white transition hover:bg-emerald-800"><CreditCard size={13} /> Open billing center <ArrowRight size={13} /></button></section>}
 
-      <section className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm" role="status" aria-live="polite">
+      <section className="sm-settings-connection rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm" role="status" aria-live="polite">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${!IS_CONFIGURED ? "bg-slate-400" : workspaceSettingsQuery.isLoading ? "bg-amber-400 animate-pulse" : workspaceSettingsQuery.isError ? "bg-red-500" : workspaceSettingsQuery.data ? "bg-emerald-500" : "bg-slate-400"}`} aria-hidden="true" />
@@ -37223,7 +37223,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
       </section>
       <AndroidAppStatus />
       {/* Role — demo switcher */}
-      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+      <section className="sm-settings-section bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
           <h2 className="text-[14.5px] font-semibold text-[#111827]">Your role</h2>
           {pendingOwnRoleChange && <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[10.5px] font-bold text-amber-800"><Clock3 size={12} /> Role change pending</span>}

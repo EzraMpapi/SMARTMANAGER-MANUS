@@ -5328,3 +5328,20 @@
   .sm-profile-info-item,
   .sm-profile-info-item > span { transition: none !important; }
 }
+
+/* Settings and account preferences polish */
+.sm-settings-page > h1,
+.sm-settings-page > div:first-child h1 { letter-spacing: -0.035em; }
+.sm-settings-page section { transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+.sm-settings-page section:hover { border-color: rgba(16, 185, 129, .22); box-shadow: 0 12px 30px rgba(15, 23, 42, .045); }
+.sm-settings-banner,
+.sm-settings-connection { position: relative; overflow: hidden; }
+.sm-settings-banner::after { content: ""; position: absolute; width: 9rem; height: 9rem; right: -3.5rem; top: -4.5rem; border-radius: 999px; border: 18px solid rgba(14, 165, 233, .08); pointer-events: none; }
+.sm-settings-connection { background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(248,250,252,.9)); }
+.sm-settings-section { scroll-margin-top: 1.25rem; }
+.sm-profile-audit-card { background: linear-gradient(145deg, #ffffff 0%, #fbfefd 100%); }
+@media (max-width: 640px) {
+  .sm-settings-page { padding-bottom: .5rem; }
+  .sm-settings-page section { border-radius: 1.15rem; }
+  .sm-profile-audit-card { padding: 1rem; }
+}

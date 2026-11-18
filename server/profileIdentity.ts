@@ -41,6 +41,7 @@ type ProfileRow = Record<string, unknown> & {
 type CompanyRow = Record<string, unknown> & { id?: string; name?: string | null; category?: string | null; region?: string | null; country?: string | null; logo?: string | null };
 type EmployeeRow = Record<string, unknown> & { id?: string; profile_id?: string | null; company_id?: string; department_id?: string | null; position_id?: string | null; manager_employee_id?: string | null; employee_number?: string | null; employment_start_date?: string | null; employment_end_date?: string | null; timezone?: string | null; status?: string | null; created_at?: string | null };
 type NotificationRow = { id?: string; title?: string | null; body?: string | null; type?: string | null; read_at?: string | null; created_at?: string | null };
+type AuditRow = { id?: string; action?: string | null; module?: string | null; actor?: string | null; subject?: string | null; details?: string | null; detail?: unknown; created_at?: string | null };
 type AuthUser = { id?: string; email?: string | null; last_sign_in_at?: string | null; user_metadata?: { full_name?: string; name?: string } };
 
 const EDITABLE_FIELDS = new Set([
@@ -185,9 +186,11 @@ export async function getProfileIdentity(req: CreateExpressContextOptions["req"]
   const companyRows = await optionalRows<CompanyRow>(`companies?select=id,name,category,region,country,logo&id=eq.${encodeURIComponent(verified.company_id)}&limit=1`, token);
   const employeeRows = await optionalRows<EmployeeRow>(`hr_employees?select=id,company_id,profile_id,department_id,position_id,manager_employee_id,employee_number,employment_start_date,employment_end_date,timezone,status,created_at&company_id=eq.${encodeURIComponent(verified.company_id)}&profile_id=eq.${encodeURIComponent(verified.id)}&order=created_at.desc&limit=1`, token);
   const notifications = await optionalRows<NotificationRow>(`hr_notifications?select=id,title,body,type,read_at,created_at&company_id=eq.${encodeURIComponent(verified.company_id)}&profile_id=eq.${encodeURIComponent(verified.id)}&order=created_at.desc&limit=20`, token);
+  const auditRows = await optionalRows<AuditRow>(`audit_log?select=id,action,module,actor,subject,details,detail,created_at&company_id=eq.${encodeURIComponent(verified.company_id)}&order=created_at.desc&limit=25`, token);
   const company = companyRows[0] ? { id: stringValue(companyRows[0].id), name: stringValue(companyRows[0].name), category: stringValue(companyRows[0].category), region: stringValue(companyRows[0].region), country: stringValue(companyRows[0].country), logo: stringValue(companyRows[0].logo) } : null;
   const work = mapEmployee(employeeRows[0]);
   const activity = notifications.map((item) => ({ id: stringValue(item.id), title: stringValue(item.title), body: stringValue(item.body), type: stringValue(item.type), readAt: stringValue(item.read_at), createdAt: stringValue(item.created_at) }));
+  const auditHistory = auditRows.map((item) => ({ id: stringValue(item.id), action: stringValue(item.action), module: stringValue(item.module), actor: stringValue(item.actor), subject: stringValue(item.subject), details: stringValue(item.details), detail: item.detail && typeof item.detail === "object" ? item.detail : null, createdAt: stringValue(item.created_at) }));
   return {
     profile,
     company,
@@ -209,6 +212,7 @@ export async function getProfileIdentity(req: CreateExpressContextOptions["req"]
     },
     notifications: activity,
     activity,
+    auditHistory,
     completion: profileCompletion(profile),
     capabilities: {
       extendedFieldsAvailable: rpc.available,
@@ -216,6 +220,7 @@ export async function getProfileIdentity(req: CreateExpressContextOptions["req"]
       workspaceSwitchingAvailable: false,
       sessionDeviceListAvailable: false,
       activityFeedAvailable: notifications.length > 0,
+      auditHistoryAvailable: auditHistory.length > 0,
     },
   };
 }
